@@ -1,0 +1,16 @@
+{
+  "name": "precious-petals-crm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:dev": "./pocketbase serve"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.3",
+  "devDependencies": {
+    "eslint": "^9.37.0"
+  }
+}
