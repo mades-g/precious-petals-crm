@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for precious-petals-crm on 2025-10-15T17:07:39+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "precious-petals-crm"
+primary_region = "lhr"
+
+[http_service]
+  auto_start_machines = true
+  auto_stop_machines = 'stop'
+  force_https = true
+  internal_port = 8_080
+  min_machines_running = 0
+  processes = [ "app" ]
+
+  [http_service.concurrency]
+  hard_limit = 500
+  type = "requests"
+
+[[mounts]]
+  destination = "/pb/pb_data"
+  source = "pb_data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+
