@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import { resolve } from 'path'
 
+const apiUrl = process.env.VITE_API_URL || "http://localhost:8090"
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -11,7 +13,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8090', // need to be env variable
+      '/api': apiUrl
     },
   },
 })
