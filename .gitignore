@@ -1,24 +1,26 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-apps/dist
-app/sdist-ssr
-*.local
+.*local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Editor and OS files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+*.log
+
+# Build artifacts
+node_modules/
+apps/frontend/.vite/
+apps/frontend/dist/
+apps/frontend/coverage/
+apps/pb/pb_public/
+
+# PocketBase
+apps/pb/pb_data
+
+# PocketBase logs and runtime cache
+apps/pb/logs/
+apps/pb/tmp/
+
+pnpm-debug.log*
+*.tsbuildinfo
+.idea/
+.vscode/

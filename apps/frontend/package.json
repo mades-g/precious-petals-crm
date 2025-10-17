@@ -14,6 +14,7 @@
     "@radix-ui/themes": "^3.2.1",
     "@tanstack/react-query": "^5.90.5",
     "@tanstack/react-query-devtools": "^5.90.2",
+    "dotenv": "^17.2.3",
     "pocketbase": "^0.26.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

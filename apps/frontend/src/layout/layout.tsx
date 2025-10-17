@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
-import { Theme, Box, Flex, Button } from "@radix-ui/themes"
-import "@radix-ui/themes/styles.css"
+import { Theme, Flex, Button } from "@radix-ui/themes"
 
 import { useAuth } from "../auth/hooks/use-auth"
 
@@ -8,7 +7,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { isAuthed, logout } = useAuth()
 
   return (
-    <Theme accentColor="blue" radius="large">
+    <Theme>
       <Flex
         align="center"
         justify="center"
@@ -21,12 +20,6 @@ export default function Layout({ children }: { children: ReactNode }) {
         )}
         {children}
       </Flex>
-      <Box p="4" style={{ minHeight: "100vh", background: "#fafafa" }}>
-        <Flex align="center" justify="between" mb="4">
-
-        </Flex>
-        {children}
-      </Box>
     </Theme>
   )
 }
