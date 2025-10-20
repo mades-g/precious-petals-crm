@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import type { UserConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import { resolve } from 'path'
 
@@ -11,9 +12,15 @@ export default defineConfig({
     outDir: resolve(__dirname, '../pb/pb_public'),
     emptyOutDir: true,
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    css: true,
+  },
   server: {
     proxy: {
       '/api': apiUrl
     },
   },
-})
+} as UserConfig)

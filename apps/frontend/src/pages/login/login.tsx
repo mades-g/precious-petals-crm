@@ -17,14 +17,16 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    pb.collection("users").authWithPassword(email, password)
+    const response = await pb.collection("users").authWithPassword(email, password)
+
+    console.log(response, 'response')
   }
 
   return (
-    <Card size="3" style={{ width: 360 }}>
+    <Card size="3" m="auto" style={{ width: 360 }} data-testid="sign-in-card">
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="4">
-          <Heading size="5" weight="bold">
+          <Heading size="5" weight="bold" data-testid="sign-in-heading">
             Sign in
           </Heading>
           <Box>
@@ -36,6 +38,7 @@ const Login = () => {
               placeholder="Enter your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              data-testid="email"
             />
           </Box>
           <Box>
@@ -50,10 +53,11 @@ const Login = () => {
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              data-testid="password"
             />
           </Box>
           <Flex justify="end" gap="3" mt="3">
-            <Button type="submit">Sign in</Button>
+            <Button type="submit" data-testid="sign-in-btn">Sign in</Button>
           </Flex>
         </Flex>
       </form>
