@@ -9,7 +9,7 @@ const Home = () => {
           <Flex gap="2" direction="column">
             <Flex gap="9">
               <Heading>Costumers</Heading>
-              <Box style={{ flex: 1}}>
+              <Box style={{ flex: 1 }}>
                 <TextField.Root placeholder="Search the docs…" type="search">
                   <TextField.Slot>
                     <MagnifyingGlassIcon height="16" width="16" />
@@ -21,13 +21,18 @@ const Home = () => {
             <Table.Root variant="surface">
               <Table.Header>
                 <Table.Row>
+                  {/* order number - column needs to be smaller */}
+                  {/* order id map */}
                   <Table.ColumnHeaderCell>Order No</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Name</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Email</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Phone</Table.ColumnHeaderCell>
+                  {/* Should include - title First and last name, email, phonenumer how recommed */}
+                  <Table.ColumnHeaderCell>Costumer</Table.ColumnHeaderCell>
+                  {/* postcode and delivery address */}
+                  <Table.ColumnHeaderCell>Delivery address</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Occasion date</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Payment status</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Order status</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Preservation type</Table.ColumnHeaderCell>
+                  {/* list of actions */}
                   <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
                 </Table.Row>
               </Table.Header>

@@ -9,17 +9,21 @@ import {
 } from "@radix-ui/themes"
 import { useState } from "react"
 
-import { pb } from "../../services/pb/pb"
+import { login } from "../../services/pb/pb"
+import { useMutation } from "@tanstack/react-query"
 
 const Login = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
+  const { mutateAsync } = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
+    mutationKey:['login']
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const response = await pb.collection("users").authWithPassword(email, password)
-
-    console.log(response, 'response')
+    await mutateAsync({ email, password })
   }
 
   return (
