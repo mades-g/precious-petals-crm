@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import type {ReactNode}  from "react"
+import type { ReactNode } from "react"
 
-import { pb } from "../../services/pb/pb"
+import { pb } from '@/services/pb/client'
 import { AuthContext } from "../auth-context/auth-context"
 
 export default function AuthProvider({ children }: { children: ReactNode }) {

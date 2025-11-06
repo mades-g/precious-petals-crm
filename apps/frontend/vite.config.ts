@@ -12,6 +12,11 @@ export default defineConfig({
     outDir: resolve(__dirname, '../pb/pb_public'),
     emptyOutDir: true,
   },
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "src")
+    }
+  },
   test: {
     globals: true,
     environment: 'jsdom',

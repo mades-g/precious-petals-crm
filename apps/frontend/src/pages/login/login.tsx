@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   Box,
   Button,
@@ -7,10 +8,9 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes"
-import { useState } from "react"
-
-import { login } from "../../services/pb/pb"
 import { useMutation } from "@tanstack/react-query"
+
+import { login } from '@/services/pb/client'
 
 const Login = () => {
   const [email, setEmail] = useState("")
