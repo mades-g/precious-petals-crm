@@ -1,13 +1,16 @@
+import type { JSX } from "react";
+import { Navigate } from "react-router";
+import { Spinner } from "@radix-ui/themes";
 
-import type { JSX } from "react"
-import { Navigate } from "react-router"
-import { Spinner } from "@radix-ui/themes"
+import { useAuth } from "../hooks/use-auth";
 
-import { useAuth } from "../hooks/use-auth"
+export default function RedirectIfAuthed({
+  children,
+}: {
+  children: JSX.Element;
+}) {
+  const { isAuthed, loading } = useAuth();
 
-export default function RedirectIfAuthed({ children }: { children: JSX.Element }) {
-  const { isAuthed, loading } = useAuth()
-
-  if (loading) return <Spinner size="3" />
-  return isAuthed ? <Navigate to="/" replace /> : children
+  if (loading) return <Spinner size="3" />;
+  return isAuthed ? <Navigate to="/" replace /> : children;
 }

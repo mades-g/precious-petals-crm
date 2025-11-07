@@ -1,9 +1,7 @@
-import { Box, Grid, Select, TextField } from "@radix-ui/themes"
+import { Box, Grid, Select, TextField } from "@radix-ui/themes";
 
 const NewOrder = () => {
-  return (
-   <h1>New order</h1>
-  )
-}
+  return <h1>New order</h1>;
+};
 
-export default NewOrder
+export default NewOrder;

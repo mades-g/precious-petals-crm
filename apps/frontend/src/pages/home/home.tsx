@@ -1,7 +1,22 @@
-import { MagnifyingGlassIcon } from "@radix-ui/react-icons"
-import { Box, Button, Card, Flex, Heading, Table, TextField } from "@radix-ui/themes"
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import {
+  Box,
+  Button,
+  Card,
+  Flex,
+  Heading,
+  Table,
+  TextField,
+} from "@radix-ui/themes";
+import { useQuery } from "@tanstack/react-query";
+import { getCostumers } from "@/features/costumers/api/getCostumers";
 
 const Home = () => {
+  const { isLoading, data, isError } = useQuery({
+    queryKey: ["costumers"],
+    queryFn: getCostumers,
+  });
+
   return (
     <Flex mx="auto" pt="9">
       <Box minWidth="80vw">
@@ -23,15 +38,21 @@ const Home = () => {
                 <Table.Row>
                   {/* order number - column needs to be smaller */}
                   {/* order id map */}
-                  <Table.ColumnHeaderCell>Order No</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Order</Table.ColumnHeaderCell>
                   {/* Should include - title First and last name, email, phonenumer how recommed */}
                   <Table.ColumnHeaderCell>Costumer</Table.ColumnHeaderCell>
                   {/* postcode and delivery address */}
-                  <Table.ColumnHeaderCell>Delivery address</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>
+                    Delivery address
+                  </Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Occasion date</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Payment status</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>
+                    Payment status
+                  </Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>Order status</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Preservation type</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>
+                    Preservation type
+                  </Table.ColumnHeaderCell>
                   {/* list of actions */}
                   <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
                 </Table.Row>
@@ -41,7 +62,7 @@ const Home = () => {
         </Card>
       </Box>
     </Flex>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

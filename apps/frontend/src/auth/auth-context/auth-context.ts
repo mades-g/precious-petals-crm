@@ -1,10 +1,10 @@
-import { createContext } from "react"
+import { createContext } from "react";
 
 export type AuthContext = {
-  isAuthed: boolean
-  user: unknown | null
-  loading: boolean
-  logout: () => Promise<void>
-}
+  isAuthed: boolean;
+  user: unknown | null;
+  loading: boolean;
+  logout: () => Promise<void>;
+};
 
-export const AuthContext = createContext<AuthContext | undefined>(undefined)
+export const AuthContext = createContext<AuthContext | undefined>(undefined);

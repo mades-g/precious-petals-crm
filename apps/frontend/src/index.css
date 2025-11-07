@@ -60,7 +60,7 @@
   --gray-a11: #000902ea;
   --gray-a12: #000904dc;
 
-  --gray-contrast: #FFFFFF;
+  --gray-contrast: #ffffff;
   --gray-surface: #ffffffcc;
   --gray-indicator: #2c362b;
   --gray-track: #2c362b;
@@ -75,7 +75,6 @@
 
 @supports (color: color(display-p3 1 1 1)) {
   @media (color-gamut: p3) {
-
     :root,
     .light,
     .light-theme {
@@ -136,7 +135,7 @@
       --gray-a11: color(display-p3 0 0.0275 0.0039 / 0.908);
       --gray-a12: color(display-p3 0 0.0275 0.0078 / 0.854);
 
-      --gray-contrast: #FFFFFF;
+      --gray-contrast: #ffffff;
       --gray-surface: color(display-p3 1 1 1 / 80%);
       --gray-indicator: oklch(31.9% 0.0234 143.2);
       --gray-track: oklch(31.9% 0.0234 143.2);

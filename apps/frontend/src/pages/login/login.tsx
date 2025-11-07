@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -7,24 +7,25 @@ import {
   Heading,
   Text,
   TextField,
-} from "@radix-ui/themes"
-import { useMutation } from "@tanstack/react-query"
+} from "@radix-ui/themes";
+import { useMutation } from "@tanstack/react-query";
 
-import { login } from '@/services/pb/client'
+import { login } from "@/services/pb/client";
 
 const Login = () => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const { mutateAsync } = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
-    mutationKey:['login']
-  })
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      login(email, password),
+    mutationKey: ["login"],
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await mutateAsync({ email, password })
-  }
+    await mutateAsync({ email, password });
+  };
 
   return (
     <Card size="3" m="auto" style={{ width: 360 }} data-testid="sign-in-card">
@@ -61,12 +62,14 @@ const Login = () => {
             />
           </Box>
           <Flex justify="end" gap="3" mt="3">
-            <Button type="submit" data-testid="sign-in-btn">Sign in</Button>
+            <Button type="submit" data-testid="sign-in-btn">
+              Sign in
+            </Button>
           </Flex>
         </Flex>
       </form>
     </Card>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
