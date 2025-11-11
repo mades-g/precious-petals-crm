@@ -2,5 +2,5 @@ packages:
   - apps/*
 
 ignoredBuiltDependencies:
-  - '@swc/core'
+  - "@swc/core"
   - esbuild

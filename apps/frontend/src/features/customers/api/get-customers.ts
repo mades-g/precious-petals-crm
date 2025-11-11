@@ -1,13 +1,13 @@
 import { pb } from "@/services/pb/client";
 import { COLLECTIONS } from "@/services/pb/constants";
 import type {
-  CostumersResponse,
+  CustomersResponse,
   OrderFrameItemsResponse,
   OrderPaperweightItemsResponse,
   OrdersResponse,
 } from "@/services/pb/types";
 
-import { normalisedCostumer } from "../normalisers/costumer.normaliser";
+import { normalisedCustomer } from "../normalisers/customer.normaliser";
 
 // for now let's keep this here
 export type ExpandedOrdersResponse = {
@@ -17,11 +17,14 @@ export type ExpandedOrdersResponse = {
   }>;
 };
 
-export async function getCostumers() {
+// for now let's keep this here
+export type NormalisedCustomer = ReturnType<typeof normalisedCustomer>;
+
+export async function getCustomers() {
   const records = await pb
-    .collection(COLLECTIONS.COSTUMERS)
-    .getFullList<CostumersResponse<ExpandedOrdersResponse>>({
+    .collection(COLLECTIONS.CUSTOMERS)
+    .getFullList<CustomersResponse<ExpandedOrdersResponse>>({
       expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
     });
-  return records.map(normalisedCostumer);
+  return records.map(normalisedCustomer);
 }

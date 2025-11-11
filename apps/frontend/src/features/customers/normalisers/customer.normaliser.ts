@@ -1,6 +1,6 @@
-import type { ExpandedOrdersResponse } from "../api/getCostumers";
+import type { ExpandedOrdersResponse } from "../api/get-customers";
 
-import type { CostumersResponse } from "@/services/pb/types";
+import type { CustomersResponse } from "@/services/pb/types";
 
 const normaliseFrameOrder = (
   expandedRecord: ExpandedOrdersResponse["orderId"]["expand"],
@@ -15,7 +15,7 @@ const normaliseFrameOrder = (
       sizeX,
       sizeY,
       framingComplete,
-      frameColour,
+      frameType,
       artistHours,
       artworkComplete,
       preservationDate,
@@ -29,9 +29,9 @@ const normaliseFrameOrder = (
       special_notes: specialNotes,
       id: frameId,
     }) => ({
-      size: `${sizeX}x${sizeY}`,
+      size: `${sizeX}x${sizeY} inches`,
       artistsHours: artistHours,
-      frameColour,
+      frameType,
       artworkComplete,
       preservationDate,
       preservationType,
@@ -115,18 +115,27 @@ const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
   };
 };
 
-export const normalisedCostumer = (
-  record: CostumersResponse<ExpandedOrdersResponse>,
-) => {
-  const displayName = `${record.title} ${record.firstName} ${record.surname}`;
-  const orderDetails = normaliseOrder(record.expand);
+export const normalisedCustomer = ({
+  firstName,
+  surname,
+  title,
+  expand,
+  telephone: phoneNumber,
+  email,
+  howRecommended,
+  id,
+  collectionId: colId,
+}: CustomersResponse<ExpandedOrdersResponse>) => {
+  const displayName = `${title} ${firstName} ${surname}`;
+  const orderDetails = normaliseOrder(expand);
 
   return {
     displayName,
-    phoneNumber: record.telephone,
-    costumerId: record.id,
-    colId: record.collectionId,
-    email: record.email,
+    phoneNumber,
+    customerId: id,
+    colId,
+    email,
     orderDetails,
+    howRecommended,
   };
 };

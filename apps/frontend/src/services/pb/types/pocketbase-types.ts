@@ -1,7 +1,6 @@
 /**
  * Based on pocketbase-typegen output.
  */
-
 import type PocketBase from "pocketbase";
 import type { RecordService } from "pocketbase";
 
@@ -11,7 +10,7 @@ export type Collections =
   | "_mfas"
   | "_otps"
   | "_superusers"
-  | "costumers"
+  | "customers"
   | "order_frame_items"
   | "order_paperweight_items"
   | "orders"
@@ -103,32 +102,43 @@ export type SuperusersRecord = {
   verified?: boolean;
 };
 
-/* --- costumers option types (enums → unions) --- */
+export type CustomersTitleOptions = "Mrs" | "Mr" | "Miss";
 
-export type CostumersTitleOptions = "Mrs" | "Mr" | "Miss";
-
-export type CostumersHowRecommendedOptions =
+export type CustomersHowRecommendedOptions =
   | "Google"
   | "Friend / Family"
   | "Florist"
   | "Wedding planner";
 
-export type CostumersRecord = {
+export type CustomersRecord = {
   created: IsoAutoDateString;
   email: string;
   firstName: string;
-  howRecommended?: CostumersHowRecommendedOptions;
+  howRecommended?: CustomersHowRecommendedOptions;
   id: string;
   orderId?: RecordIdString;
   surname: string;
   telephone: string;
-  title?: CostumersTitleOptions;
+  title?: CustomersTitleOptions;
   updated: IsoAutoDateString;
 };
 
-/* --- order_frame_items option types (enums → unions) --- */
+export type OrderFrameItemsFrameMountColourOptions =
+  | "Cream - 8674"
+  | "Red - 8020"
+  | "Burgundy - 8151"
+  | "Gold - 8246"
+  | "Sage - 8633"
+  | "Silver - 835"
+  | "Blue - 8168"
+  | "Purple - 8146"
+  | "Navy - 8687"
+  | "Pink - 8064"
+  | "Maroon - 8016"
+  | "Light Grey - 8664"
+  | "Bright white - 897";
 
-export type OrderFrameItemsFrameColourOptions =
+export type OrderFrameItemsFrameTypeOptions =
   | "Black"
   | "Dark wood gold line"
   | "Oak"
@@ -170,7 +180,7 @@ export type OrderFrameItemsRecord<Textras = unknown> = {
   artworkComplete?: boolean;
   created: IsoAutoDateString;
   extras?: null | Textras;
-  frameColour: OrderFrameItemsFrameColourOptions;
+  frameType: OrderFrameItemsFrameTypeOptions;
   framingComplete?: boolean;
   glassEngraving?: string;
   glassType: OrderFrameItemsGlassTypeOptions;
@@ -194,8 +204,6 @@ export type OrderPaperweightItemsRecord = {
   quantity: number;
   updated: IsoAutoDateString;
 };
-
-/* --- orders option types (enums → unions) --- */
 
 export type OrdersPaymentStatusOptions =
   | "wainting_first_deposit"
@@ -254,7 +262,7 @@ export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> &
   BaseSystemFields<Texpand>;
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> &
   AuthSystemFields<Texpand>;
-export type CostumersResponse<Texpand = unknown> = Required<CostumersRecord> &
+export type CustomersResponse<Texpand = unknown> = Required<CustomersRecord> &
   BaseSystemFields<Texpand>;
 export type OrderFrameItemsResponse<
   Textras = unknown,
@@ -277,7 +285,7 @@ export type CollectionRecords = {
   _mfas: MfasRecord;
   _otps: OtpsRecord;
   _superusers: SuperusersRecord;
-  costumers: CostumersRecord;
+  customers: CustomersRecord;
   order_frame_items: OrderFrameItemsRecord;
   order_paperweight_items: OrderPaperweightItemsRecord;
   orders: OrdersRecord;
@@ -290,7 +298,7 @@ export type CollectionResponses = {
   _mfas: MfasResponse;
   _otps: OtpsResponse;
   _superusers: SuperusersResponse;
-  costumers: CostumersResponse;
+  customers: CustomersResponse;
   order_frame_items: OrderFrameItemsResponse;
   order_paperweight_items: OrderPaperweightItemsResponse;
   orders: OrdersResponse;
@@ -306,8 +314,7 @@ type ProcessCreateAndUpdateFields<T> = Omit<
     // Omit AutoDate fields
     [K in keyof T as Extract<T[K], IsoAutoDateString> extends never
       ? K
-      : never]: // Convert FileNameString to File
-    T[K] extends infer U
+      : never]: T[K] extends infer U // Convert FileNameString to File
       ? U extends FileNameString | FileNameString[]
         ? U extends unknown[]
           ? File[]

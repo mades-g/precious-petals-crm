@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   Box,
@@ -5,17 +6,33 @@ import {
   Card,
   Flex,
   Heading,
-  Table,
+  Spinner,
   TextField,
 } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
-import { getCostumers } from "@/features/costumers/api/getCostumers";
+
+import { getCustomers } from "@/features/customers/api/get-customers";
+
+import CustomerTable from "./components/customer-tabel/costumer-tabel";
+import CreaeNewOrderModal from "./components/create-new-order-modal/create-new-order-modal";
+import CustomerData from "./components/customer-data/customer-data";
+import PaperWeightData from "./components/paperweight-data/paperweight-data";
+import BouquetData from "./components/bouquet-data/bouquet-data";
 
 const Home = () => {
-  const { isLoading, data, isError } = useQuery({
-    queryKey: ["costumers"],
-    queryFn: getCostumers,
+  const { isLoading, data } = useQuery({
+    queryKey: ["customers"],
+    queryFn: getCustomers,
   });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  if (isLoading) return <Spinner size="3" />;
+
+  if (!data) return null;
+
+  // given that is sorted by orderId
+  const nextOrder = data[0].orderDetails?.orderId;
 
   return (
     <Flex mx="auto" pt="9">
@@ -23,44 +40,31 @@ const Home = () => {
         <Card>
           <Flex gap="2" direction="column">
             <Flex gap="9">
-              <Heading>Costumers</Heading>
-              <Box style={{ flex: 1 }}>
-                <TextField.Root placeholder="Search the docs…" type="search">
+              <Heading>Customers</Heading>
+              <Box flexGrow="1">
+                <TextField.Root
+                  placeholder="Search"
+                  type="search"
+                  name="search"
+                >
                   <TextField.Slot>
                     <MagnifyingGlassIcon height="16" width="16" />
                   </TextField.Slot>
                 </TextField.Root>
               </Box>
-              <Button>Create new order</Button>
+              <Button onClick={() => setIsModalOpen(true)}>
+                Create new order
+              </Button>
             </Flex>
-            <Table.Root variant="surface">
-              <Table.Header>
-                <Table.Row>
-                  {/* order number - column needs to be smaller */}
-                  {/* order id map */}
-                  <Table.ColumnHeaderCell>Order</Table.ColumnHeaderCell>
-                  {/* Should include - title First and last name, email, phonenumer how recommed */}
-                  <Table.ColumnHeaderCell>Costumer</Table.ColumnHeaderCell>
-                  {/* postcode and delivery address */}
-                  <Table.ColumnHeaderCell>
-                    Delivery address
-                  </Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Occasion date</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>
-                    Payment status
-                  </Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Order status</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>
-                    Preservation type
-                  </Table.ColumnHeaderCell>
-                  {/* list of actions */}
-                  <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-            </Table.Root>
+            <CustomerTable customers={data} />
           </Flex>
         </Card>
       </Box>
+      <CreaeNewOrderModal
+        isModalOpen={isModalOpen}
+        nextOrderNo={`${parseInt(nextOrder || `0`, 10) + 1}`}
+        onCancel={() => setIsModalOpen(false)}
+      />
     </Flex>
   );
 };

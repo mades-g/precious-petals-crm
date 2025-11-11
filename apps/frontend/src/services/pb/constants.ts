@@ -1,7 +1,7 @@
 import type {
-  CostumersTitleOptions,
-  CostumersHowRecommendedOptions,
-  OrderFrameItemsFrameColourOptions,
+  CustomersTitleOptions,
+  CustomersHowRecommendedOptions,
+  OrderFrameItemsFrameTypeOptions,
   OrderFrameItemsLayoutOptions,
   OrderFrameItemsGlassTypeOptions,
   OrderFrameItemsInclusionsOptions,
@@ -9,6 +9,7 @@ import type {
   OrdersPaymentStatusOptions,
   OrdersOrderStatusOptions,
   Collections,
+  OrderFrameItemsFrameMountColourOptions,
 } from "@/services/pb/types";
 
 // ─────────────────────────────────────────────
@@ -16,30 +17,47 @@ import type {
 // ─────────────────────────────────────────────
 
 export const COLLECTIONS: Record<
-  "USERS" | "COSTUMERS" | "ORDERS",
-  Extract<Collections, "costumers" | "orders" | "users">
+  "USERS" | "CUSTOMERS" | "ORDERS",
+  Extract<Collections, "customers" | "orders" | "users">
 > = {
   USERS: "users",
-  COSTUMERS: "costumers",
+  CUSTOMERS: "customers",
   ORDERS: "orders",
 };
 
 // ─────────────────────────────────────────────
-// Costumers
+// Customers
 // ─────────────────────────────────────────────
-export const COSTUMERS_TITLE_OPTIONS: CostumersTitleOptions[] = [
+export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [
   "Mrs",
   "Mr",
   "Miss",
-];
+] as const;
 
-export const COSTUMERS_HOW_RECOMMENDED_OPTIONS: CostumersHowRecommendedOptions[] =
+export const CUSTOMERS_HOW_RECOMMENDED_OPTIONS: CustomersHowRecommendedOptions[] =
   ["Google", "Friend / Family", "Florist", "Wedding planner"];
 
 // ─────────────────────────────────────────────
 // Frames
 // ─────────────────────────────────────────────
-export const FRAME_COLOUR_OPTIONS: OrderFrameItemsFrameColourOptions[] = [
+export const FRAME_MOUNT_COLOUR_OPTIONS: OrderFrameItemsFrameMountColourOptions[] =
+  [
+    "Cream - 8674",
+    "Red - 8020",
+    "Burgundy - 8151",
+    "Gold - 8246",
+    "Sage - 8633",
+    "Silver - 835",
+    "Blue - 8168",
+    "Purple - 8146",
+    "Navy - 8687",
+    "Pink - 8064",
+    "Maroon - 8016",
+    "Light Grey - 8664",
+    "Bright white - 897",
+  ];
+
+export const FRAME_TYPE_OPTIONS: OrderFrameItemsFrameTypeOptions[] = [
   "Black",
   "Dark wood gold line",
   "Oak",
