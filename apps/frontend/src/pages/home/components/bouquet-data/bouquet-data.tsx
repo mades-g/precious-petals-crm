@@ -1,4 +1,4 @@
-import { FormControl, FormField, FormLabel } from "@radix-ui/react-form";
+import * as Form from "@radix-ui/react-form"
 import {
   Box,
   Flex,
@@ -6,210 +6,377 @@ import {
   Separator,
   Text,
   TextField,
-} from "@radix-ui/themes";
+  Button,
+} from "@radix-ui/themes"
+import { useFormContext, useFieldArray, Controller } from "react-hook-form"
 
 import {
   FRAME_LAYOUT_OPTIONS,
   FRAME_MOUNT_COLOUR_OPTIONS,
   FRAME_PRESERVATION_TYPE_OPTIONS,
   FRAME_TYPE_OPTIONS,
-} from "@/services/pb/constants";
+} from "@/services/pb/constants"
 
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
+import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form"
+import formStyles from "../create-new-customer-form/create-new-customer-form.module.css"
+
+const MAX_BOUQUETS = 6
 
 const BouquetData = () => {
-  return (
-    <Flex direction="column" gap="3">
-      <Flex direction="row" gap="3" wrap="wrap" justify="between">
-        <Box>
-          <FormField name="measuredSize" className={formStyles.filed}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Measured size (in)
-              </Text>
-            </FormLabel>
-            <Flex gap="3" align="center">
-              <Text size="1">X</Text>
-              <FormControl asChild>
-                <FormField name="measuredWidthIn">
-                  <TextField.Root
-                    name="measuredWidthIn"
-                    type="number"
-                    min="0"
-                  />
-                </FormField>
-              </FormControl>
-              <Text size="1">Y</Text>
-              <FormControl asChild>
-                <FormField name="measuredHeightIn">
-                  <TextField.Root
-                    name="measuredHeightIn"
-                    type="number"
-                    min="0"
-                  />
-                </FormField>
-              </FormControl>
-            </Flex>
-          </FormField>
-        </Box>
-        <Box minWidth="250px">
-          <FormField name="layout" className={formStyles.field}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Layout
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <Select.Root name="layout">
-                <Select.Trigger placeholder="Layout" />
-                <Select.Content>
-                  {FRAME_LAYOUT_OPTIONS.map((opt) => (
-                    <Select.Item key={opt} value={opt}>
-                      {opt}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </FormControl>
-          </FormField>
-        </Box>
-        <Box>
-          <FormField name="recommendedSize" className={formStyles.filed}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Recommended frame size (in)
-              </Text>
-            </FormLabel>
-            <Flex gap="3" align="center">
-              <Text size="1">X</Text>
-              <FormControl asChild>
-                <FormField name="recommendedSizeWidthIn">
-                  <TextField.Root
-                    name="recommendedSizeWidthIn"
-                    type="number"
-                    min="0"
-                  />
-                </FormField>
-              </FormControl>
-              <Text size="1">Y</Text>
-              <FormControl asChild>
-                <FormField name="recommendedSizeHeightIn">
-                  <TextField.Root
-                    name="recommendedSizeHeightIn"
-                    type="number"
-                    min="0"
-                  />
-                </FormField>
-              </FormControl>
-            </Flex>
-          </FormField>
-        </Box>
-        <Box minWidth="250px">
-          <FormField name="preservationType" className={formStyles.field}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Preservation type
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <Select.Root name="preservationType">
-                <Select.Trigger placeholder="Preservation type" />
-                <Select.Content>
-                  {FRAME_PRESERVATION_TYPE_OPTIONS.map((opt) => (
-                    <Select.Item key={opt} value={opt}>
-                      {opt}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </FormControl>
-          </FormField>
-        </Box>
-      </Flex>
-      <Separator orientation="horizontal" size="4" />
-      <Flex gap="3" justify="between" direction="row">
-        <Box minWidth="250px">
-          <FormField name="frameType" className={formStyles.field}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Recommended Frame type
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <Select.Root name="frameType">
-                <Select.Trigger placeholder="Frame type" />
-                <Select.Content>
-                  {FRAME_TYPE_OPTIONS.map((opt) => (
-                    <Select.Item key={opt} value={opt}>
-                      {opt}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </FormControl>
-          </FormField>
-        </Box>
-        <Box>
-          <FormField name="framePrice">
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Price (£)
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <TextField.Root
-                name="framePrice"
-                type="number"
-                min="0"
-                step="0.01"
-              />
-            </FormControl>
-          </FormField>
-        </Box>
-      </Flex>
-      <Separator orientation="horizontal" size="4" />
-      <Flex gap="3" justify="between" direction="row">
-        <Box minWidth="250px">
-          <FormField name="mountColour" className={formStyles.field}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Recommended Mount colour
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <Select.Root name="mountColour">
-                <Select.Trigger placeholder="Mount colour" />
-                <Select.Content>
-                  {FRAME_MOUNT_COLOUR_OPTIONS.map((opt) => (
-                    <Select.Item key={opt} value={opt}>
-                      {opt}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </FormControl>
-          </FormField>
-        </Box>
-        <Box>
-          <FormField name="framePrice">
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Price (£)
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <TextField.Root
-                name="framePrice"
-                type="number"
-                min="0"
-                step="0.01"
-              />
-            </FormControl>
-          </FormField>
-        </Box>
-      </Flex>
-    </Flex>
-  );
-};
+  const {
+    control,
+    register,
+    formState: { errors },
+  } = useFormContext<CreateOrderFormValues>()
 
-export default BouquetData;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "bouquets",
+  })
+
+  const canAdd = fields.length < MAX_BOUQUETS
+
+  return (
+    <Flex direction="column" gap="4">
+      <Flex justify="between" align="center">
+        <Text weight="bold">Bouquets</Text>
+        <Button
+          type="button"
+          size="1"
+          disabled={!canAdd}
+          onClick={() =>
+            append({
+              measuredWidthIn: null,
+              measuredHeightIn: null,
+              layout: "",
+              recommendedSizeWidthIn: null,
+              recommendedSizeHeightIn: null,
+              preservationType: "",
+              frameType: "",
+              framePrice: null,
+              mountColour: "",
+            })
+          }
+        >
+          Add bouquet ({fields.length}/{MAX_BOUQUETS})
+        </Button>
+      </Flex>
+      {fields.length === 0 && (
+        <Text size="1" color="gray">
+          No bouquets added yet. Click “Add bouquet” to create one.
+        </Text>
+      )}
+      {fields.map((field, index) => {
+        const prefix = `bouquets.${index}` as const
+        const bouquetErrors = (errors.bouquets?.[index] ?? {})
+
+        return (
+          <Box
+            key={field.id}
+            style={{
+              borderRadius: 8,
+              border: "1px solid var(--gray-5)",
+              padding: 12,
+            }}
+          >
+            <Flex justify="between" align="center" mb="2">
+              <Text weight="medium">Bouquet #{index + 1}</Text>
+              <Button
+                type="button"
+                size="1"
+                variant="soft"
+                color="red"
+                onClick={() => remove(index)}
+              >
+                Remove
+              </Button>
+            </Flex>
+            <Flex direction="column" gap="3">
+              <Flex direction="row" gap="3" wrap="wrap" justify="between">
+                <Box>
+                  <Form.Field
+                    name={`${prefix}.measuredSize`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Measured size (in)
+                      </Text>
+                    </Form.Label>
+                    <Flex gap="3" align="center">
+                      <Text size="1">X</Text>
+                      <Form.Control asChild>
+                        <TextField.Root
+                          type="number"
+                          min="0"
+                          {...register(`${prefix}.measuredWidthIn`, {
+                            valueAsNumber: true,
+                            required: "Required",
+                          })}
+                        />
+                      </Form.Control>
+                      <Text size="1">Y</Text>
+                      <Form.Control asChild>
+                        <TextField.Root
+                          type="number"
+                          min="0"
+                          {...register(`${prefix}.measuredHeightIn`, {
+                            valueAsNumber: true,
+                            required: "Required",
+                          })}
+                        />
+                      </Form.Control>
+                    </Flex>
+                    {(bouquetErrors?.measuredWidthIn ||
+                      bouquetErrors?.measuredHeightIn) && (
+                      <Text size="1" color="red">
+                        Both dimensions are required
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+                <Box minWidth="250px">
+                  <Form.Field
+                    name={`${prefix}.layout`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Layout
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <Controller
+                        control={control}
+                        name={`${prefix}.layout`}
+                        rules={{ required: "Layout is required" }}
+                        render={({ field }) => (
+                          <Select.Root
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                          >
+                            <Select.Trigger placeholder="Layout" />
+                            <Select.Content>
+                              {FRAME_LAYOUT_OPTIONS.map((opt) => (
+                                <Select.Item key={opt} value={opt}>
+                                  {opt}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+                        )}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.layout && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.layout.message}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+                <Box>
+                  <Form.Field
+                    name={`${prefix}.recommendedSize`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Recommended frame size (in)
+                      </Text>
+                    </Form.Label>
+                    <Flex gap="3" align="center">
+                      <Text size="1">X</Text>
+                      <Form.Control asChild>
+                        <TextField.Root
+                          type="number"
+                          min="0"
+                          {...register(
+                            `${prefix}.recommendedSizeWidthIn`,
+                            {
+                              valueAsNumber: true,
+                              required: "Required",
+                            }
+                          )}
+                        />
+                      </Form.Control>
+                      <Text size="1">Y</Text>
+                      <Form.Control asChild>
+                        <TextField.Root
+                          type="number"
+                          min="0"
+                          {...register(
+                            `${prefix}.recommendedSizeHeightIn`,
+                            {
+                              valueAsNumber: true,
+                              required: "Required",
+                            }
+                          )}
+                        />
+                      </Form.Control>
+                    </Flex>
+                    {(bouquetErrors?.recommendedSizeWidthIn ||
+                      bouquetErrors?.recommendedSizeHeightIn) && (
+                      <Text size="1" color="red">
+                        Both dimensions are required
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+                <Box minWidth="250px">
+                  <Form.Field
+                    name={`${prefix}.preservationType`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Preservation type
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <Controller
+                        control={control}
+                        name={`${prefix}.preservationType`}
+                        rules={{ required: "Preservation type is required" }}
+                        render={({ field }) => (
+                          <Select.Root
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                          >
+                            <Select.Trigger placeholder="Preservation type" />
+                            <Select.Content>
+                              {FRAME_PRESERVATION_TYPE_OPTIONS.map((opt) => (
+                                <Select.Item key={opt} value={opt}>
+                                  {opt}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+                        )}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.preservationType && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.preservationType.message}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+              </Flex>
+              <Separator orientation="horizontal" size="4" />
+              <Flex gap="3" justify="between" direction="row">
+                <Box minWidth="250px">
+                  <Form.Field
+                    name={`${prefix}.frameType`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Recommended Frame type
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <Controller
+                        control={control}
+                        name={`${prefix}.frameType`}
+                        rules={{ required: "Frame type is required" }}
+                        render={({ field }) => (
+                          <Select.Root
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                          >
+                            <Select.Trigger placeholder="Frame type" />
+                            <Select.Content>
+                              {FRAME_TYPE_OPTIONS.map((opt) => (
+                                <Select.Item key={opt} value={opt}>
+                                  {opt}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+                        )}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.frameType && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.frameType.message}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+                <Box>
+                  <Form.Field name={`${prefix}.framePrice`}>
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Price (£)
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <TextField.Root
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...register(`${prefix}.framePrice`, {
+                          valueAsNumber: true,
+                          required: "Required",
+                        })}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.framePrice && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.framePrice.message}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+              </Flex>
+              <Separator orientation="horizontal" size="4" />
+              <Flex gap="3" justify="between" direction="row">
+                <Box minWidth="250px">
+                  <Form.Field
+                    name={`${prefix}.mountColour`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Recommended Mount colour
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <Controller
+                        control={control}
+                        name={`${prefix}.mountColour`}
+                        rules={{ required: "Mount colour is required" }}
+                        render={({ field }) => (
+                          <Select.Root
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                          >
+                            <Select.Trigger placeholder="Mount colour" />
+                            <Select.Content>
+                              {FRAME_MOUNT_COLOUR_OPTIONS.map((opt) => (
+                                <Select.Item key={opt} value={opt}>
+                                  {opt}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+                        )}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.mountColour && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.mountColour.message}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+              </Flex>
+            </Flex>
+          </Box>
+        )
+      })}
+    </Flex>
+  )
+}
+
+export default BouquetData

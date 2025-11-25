@@ -12,9 +12,6 @@ import type {
   OrderFrameItemsFrameMountColourOptions,
 } from "@/services/pb/types";
 
-// ─────────────────────────────────────────────
-// Collections (what is needed)
-// ─────────────────────────────────────────────
 
 export const COLLECTIONS: Record<
   "USERS" | "CUSTOMERS" | "ORDERS",
@@ -25,9 +22,6 @@ export const COLLECTIONS: Record<
   ORDERS: "orders",
 };
 
-// ─────────────────────────────────────────────
-// Customers
-// ─────────────────────────────────────────────
 export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [
   "Mrs",
   "Mr",
@@ -37,9 +31,6 @@ export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [
 export const CUSTOMERS_HOW_RECOMMENDED_OPTIONS: CustomersHowRecommendedOptions[] =
   ["Google", "Friend / Family", "Florist", "Wedding planner"];
 
-// ─────────────────────────────────────────────
-// Frames
-// ─────────────────────────────────────────────
 export const FRAME_MOUNT_COLOUR_OPTIONS: OrderFrameItemsFrameMountColourOptions[] =
   [
     "Cream - 8674",
@@ -102,9 +93,6 @@ export const FRAME_INCLUSIONS_OPTIONS: OrderFrameItemsInclusionsOptions[] = [
 export const FRAME_PRESERVATION_TYPE_OPTIONS: OrderFrameItemsPreservationTypeOptions[] =
   ["3D", "pressed"];
 
-// ─────────────────────────────────────────────
-// Orders
-// ─────────────────────────────────────────────
 export const ORDER_PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
   "wainting_first_deposit",
   "waiting_second_deposit",

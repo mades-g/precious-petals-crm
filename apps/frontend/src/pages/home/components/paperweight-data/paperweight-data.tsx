@@ -1,50 +1,72 @@
-import { FormControl, FormField, FormLabel } from "@radix-ui/react-form";
-import { Box, Flex, Text, TextField } from "@radix-ui/themes";
+import * as Form from "@radix-ui/react-form"
+import { Box, Flex, Text, TextField } from "@radix-ui/themes"
+import { useFormContext } from "react-hook-form"
 
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
+import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form"
+import formStyles from "../create-new-customer-form/create-new-customer-form.module.css"
 
 const PaperWeightData = () => {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<CreateOrderFormValues>()
+
   return (
     <Flex gap="3" justify="between" direction="row">
       <Box>
-        <FormField name="quantity" className={formStyles.field}>
-          <FormLabel className={formStyles.label} asChild>
+        <Form.Field name="paperweightQuantity" className={formStyles.field}>
+          <Form.Label className={formStyles.label} asChild>
             <Text>
               <Text color="red">*</Text> Quantity
             </Text>
-          </FormLabel>
-          <FormControl asChild>
+          </Form.Label>
+          <Form.Control asChild>
             <TextField.Root
-              name="quantity"
               type="number"
               min="0"
-              step="0.01"
-              required
+              step="1"
+              {...register("paperweightQuantity", {
+                valueAsNumber: true,
+                required: "Quantity is required",
+                min: { value: 1, message: "At least 1" },
+              })}
             />
-          </FormControl>
-        </FormField>
+          </Form.Control>
+          {errors.paperweightQuantity && (
+            <Text size="1" color="red">
+              {errors.paperweightQuantity.message}
+            </Text>
+          )}
+        </Form.Field>
       </Box>
       <Box>
-        <FormField name="price">
-          <FormLabel className={formStyles.label} asChild>
+        <Form.Field name="paperweightPrice">
+          <Form.Label className={formStyles.label} asChild>
             <Text>
               <Text color="red">*</Text> Price (£)
             </Text>
-          </FormLabel>
-          <FormControl asChild>
+          </Form.Label>
+          <Form.Control asChild>
             <TextField.Root
-              name="price"
               type="number"
               min="0"
               step="0.01"
               className={formStyles.input}
-              required
+              {...register("paperweightPrice", {
+                valueAsNumber: true,
+                required: "Price is required",
+              })}
             />
-          </FormControl>
-        </FormField>
+          </Form.Control>
+          {errors.paperweightPrice && (
+            <Text size="1" color="red">
+              {errors.paperweightPrice.message}
+            </Text>
+          )}
+        </Form.Field>
       </Box>
     </Flex>
-  );
-};
+  )
+}
 
-export default PaperWeightData;
+export default PaperWeightData
