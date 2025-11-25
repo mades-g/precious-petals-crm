@@ -15,9 +15,6 @@ import { getCustomers } from "@/features/customers/api/get-customers";
 
 import CustomerTable from "./components/customer-tabel/costumer-tabel";
 import CreaeNewOrderModal from "./components/create-new-order-modal/create-new-order-modal";
-import CustomerData from "./components/customer-data/customer-data";
-import PaperWeightData from "./components/paperweight-data/paperweight-data";
-import BouquetData from "./components/bouquet-data/bouquet-data";
 
 const Home = () => {
   const { isLoading, data } = useQuery({
@@ -32,7 +29,7 @@ const Home = () => {
   if (!data) return null;
 
   // given that is sorted by orderId
-  const nextOrder = data[0].orderDetails?.orderId;
+  const nextOrder = data[0].orderDetails?.orderNo;
 
   return (
     <Flex mx="auto" pt="9">
@@ -62,7 +59,7 @@ const Home = () => {
       </Box>
       <CreaeNewOrderModal
         isModalOpen={isModalOpen}
-        nextOrderNo={`${parseInt(nextOrder || `0`, 10) + 1}`}
+        nextOrderNo={`${nextOrder || 1}`}
         onCancel={() => setIsModalOpen(false)}
       />
     </Flex>
