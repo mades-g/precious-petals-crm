@@ -18,6 +18,9 @@ RUN unzip /tmp/pb.zip -d /pb/
 # uncomment to copy the local pb_hooks dir into the container
 # COPY ./pb_hooks /pb/pb_hooks
 
+# copying local db to fly.io
+COPY ./pb_public /pb/pb_public
+
 EXPOSE 8080
 
 # start PocketBase
