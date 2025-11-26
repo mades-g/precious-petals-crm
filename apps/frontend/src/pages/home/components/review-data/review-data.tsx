@@ -29,7 +29,9 @@ const ReviewData: FC<ReviewDataProps> = ({
   }, 0);
 
   // --- Paperweight totals --------------------------------------------------
-  const hasPaperweight = Boolean(values.paperweightPrice || values.paperweightQuantity);
+  const hasPaperweight = Boolean(
+    values.paperweightPrice || values.paperweightQuantity,
+  );
   const paperweightQuantity = values.paperweightQuantity || 0;
   const paperweightPrice = values.paperweightPrice || 0;
   const paperweightTotal = hasPaperweight

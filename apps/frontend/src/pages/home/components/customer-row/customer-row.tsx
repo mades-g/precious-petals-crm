@@ -8,40 +8,18 @@ import {
   Table,
   Text,
 } from "@radix-ui/themes";
-import type { normalisedCustomer } from "@/features/customers/normalisers/customer.normaliser";
+import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+
+import type { normalisedCustomer } from "@/api/normalisers/customer.normaliser";
 import {
+  formatAddressLines,
   formatDate,
   formatSnakeCase,
   howRecommendedColour,
-} from "@/features/customers/utils";
-import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+} from "@/utils";
 
 type CustomerRowProps = {
   customer: ReturnType<typeof normalisedCustomer>;
-};
-
-const formatAddressLines = (opts: {
-  line1?: string | null;
-  line2?: string | null;
-  town?: string | null;
-  county?: string | null;
-  postcode?: string | null;
-}): string[] => {
-  const { line1, line2, town, county, postcode } = opts;
-
-  const firstLineParts = [line1, line2].filter(
-    (v) => v && v.trim().length > 0
-  );
-  const secondLineParts = [town, county].filter(
-    (v) => v && v.trim().length > 0
-  );
-
-  const lines: string[] = [];
-  if (firstLineParts.length) lines.push(firstLineParts.join(", "));
-  if (secondLineParts.length) lines.push(secondLineParts.join(", "));
-  if (postcode && postcode.trim().length > 0) lines.push(postcode);
-
-  return lines;
 };
 
 const CustomerRow: FC<CustomerRowProps> = ({
@@ -81,8 +59,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
           )}
         </Flex>
       </Table.RowHeaderCell>
-
-      {/* Customer */}
       <Table.Cell align="center">
         <Text align="center" weight="medium">
           {displayName}
@@ -104,8 +80,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
           )}
         </Flex>
       </Table.Cell>
-
-      {/* Delivery address + same-as-billing info */}
       <Table.Cell>
         {hasOrder ? (
           <Flex direction="column" gap="1">
@@ -121,7 +95,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
                 </Badge>
               )}
             </Flex>
-
             {deliveryLines.length > 0 ? (
               <Flex gap="1" direction="column" mt="1">
                 {deliveryLines.map((line) => (
@@ -138,8 +111,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
           <Text>-</Text>
         )}
       </Table.Cell>
-
-      {/* Occasion date */}
       <Table.Cell>
         {hasOrder && orderDetails!.occasionDate ? (
           <Text>{formatDate(orderDetails!.occasionDate)}</Text>
@@ -147,8 +118,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
           <Text>-</Text>
         )}
       </Table.Cell>
-
-      {/* Payment status */}
       <Table.Cell>
         {hasOrder && paymentStatus ? (
           <Badge color="orange" variant="soft" radius="full">
@@ -158,8 +127,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
           <Text>-</Text>
         )}
       </Table.Cell>
-
-      {/* Frame order details */}
       <Table.Cell>
         {orderDetails?.frameOrder && orderDetails.frameOrder.length > 0 ? (
           orderDetails.frameOrder.map((frameOrder) => (
@@ -175,25 +142,19 @@ const CustomerRow: FC<CustomerRowProps> = ({
           <Text>-</Text>
         )}
       </Table.Cell>
-
-      {/* Paperweight */}
       <Table.Cell>
         {orderDetails?.paperWeightOrder ? (
           <Flex gap="1" direction="column">
             <Text>Quantity: {orderDetails.paperWeightOrder.quantity}</Text>
             <Text>
               Received:{" "}
-              {orderDetails.paperWeightOrder.paperweightReceived
-                ? "Yes"
-                : "No"}
+              {orderDetails.paperWeightOrder.paperweightReceived ? "Yes" : "No"}
             </Text>
           </Flex>
         ) : (
           <Text>-</Text>
         )}
       </Table.Cell>
-
-      {/* Actions */}
       <Table.Cell>
         <IconButton variant="soft">
           <DotsHorizontalIcon width="18" height="18" />

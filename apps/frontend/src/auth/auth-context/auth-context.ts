@@ -1,8 +1,10 @@
 import { createContext } from "react";
 
+import type { AuthRecord } from "pocketbase";
+
 export type AuthContext = {
   isAuthed: boolean;
-  user: unknown | null;
+  user: AuthRecord | null;
   loading: boolean;
   logout: () => Promise<void>;
 };

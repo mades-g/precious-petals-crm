@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { Table } from "@radix-ui/themes";
 
-import type { NormalisedCustomer } from "@/features/customers/api/get-customers";
+import type { NormalisedCustomer } from "@/api/get-customers";
 
 import CustomerRow from "../customer-row/customer-row";
 
@@ -31,7 +31,7 @@ const CustomerTable: FC<CustomerTableProps> = ({ customers }) => {
       </Table.Header>
       <Table.Body>
         {customers?.map((customer) => (
-          <CustomerRow customer={customer} key={customer.colId} />
+          <CustomerRow customer={customer} key={customer.customerId} />
         ))}
       </Table.Body>
     </Table.Root>

@@ -8,7 +8,6 @@ import type {
   OrdersResponse,
 } from "@/services/pb/types";
 
-
 type FrameExtras = {
   measuredWidthIn: number | null;
   measuredHeightIn: number | null;
@@ -50,13 +49,13 @@ export const createNewOrder = async (
       price: number;
       frameType: string;
       layout: string;
-      glassType: string;
+      glassType: string | null;
       frameMountColour?: string | null;
-      inclusions: string;
+      inclusions: string | null;
       glassEngraving?: string;
       sizeX: string;
       sizeY: string;
-      artistHours: number;
+      artistHours: number | null;
       extras: FrameExtras | null;
       preservationType: string;
       special_notes?: string;
@@ -67,16 +66,13 @@ export const createNewOrder = async (
       price: totalPrice,
       frameType: bq.frameType,
       layout: bq.layout,
-      // required by PB schema but not in UI yet → sensible default
-      glassType: "Clearview uv glass",
+      glassType: null,
       frameMountColour: bq.mountColour || null,
-      // required by PB schema but not in UI yet → sensible default
-      inclusions: "No",
+      inclusions: null,
       glassEngraving: "",
       sizeX: sizeX != null ? String(sizeX) : "",
       sizeY: sizeY != null ? String(sizeY) : "",
-      // required by PB schema, not in UI → default to 0 for now
-      artistHours: 0,
+      artistHours: null,
       extras: {
         measuredWidthIn: bq.measuredWidthIn,
         measuredHeightIn: bq.measuredHeightIn,
@@ -103,10 +99,7 @@ export const createNewOrder = async (
 
   let paperweightItem: OrderPaperweightItemsResponse | null = null;
 
-  if (
-    values.paperweightQuantity &&
-    values.paperweightPrice
-  ) {
+  if (values.paperweightQuantity && values.paperweightPrice) {
     const paperweightPayload = {
       quantity: values.paperweightQuantity,
       price: values.paperweightPrice,
@@ -140,19 +133,19 @@ export const createNewOrder = async (
     deliverySameAsBilling: values.deliverySameAsBilling,
     deliveryAddressLine1: values.deliverySameAsBilling
       ? values.billingAddressLine1
-      : values.deliveryAddressLine1 ?? "",
+      : (values.deliveryAddressLine1 ?? ""),
     deliveryAddressLine2: values.deliverySameAsBilling
-      ? values.billingAddressLine2 ?? ""
-      : values.deliveryAddressLine2 ?? "",
+      ? (values.billingAddressLine2 ?? "")
+      : (values.deliveryAddressLine2 ?? ""),
     deliveryTown: values.deliverySameAsBilling
       ? values.billingTown
-      : values.deliveryTown ?? "",
+      : (values.deliveryTown ?? ""),
     deliveryCounty: values.deliverySameAsBilling
-      ? values.billingCounty ?? ""
-      : values.deliveryCounty ?? "",
+      ? (values.billingCounty ?? "")
+      : (values.deliveryCounty ?? ""),
     deliveryPostcode: values.deliverySameAsBilling
       ? values.billingPostcode
-      : values.deliveryPostcode ?? "",
+      : (values.deliveryPostcode ?? ""),
 
     notes: "", // hook this up when you add notes to the form
     payment_status: undefined,
@@ -184,16 +177,14 @@ export const createNewOrder = async (
 
   // --- 5. Re-fetch order with expand so UI gets full structure -------------
 
-  const expandedOrder = await pb
-    .collection(COLLECTIONS.ORDERS)
-    .getOne<
-      OrdersResponse<{
-        frameOrderId: OrderFrameItemsResponse<FrameExtras>[];
-        paperweightOrderId: OrderPaperweightItemsResponse | null;
-      }>
-    >(order.id, {
-      expand: "frameOrderId,paperweightOrderId",
-    });
+  const expandedOrder = await pb.collection(COLLECTIONS.ORDERS).getOne<
+    OrdersResponse<{
+      frameOrderId: OrderFrameItemsResponse<FrameExtras>[];
+      paperweightOrderId: OrderPaperweightItemsResponse | null;
+    }>
+  >(order.id, {
+    expand: "frameOrderId,paperweightOrderId",
+  });
 
   return {
     customer,

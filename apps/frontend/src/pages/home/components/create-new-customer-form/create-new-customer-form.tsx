@@ -28,6 +28,8 @@ export type CreateOrderFormValues = {
   occasionDate: string;
   preservationDate: string;
   bouquets: BouquetItemFormValues[];
+  //
+  hasPaperweight: boolean;
   paperweightQuantity: number | null;
   paperweightPrice: number | null;
   //
@@ -62,6 +64,7 @@ const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
     mode: "onBlur",
     defaultValues: {
       bouquets: [],
+      hasPaperweight: false,
       paperweightQuantity: null,
       paperweightPrice: null,
       deliverySameAsBilling: true,

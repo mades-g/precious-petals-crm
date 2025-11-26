@@ -13,8 +13,19 @@ import type {
 } from "@/services/pb/types";
 
 export const COLLECTIONS: Record<
-  "USERS" | "CUSTOMERS" | "ORDERS" | "ORDER_PAPERWEIGHT_ITEMS" | "ORDER_FRAME_ITMES",
-  Extract<Collections, "customers" | "orders" | "users" | "order_frame_items" | "order_paperweight_items">
+  | "USERS"
+  | "CUSTOMERS"
+  | "ORDERS"
+  | "ORDER_PAPERWEIGHT_ITEMS"
+  | "ORDER_FRAME_ITMES",
+  Extract<
+    Collections,
+    | "customers"
+    | "orders"
+    | "users"
+    | "order_frame_items"
+    | "order_paperweight_items"
+  >
 > = {
   USERS: "users",
   CUSTOMERS: "customers",

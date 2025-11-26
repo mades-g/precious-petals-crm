@@ -10,3 +10,5 @@ export const login = async (email: string, password: string) =>
     .collection("users")
     .authWithPassword(email, password)
     .then((res) => res);
+
+export const logout = async () => pb.authStore.clear();

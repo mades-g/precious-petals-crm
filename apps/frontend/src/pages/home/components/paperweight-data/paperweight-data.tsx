@@ -13,14 +13,21 @@ const PaperWeightData = () => {
     clearErrors,
   } = useFormContext<CreateOrderFormValues>();
 
-  const paperweightQuantity: number | null = useWatch({
-    name: "paperweightQuantity",
-  });
-  const paperweightPrice: number | null = useWatch({
-    name: "paperweightPrice",
+  const hasPaperweight = useWatch({
+    name: "hasPaperweight",
   });
 
-  const hasPaperweight = Boolean(paperweightPrice || paperweightQuantity);
+  const handleTogglePaperweight = () => {
+    const next = !hasPaperweight;
+    setValue("hasPaperweight", next, { shouldValidate: true });
+
+    if (!next) {
+      // If turning off, clear values and errors so they don't pollute review
+      setValue("paperweightQuantity", null, { shouldValidate: false });
+      setValue("paperweightPrice", null, { shouldValidate: false });
+      clearErrors(["paperweightQuantity", "paperweightPrice"]);
+    }
+  };
 
   return (
     <Flex gap="3" justify="between" direction="row">
@@ -34,20 +41,7 @@ const PaperWeightData = () => {
             if you would like to include one.
           </Text>
         )}
-        <Button
-          type="button"
-          size="1"
-          onClick={() => {
-            if (!hasPaperweight) {
-              setValue("paperweightQuantity", 1);
-              setValue("paperweightPrice", null);
-            } else {
-              setValue("paperweightQuantity", null, { shouldValidate: false });
-              setValue("paperweightPrice", null, { shouldValidate: false });
-              clearErrors(["paperweightPrice", "paperweightQuantity"]);
-            }
-          }}
-        >
+        <Button type="button" size="1" onClick={handleTogglePaperweight}>
           {hasPaperweight ? "Remove" : "Add"} Paperweight
         </Button>
       </Flex>
@@ -80,7 +74,7 @@ const PaperWeightData = () => {
             </Form.Field>
           </Box>
           <Box>
-            <Form.Field name="paperweightPrice">
+            <Form.Field name="paperweightPrice" className={formStyles.field}>
               <Form.Label className={formStyles.label} asChild>
                 <Text>
                   <Text color="red">*</Text> Price (£)

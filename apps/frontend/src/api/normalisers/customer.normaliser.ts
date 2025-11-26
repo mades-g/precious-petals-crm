@@ -1,5 +1,6 @@
-import type { ExpandedOrdersResponse } from "../api/get-customers";
 import type { CustomersResponse } from "@/services/pb/types";
+
+import type { ExpandedOrdersResponse } from "../get-customers";
 
 const normaliseFrameOrder = (
   expandedRecord: ExpandedOrdersResponse["orderId"]["expand"],
@@ -88,7 +89,6 @@ const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
       orderNo,
       orderStatus,
       payment_status: paymentStatus,
-      // 🔽 new structured address fields on orders
       billingAddressLine1,
       billingAddressLine2,
       billingTown,
