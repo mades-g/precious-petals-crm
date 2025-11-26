@@ -1,4 +1,4 @@
-import * as Form from "@radix-ui/react-form"
+import * as Form from "@radix-ui/react-form";
 import {
   Box,
   Flex,
@@ -7,34 +7,34 @@ import {
   Text,
   TextField,
   Button,
-} from "@radix-ui/themes"
-import { useFormContext, useFieldArray, Controller } from "react-hook-form"
+} from "@radix-ui/themes";
+import { useFormContext, useFieldArray, Controller } from "react-hook-form";
 
 import {
   FRAME_LAYOUT_OPTIONS,
   FRAME_MOUNT_COLOUR_OPTIONS,
   FRAME_PRESERVATION_TYPE_OPTIONS,
   FRAME_TYPE_OPTIONS,
-} from "@/services/pb/constants"
+} from "@/services/pb/constants";
 
-import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form"
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css"
+import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
+import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
 
-const MAX_BOUQUETS = 6
+const MAX_BOUQUETS = 6;
 
 const BouquetData = () => {
   const {
     control,
     register,
     formState: { errors },
-  } = useFormContext<CreateOrderFormValues>()
+  } = useFormContext<CreateOrderFormValues>();
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "bouquets",
-  })
+  });
 
-  const canAdd = fields.length < MAX_BOUQUETS
+  const canAdd = fields.length < MAX_BOUQUETS;
 
   return (
     <Flex direction="column" gap="4">
@@ -55,20 +55,23 @@ const BouquetData = () => {
               frameType: "",
               framePrice: null,
               mountColour: "",
+              mountPrice: null, // ✅ new
             })
           }
         >
           Add bouquet ({fields.length}/{MAX_BOUQUETS})
         </Button>
       </Flex>
+
       {fields.length === 0 && (
         <Text size="1" color="gray">
           No bouquets added yet. Click “Add bouquet” to create one.
         </Text>
       )}
+
       {fields.map((field, index) => {
-        const prefix = `bouquets.${index}` as const
-        const bouquetErrors = (errors.bouquets?.[index] ?? {})
+        const prefix = `bouquets.${index}` as const;
+        const bouquetErrors = errors.bouquets?.[index] ?? {};
 
         return (
           <Box
@@ -91,8 +94,10 @@ const BouquetData = () => {
                 Remove
               </Button>
             </Flex>
+
             <Flex direction="column" gap="3">
               <Flex direction="row" gap="3" wrap="wrap" justify="between">
+                {/* Measured size */}
                 <Box>
                   <Form.Field
                     name={`${prefix}.measuredSize`}
@@ -135,6 +140,8 @@ const BouquetData = () => {
                     )}
                   </Form.Field>
                 </Box>
+
+                {/* Layout */}
                 <Box minWidth="250px">
                   <Form.Field
                     name={`${prefix}.layout`}
@@ -169,11 +176,13 @@ const BouquetData = () => {
                     </Form.Control>
                     {bouquetErrors?.layout && (
                       <Text size="1" color="red">
-                        {bouquetErrors.layout.message}
+                        {bouquetErrors.layout.message as string}
                       </Text>
                     )}
                   </Form.Field>
                 </Box>
+
+                {/* Recommended size */}
                 <Box>
                   <Form.Field
                     name={`${prefix}.recommendedSize`}
@@ -190,13 +199,10 @@ const BouquetData = () => {
                         <TextField.Root
                           type="number"
                           min="0"
-                          {...register(
-                            `${prefix}.recommendedSizeWidthIn`,
-                            {
-                              valueAsNumber: true,
-                              required: "Required",
-                            }
-                          )}
+                          {...register(`${prefix}.recommendedSizeWidthIn`, {
+                            valueAsNumber: true,
+                            required: "Required",
+                          })}
                         />
                       </Form.Control>
                       <Text size="1">Y</Text>
@@ -204,13 +210,10 @@ const BouquetData = () => {
                         <TextField.Root
                           type="number"
                           min="0"
-                          {...register(
-                            `${prefix}.recommendedSizeHeightIn`,
-                            {
-                              valueAsNumber: true,
-                              required: "Required",
-                            }
-                          )}
+                          {...register(`${prefix}.recommendedSizeHeightIn`, {
+                            valueAsNumber: true,
+                            required: "Required",
+                          })}
                         />
                       </Form.Control>
                     </Flex>
@@ -222,6 +225,8 @@ const BouquetData = () => {
                     )}
                   </Form.Field>
                 </Box>
+
+                {/* Preservation type */}
                 <Box minWidth="250px">
                   <Form.Field
                     name={`${prefix}.preservationType`}
@@ -256,13 +261,16 @@ const BouquetData = () => {
                     </Form.Control>
                     {bouquetErrors?.preservationType && (
                       <Text size="1" color="red">
-                        {bouquetErrors.preservationType.message}
+                        {bouquetErrors.preservationType.message as string}
                       </Text>
                     )}
                   </Form.Field>
                 </Box>
               </Flex>
+
               <Separator orientation="horizontal" size="4" />
+
+              {/* Frame type + price */}
               <Flex gap="3" justify="between" direction="row">
                 <Box minWidth="250px">
                   <Form.Field
@@ -298,16 +306,17 @@ const BouquetData = () => {
                     </Form.Control>
                     {bouquetErrors?.frameType && (
                       <Text size="1" color="red">
-                        {bouquetErrors.frameType.message}
+                        {bouquetErrors.frameType.message as string}
                       </Text>
                     )}
                   </Form.Field>
                 </Box>
+
                 <Box>
                   <Form.Field name={`${prefix}.framePrice`}>
                     <Form.Label className={formStyles.label} asChild>
                       <Text>
-                        <Text color="red">*</Text> Price (£)
+                        <Text color="red">*</Text> Frame price (£)
                       </Text>
                     </Form.Label>
                     <Form.Control asChild>
@@ -323,13 +332,16 @@ const BouquetData = () => {
                     </Form.Control>
                     {bouquetErrors?.framePrice && (
                       <Text size="1" color="red">
-                        {bouquetErrors.framePrice.message}
+                        {bouquetErrors.framePrice.message as string}
                       </Text>
                     )}
                   </Form.Field>
                 </Box>
               </Flex>
+
               <Separator orientation="horizontal" size="4" />
+
+              {/* Mount colour + mount price */}
               <Flex gap="3" justify="between" direction="row">
                 <Box minWidth="250px">
                   <Form.Field
@@ -365,7 +377,33 @@ const BouquetData = () => {
                     </Form.Control>
                     {bouquetErrors?.mountColour && (
                       <Text size="1" color="red">
-                        {bouquetErrors.mountColour.message}
+                        {bouquetErrors.mountColour.message as string}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+
+                <Box>
+                  <Form.Field name={`${prefix}.mountPrice`}>
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Mount price (£)
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <TextField.Root
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...register(`${prefix}.mountPrice`, {
+                          valueAsNumber: true,
+                          required: "Required",
+                        })}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.mountPrice && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.mountPrice.message as string}
                       </Text>
                     )}
                   </Form.Field>
@@ -373,10 +411,10 @@ const BouquetData = () => {
               </Flex>
             </Flex>
           </Box>
-        )
+        );
       })}
     </Flex>
-  )
-}
+  );
+};
 
-export default BouquetData
+export default BouquetData;

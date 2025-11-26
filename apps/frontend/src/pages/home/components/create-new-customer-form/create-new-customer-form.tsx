@@ -1,49 +1,56 @@
-import * as Form from "@radix-ui/react-form"
+import * as Form from "@radix-ui/react-form";
 
-import {
-  type FC,
-  type ReactNode,
-} from "react"
-import {
-  useForm,
-  FormProvider,
-  type SubmitHandler,
-} from "react-hook-form"
+import { type FC, type ReactNode } from "react";
+import { useForm, FormProvider, type SubmitHandler } from "react-hook-form";
 
 export type BouquetItemFormValues = {
-  measuredWidthIn: number | null
-  measuredHeightIn: number | null
-  layout: string
-  recommendedSizeWidthIn: number | null
-  recommendedSizeHeightIn: number | null
-  preservationType: string
-  frameType: string
-  framePrice: number | null
-  mountColour: string
-}
+  measuredWidthIn: number | null;
+  measuredHeightIn: number | null;
+  layout: string;
+  recommendedSizeWidthIn: number | null;
+  recommendedSizeHeightIn: number | null;
+  preservationType: string;
+  frameType: string;
+  framePrice: number | null;
+  mountColour: string;
+  mountPrice: number | null;
+};
 
 export type CreateOrderFormValues = {
-  orderNo: string
-  title: string
-  firstName: string
-  surname: string
-  email: string
-  telephone: string
-  howRecommended: string
-  deliveryAddress: string
-  occasionDate: string
-  preservationDate: string
-  bouquets: BouquetItemFormValues[]
-  paperweightQuantity: number | null
-  paperweightPrice: number | null
-}
+  orderNo: string;
+  title: string;
+  firstName: string;
+  surname: string;
+  email: string;
+  telephone: string;
+  howRecommended: string;
+  deliveryAddress: string;
+  occasionDate: string;
+  preservationDate: string;
+  bouquets: BouquetItemFormValues[];
+  paperweightQuantity: number | null;
+  paperweightPrice: number | null;
+  //
+  deliverySameAsBilling: boolean;
+  deliveryAddressLine1?: string;
+  deliveryAddressLine2?: string;
+  deliveryTown?: string;
+  deliveryCounty?: string;
+  deliveryPostcode?: string;
+  //
+  billingAddressLine1: string;
+  billingAddressLine2?: string;
+  billingTown: string;
+  billingCounty?: string;
+  billingPostcode: string;
+};
 
 type CreateNewCustomerFormProps = {
-  children: ReactNode
-  formId: string
-  onValidSubmit: SubmitHandler<CreateOrderFormValues>
-  defaultValues?: Partial<CreateOrderFormValues>
-}
+  children: ReactNode;
+  formId: string;
+  onValidSubmit: SubmitHandler<CreateOrderFormValues>;
+  defaultValues?: Partial<CreateOrderFormValues>;
+};
 
 const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
   children,
@@ -57,11 +64,12 @@ const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
       bouquets: [],
       paperweightQuantity: null,
       paperweightPrice: null,
+      deliverySameAsBilling: true,
       ...defaultValues,
     } as CreateOrderFormValues,
-  })
+  });
 
-  const { handleSubmit } = methods
+  const { handleSubmit } = methods;
 
   return (
     <Form.Root asChild>
@@ -69,7 +77,7 @@ const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
         <FormProvider {...methods}>{children}</FormProvider>
       </form>
     </Form.Root>
-  )
-}
+  );
+};
 
-export default CreateNewCustomerForm
+export default CreateNewCustomerForm;

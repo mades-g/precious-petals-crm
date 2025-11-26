@@ -12,14 +12,15 @@ import type {
   OrderFrameItemsFrameMountColourOptions,
 } from "@/services/pb/types";
 
-
 export const COLLECTIONS: Record<
-  "USERS" | "CUSTOMERS" | "ORDERS",
-  Extract<Collections, "customers" | "orders" | "users">
+  "USERS" | "CUSTOMERS" | "ORDERS" | "ORDER_PAPERWEIGHT_ITEMS" | "ORDER_FRAME_ITMES",
+  Extract<Collections, "customers" | "orders" | "users" | "order_frame_items" | "order_paperweight_items">
 > = {
   USERS: "users",
   CUSTOMERS: "customers",
   ORDERS: "orders",
+  ORDER_FRAME_ITMES: "order_frame_items",
+  ORDER_PAPERWEIGHT_ITEMS: "order_paperweight_items",
 };
 
 export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [

@@ -26,10 +26,7 @@ const Home = () => {
 
   if (isLoading) return <Spinner size="3" />;
 
-  if (!data) return null;
-
-  // given that is sorted by orderId
-  const nextOrder = data[0].orderDetails?.orderNo;
+  const hasData = data && data?.length > 0
 
   return (
     <Flex mx="auto" pt="9">
@@ -59,7 +56,7 @@ const Home = () => {
       </Box>
       <CreaeNewOrderModal
         isModalOpen={isModalOpen}
-        nextOrderNo={`${nextOrder || 1}`}
+        nextOrderNo={`${hasData ?  data[0].orderDetails?.orderStatus : 1}`}
         onCancel={() => setIsModalOpen(false)}
       />
     </Flex>

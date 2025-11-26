@@ -1,29 +1,33 @@
-import type { FC } from "react"
-import { FormControl, FormField, FormLabel } from "@radix-ui/react-form"
-import { Box, TextField, Text, Flex, Select } from "@radix-ui/themes"
-import { useFormContext, Controller } from "react-hook-form"
+import type { FC } from "react";
+import { FormControl, FormField, FormLabel } from "@radix-ui/react-form";
+import { Box, TextField, Text, Flex, Select, Checkbox } from "@radix-ui/themes";
+import { useFormContext, Controller } from "react-hook-form";
 
 import {
   CUSTOMERS_HOW_RECOMMENDED_OPTIONS,
   CUSTOMERS_TITLE_OPTIONS,
-} from "@/services/pb/constants"
+} from "@/services/pb/constants";
 
-import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form"
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css"
+import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
+import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
 
 type CustomerDataProps = {
-  nextOrderNo: string
-}
+  nextOrderNo: string;
+};
 
 const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
   const {
     register,
     control,
+    watch,
     formState: { errors },
-  } = useFormContext<CreateOrderFormValues>()
+  } = useFormContext<CreateOrderFormValues>();
+
+  const deliverySameAsBilling = watch("deliverySameAsBilling");
 
   return (
     <Flex gap="3" direction="column">
+      {/* Order number (only shown if there's no auto-generated order no) */}
       {!nextOrderNo && (
         <Flex>
           <Box maxWidth="100px">
@@ -40,7 +44,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               </FormControl>
               {errors.orderNo && (
                 <Text size="1" color="red">
-                  {errors.orderNo.message}
+                  {errors.orderNo.message as string}
                 </Text>
               )}
             </FormField>
@@ -79,7 +83,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormControl>
             {errors.title && (
               <Text size="1" color="red">
-                {errors.title.message}
+                {errors.title.message as string}
               </Text>
             )}
           </FormField>
@@ -97,7 +101,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormControl>
             {errors.firstName && (
               <Text size="1" color="red">
-                {errors.firstName.message}
+                {errors.firstName.message as string}
               </Text>
             )}
           </FormField>
@@ -119,7 +123,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormControl>
             {errors.surname && (
               <Text size="1" color="red">
-                {errors.surname.message}
+                {errors.surname.message as string}
               </Text>
             )}
           </FormField>
@@ -147,7 +151,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormControl>
             {errors.email && (
               <Text size="1" color="red">
-                {errors.email.message}
+                {errors.email.message as string}
               </Text>
             )}
           </FormField>
@@ -165,14 +169,14 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   required: "Telephone is required",
                   pattern: {
                     value: /^(?:0|\+44)(?:\d\s?){9,10}$/,
-                    message: "Please enter a vaid UK number"
-                  }
+                    message: "Please enter a valid UK number",
+                  },
                 })}
               />
             </FormControl>
             {errors.telephone && (
               <Text size="1" color="red">
-                {errors.telephone.message}
+                {errors.telephone.message as string}
               </Text>
             )}
           </FormField>
@@ -208,35 +212,251 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormControl>
             {errors.howRecommended && (
               <Text size="1" color="red">
-                {errors.howRecommended.message}
+                {errors.howRecommended.message as string}
               </Text>
             )}
           </FormField>
         </Box>
       </Flex>
-      <Flex gap="3">
-        <Box flexGrow="1" minWidth="260px">
-          <FormField name="deliveryAddress" className={formStyles.field}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Delivery address
-              </Text>
-            </FormLabel>
-            <FormControl asChild>
-              <TextField.Root
-                placeholder="Start typing postcode or address"
-                {...register("deliveryAddress", {
-                  required: "Delivery address is required",
-                })}
-              />
-            </FormControl>
-            {errors.deliveryAddress && (
-              <Text size="1" color="red">
-                {errors.deliveryAddress.message}
-              </Text>
-            )}
-          </FormField>
-        </Box>
+      <Flex direction="column" gap="2" mt="2">
+        <Text weight="bold">Billing address</Text>
+        <Flex gap="3">
+          <Box flexGrow="1" minWidth="260px">
+            <FormField name="billingAddressLine1" className={formStyles.field}>
+              <FormLabel className={formStyles.label} asChild>
+                <Text>
+                  <Text color="red">*</Text> Address line 1
+                </Text>
+              </FormLabel>
+              <FormControl asChild>
+                <TextField.Root
+                  placeholder="Address line 1"
+                  {...register("billingAddressLine1", {
+                    required: "Billing address line 1 is required",
+                  })}
+                />
+              </FormControl>
+              {errors.billingAddressLine1 && (
+                <Text size="1" color="red">
+                  {errors.billingAddressLine1.message as string}
+                </Text>
+              )}
+            </FormField>
+          </Box>
+          <Box flexGrow="1" minWidth="260px">
+            <FormField name="billingAddressLine2" className={formStyles.field}>
+              <FormLabel className={formStyles.label} asChild>
+                <Text>Address line 2</Text>
+              </FormLabel>
+              <FormControl asChild>
+                <TextField.Root
+                  placeholder="Address line 2 (optional)"
+                  {...register("billingAddressLine2")}
+                />
+              </FormControl>
+            </FormField>
+          </Box>
+        </Flex>
+        <Flex gap="3">
+          <Box flexGrow="1" minWidth="200px">
+            <FormField name="billingTown" className={formStyles.field}>
+              <FormLabel className={formStyles.label} asChild>
+                <Text>
+                  <Text color="red">*</Text> Town
+                </Text>
+              </FormLabel>
+              <FormControl asChild>
+                <TextField.Root
+                  placeholder="Town"
+                  {...register("billingTown", {
+                    required: "Billing town is required",
+                  })}
+                />
+              </FormControl>
+              {errors.billingTown && (
+                <Text size="1" color="red">
+                  {errors.billingTown.message as string}
+                </Text>
+              )}
+            </FormField>
+          </Box>
+          <Box flexGrow="1" minWidth="200px">
+            <FormField name="billingCounty" className={formStyles.field}>
+              <FormLabel className={formStyles.label} asChild>
+                <Text>County</Text>
+              </FormLabel>
+              <FormControl asChild>
+                <TextField.Root
+                  placeholder="County (optional)"
+                  {...register("billingCounty")}
+                />
+              </FormControl>
+            </FormField>
+          </Box>
+          <Box flexGrow="1" minWidth="160px">
+            <FormField name="billingPostcode" className={formStyles.field}>
+              <FormLabel className={formStyles.label} asChild>
+                <Text>
+                  <Text color="red">*</Text> Postcode
+                </Text>
+              </FormLabel>
+              <FormControl asChild>
+                <TextField.Root
+                  placeholder="Postcode"
+                  {...register("billingPostcode", {
+                    required: "Billing postcode is required",
+                  })}
+                />
+              </FormControl>
+              {errors.billingPostcode && (
+                <Text size="1" color="red">
+                  {errors.billingPostcode.message as string}
+                </Text>
+              )}
+            </FormField>
+          </Box>
+        </Flex>
+      </Flex>
+      <Flex direction="column" gap="2" mt="3">
+        <Flex align="center" justify="between">
+          <Text weight="bold">Delivery address</Text>
+          <Flex align="center" gap="2">
+            <Controller
+              name="deliverySameAsBilling"
+              control={control}
+              render={({ field }) => (
+                <Flex align="center" gap="2">
+                  <Checkbox
+                    checked={!!field.value}
+                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                  />
+                  <Text size="1">Same as billing address</Text>
+                </Flex>
+              )}
+            />
+          </Flex>
+        </Flex>
+        {deliverySameAsBilling ? (
+          <Text size="2" color="gray">
+            Delivery will be sent to the billing address above.
+          </Text>
+        ) : (
+          <>
+            <Flex gap="3">
+              <Box flexGrow="1" minWidth="260px">
+                <FormField
+                  name="deliveryAddressLine1"
+                  className={formStyles.field}
+                >
+                  <FormLabel className={formStyles.label} asChild>
+                    <Text>
+                      <Text color="red">*</Text> Address line 1
+                    </Text>
+                  </FormLabel>
+                  <FormControl asChild>
+                    <TextField.Root
+                      placeholder="Address line 1"
+                      {...register("deliveryAddressLine1", {
+                        validate: (value) =>
+                          deliverySameAsBilling ||
+                          value ||
+                          "Delivery address line 1 is required",
+                      })}
+                    />
+                  </FormControl>
+                  {errors.deliveryAddressLine1 && (
+                    <Text size="1" color="red">
+                      {errors.deliveryAddressLine1.message as string}
+                    </Text>
+                  )}
+                </FormField>
+              </Box>
+              <Box flexGrow="1" minWidth="260px">
+                <FormField
+                  name="deliveryAddressLine2"
+                  className={formStyles.field}
+                >
+                  <FormLabel className={formStyles.label} asChild>
+                    <Text>Address line 2</Text>
+                  </FormLabel>
+                  <FormControl asChild>
+                    <TextField.Root
+                      placeholder="Address line 2 (optional)"
+                      {...register("deliveryAddressLine2")}
+                    />
+                  </FormControl>
+                </FormField>
+              </Box>
+            </Flex>
+            <Flex gap="3">
+              <Box flexGrow="1" minWidth="200px">
+                <FormField name="deliveryTown" className={formStyles.field}>
+                  <FormLabel className={formStyles.label} asChild>
+                    <Text>
+                      <Text color="red">*</Text> Town
+                    </Text>
+                  </FormLabel>
+                  <FormControl asChild>
+                    <TextField.Root
+                      placeholder="Town"
+                      {...register("deliveryTown", {
+                        validate: (value) =>
+                          deliverySameAsBilling ||
+                          value ||
+                          "Delivery town is required",
+                      })}
+                    />
+                  </FormControl>
+                  {errors.deliveryTown && (
+                    <Text size="1" color="red">
+                      {errors.deliveryTown.message as string}
+                    </Text>
+                  )}
+                </FormField>
+              </Box>
+              <Box flexGrow="1" minWidth="200px">
+                <FormField name="deliveryCounty" className={formStyles.field}>
+                  <FormLabel className={formStyles.label} asChild>
+                    <Text>County</Text>
+                  </FormLabel>
+                  <FormControl asChild>
+                    <TextField.Root
+                      placeholder="County (optional)"
+                      {...register("deliveryCounty")}
+                    />
+                  </FormControl>
+                </FormField>
+              </Box>
+              <Box flexGrow="1" minWidth="160px">
+                <FormField name="deliveryPostcode" className={formStyles.field}>
+                  <FormLabel className={formStyles.label} asChild>
+                    <Text>
+                      <Text color="red">*</Text> Postcode
+                    </Text>
+                  </FormLabel>
+                  <FormControl asChild>
+                    <TextField.Root
+                      placeholder="Postcode"
+                      {...register("deliveryPostcode", {
+                        validate: (value) =>
+                          deliverySameAsBilling ||
+                          value ||
+                          "Delivery postcode is required",
+                      })}
+                    />
+                  </FormControl>
+                  {errors.deliveryPostcode && (
+                    <Text size="1" color="red">
+                      {errors.deliveryPostcode.message as string}
+                    </Text>
+                  )}
+                </FormField>
+              </Box>
+            </Flex>
+          </>
+        )}
+      </Flex>
+      <Flex gap="3" mt="2">
         <Box>
           <FormField name="occasionDate" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -254,7 +474,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormControl>
             {errors.occasionDate && (
               <Text size="1" color="red">
-                {errors.occasionDate.message}
+                {errors.occasionDate.message as string}
               </Text>
             )}
           </FormField>
@@ -265,21 +485,18 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               <Text>Preservation date</Text>
             </FormLabel>
             <FormControl asChild>
-              <TextField.Root
-                type="date"
-                {...register("preservationDate")}
-              />
+              <TextField.Root type="date" {...register("preservationDate")} />
             </FormControl>
             {errors.preservationDate && (
               <Text size="1" color="red">
-                {errors.preservationDate.message}
+                {errors.preservationDate.message as string}
               </Text>
             )}
           </FormField>
         </Box>
       </Flex>
     </Flex>
-  )
-}
+  );
+};
 
-export default CustomerData
+export default CustomerData;

@@ -1,10 +1,10 @@
-import type { FC } from "react"
-import { Flex, Text } from "@radix-ui/themes"
+import type { FC } from "react";
+import { Flex, Text } from "@radix-ui/themes";
 
 type RowProps = {
-  label: string
-  children: React.ReactNode
-}
+  label: string;
+  children: React.ReactNode;
+};
 
 const ReviewDataRow: FC<RowProps> = ({ label, children }) => (
   <Flex justify="between" align="start" gap="3">
@@ -15,6 +15,6 @@ const ReviewDataRow: FC<RowProps> = ({ label, children }) => (
       {children || "—"}
     </Text>
   </Flex>
-)
+);
 
-export default ReviewDataRow
+export default ReviewDataRow;

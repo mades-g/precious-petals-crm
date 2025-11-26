@@ -1,27 +1,30 @@
-import { useState, type FC } from "react"
-import { Dialog, Flex, Box, Button } from "@radix-ui/themes"
+import { useState, type FC } from "react";
+import { Dialog, Flex } from "@radix-ui/themes";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import CustomerData from "../customer-data/customer-data"
-import BouquetData from "../bouquet-data/bouquet-data"
-import PaperWeightData from "../paperweight-data/paperweight-data"
+import CustomerData from "../customer-data/customer-data";
+import BouquetData from "../bouquet-data/bouquet-data";
+import PaperWeightData from "../paperweight-data/paperweight-data";
 import CreateNewCustomerForm, {
   type CreateOrderFormValues,
-} from "../create-new-customer-form/create-new-customer-form"
-import ReviewData from "../review-data/review-data"
+} from "../create-new-customer-form/create-new-customer-form";
+import ReviewData from "../review-data/review-data";
+import ModalFooter from "../modal-footer/modal-footer";
+import { createNewOrder } from "@/features/customers/api/create-new-order";
 
 type CreaeNewOrderModalProps = {
-  nextOrderNo: string
-  isModalOpen: boolean
-  onCancel: () => void
-}
+  nextOrderNo: string;
+  isModalOpen: boolean;
+  onCancel: () => void;
+};
 
 export type FormStage =
   | "costumer_data"
   | "bouquet_data"
   | "paperweight_data"
-  | "review_data"
+  | "review_data";
 
-const FORM_ID = "create-new-order-form"
+const FORM_ID = "create-new-order-form";
 
 const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
   isModalOpen,
@@ -29,21 +32,74 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
   onCancel,
 }) => {
   const [currentFormStage, setCurrentFormStage] =
-    useState<FormStage>("costumer_data")
+    useState<FormStage>("costumer_data");
 
+  // Where we want to go after a successful submit (non-review stages)
   const [nextStageAfterSubmit, setNextStageAfterSubmit] =
-    useState<FormStage | null>(null)
+    useState<FormStage | null>(null);
 
-  const handleValidSubmit = (values: CreateOrderFormValues) => {
-    console.log("Form values:", values)
+  // Error specific to final submission on the review screen
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-    if (nextStageAfterSubmit) {
-      setCurrentFormStage(nextStageAfterSubmit)
-      setNextStageAfterSubmit(null)
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: mutateCreateOrder, isPending } = useMutation({
+    mutationFn: (values: CreateOrderFormValues) => createNewOrder(values),
+    onSuccess: () => {
+      // Clear any errors
+      setSubmitError(null);
+      // Refresh customers list
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      // Close modal + reset wizard state
+      handleCancel();
+    },
+    onError: (error: unknown) => {
+      // Surface a friendly error on the review screen
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while saving the order.";
+      setSubmitError(message);
+    },
+  });
+
+  const handleValidSubmit = async (values: CreateOrderFormValues) => {
+    // Clear any previous submit error
+    setSubmitError(null);
+
+    // If we're on the review screen, this is our "final submit" path
+    if (currentFormStage === "review_data") {
+      const hasBouquets = values.bouquets && values.bouquets.length > 0;
+      const hasPaperweight = Boolean(
+        values.paperweightPrice || values.paperweightQuantity,
+      );
+
+      if (!hasBouquets && !hasPaperweight) {
+        setSubmitError(
+          "Please add at least one bouquet or one paperweight before saving the order.",
+        );
+        return;
+      }
+
+      // ✅ Final order submit via React Query mutation
+      await mutateCreateOrder(values);
+      return;
     }
 
-    // call api and stuff
-  }
+    // For non-review stages, this is just “validate and go to next stage”
+    if (nextStageAfterSubmit) {
+      setCurrentFormStage(nextStageAfterSubmit);
+      setNextStageAfterSubmit(null);
+    }
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    // Reset wizard state
+    setCurrentFormStage("costumer_data");
+    setNextStageAfterSubmit(null);
+    setSubmitError(null);
+  };
 
   return (
     <Dialog.Root open={isModalOpen}>
@@ -57,6 +113,7 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
             Create new customer, frame and/or paperweight order
           </Dialog.Description>
         </Flex>
+
         <CreateNewCustomerForm
           formId={FORM_ID}
           onValidSubmit={handleValidSubmit}
@@ -67,107 +124,37 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
           )}
 
           {currentFormStage === "bouquet_data" && <BouquetData />}
+
           {currentFormStage === "paperweight_data" && <PaperWeightData />}
+
           {currentFormStage === "review_data" && (
             <ReviewData
               onEditCustomer={() => setCurrentFormStage("costumer_data")}
               onEditBouquets={() => setCurrentFormStage("bouquet_data")}
               onEditPaperweight={() => setCurrentFormStage("paperweight_data")}
+              submitError={submitError}
             />
           )}
         </CreateNewCustomerForm>
-        {/* Move this footer to it's own component */}
-        <Box mt="4">
-          <Flex justify="between" align="center">
-            <Button
-              variant="soft"
-              color="gray"
-              type="button"
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
-            {currentFormStage === "costumer_data" && (
-              <Flex justify="end" gap="2">
-                <Button
-                  type="submit"
-                  form={FORM_ID}
-                  onClick={() => setNextStageAfterSubmit("bouquet_data")}
-                >
-                  Add bouquet
-                </Button>
 
-                <Button
-                  type="submit"
-                  form={FORM_ID}
-                  onClick={() => setNextStageAfterSubmit("paperweight_data")}
-                >
-                  Add paperweight
-                </Button>
-              </Flex>
-            )}
-            {currentFormStage === "bouquet_data" && (
-              <Flex justify="end" gap="2">
-                <Button
-                  type="button"
-                  variant="soft"
-                  color="gray"
-                  onClick={() => setCurrentFormStage("costumer_data")}
-                >
-                  Back to customer
-                </Button>
-                <Button
-                  type="submit"
-                  form={FORM_ID}
-                  onClick={() => setNextStageAfterSubmit("paperweight_data")}
-                >
-                  Next: Paperweight
-                </Button>
-              </Flex>
-            )}
-            {currentFormStage === "paperweight_data" && (
-              <Flex justify="end" gap="2">
-                <Button
-                  type="button"
-                  variant="soft"
-                  color="gray"
-                  onClick={() => setCurrentFormStage("bouquet_data")}
-                >
-                  Back to bouquet
-                </Button>
-                <Button
-                  type="submit"
-                  form={FORM_ID}
-                  onClick={() => setNextStageAfterSubmit("review_data")}
-                >
-                  Review order
-                </Button>
-              </Flex>
-            )}
-            {currentFormStage === "review_data" && (
-              <Flex justify="end" gap="2">
-                <Button
-                  type="button"
-                  variant="soft"
-                  color="gray"
-                  onClick={() => setCurrentFormStage("paperweight_data")}
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  form={FORM_ID}
-                  onClick={() => setNextStageAfterSubmit("review_data")}
-                >
-                  Confirm & Save
-                </Button>
-              </Flex>
-            )}
-          </Flex>
-        </Box>
+        <ModalFooter
+          currentFormStage={currentFormStage}
+          formId={FORM_ID}
+          onCancel={handleCancel}
+          onGoBack={(stage) => {
+            setCurrentFormStage(stage);
+            setNextStageAfterSubmit(null);
+            setSubmitError(null);
+          }}
+          onSubmitAndGo={(stage) => {
+            setNextStageAfterSubmit(stage);
+            setSubmitError(null);
+          }}
+          isSubmitting={isPending}
+        />
       </Dialog.Content>
     </Dialog.Root>
-  )
-}
+  );
+};
 
-export default CreaeNewOrderModal
+export default CreaeNewOrderModal;

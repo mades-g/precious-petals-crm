@@ -221,9 +221,7 @@ export type OrdersOrderStatusOptions =
   | "draft";
 
 export type OrdersRecord = {
-  addressPostcode: string;
   created: IsoAutoDateString;
-  deliveryAddress: string;
   frameOrderId?: RecordIdString[];
   id: string;
   notes?: string;
@@ -233,6 +231,21 @@ export type OrdersRecord = {
   paperweightOrderId?: RecordIdString;
   payment_status?: OrdersPaymentStatusOptions;
   updated: IsoAutoDateString;
+
+  // New structured billing address fields
+  billingAddressLine1: string;
+  billingAddressLine2?: string;
+  billingTown: string;
+  billingCounty?: string;
+  billingPostcode: string;
+
+  // New structured delivery address fields
+  deliverySameAsBilling?: boolean;
+  deliveryAddressLine1?: string;
+  deliveryAddressLine2?: string;
+  deliveryTown?: string;
+  deliveryCounty?: string;
+  deliveryPostcode?: string;
 };
 
 export type UsersRecord = {

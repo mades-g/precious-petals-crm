@@ -1,5 +1,4 @@
 import type { ExpandedOrdersResponse } from "../api/get-customers";
-
 import type { CustomersResponse } from "@/services/pb/types";
 
 const normaliseFrameOrder = (
@@ -50,6 +49,7 @@ const normaliseFrameOrder = (
     }),
   );
 };
+
 const normalisePaperWeightOrder = (
   expandedRecord: ExpandedOrdersResponse["orderId"]["expand"],
 ) => {
@@ -88,14 +88,25 @@ const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
       orderNo,
       orderStatus,
       payment_status: paymentStatus,
-      addressPostcode,
-      deliveryAddress,
+      // 🔽 new structured address fields on orders
+      billingAddressLine1,
+      billingAddressLine2,
+      billingTown,
+      billingCounty,
+      billingPostcode,
+      deliverySameAsBilling,
+      deliveryAddressLine1,
+      deliveryAddressLine2,
+      deliveryTown,
+      deliveryCounty,
+      deliveryPostcode,
       updated,
       created,
       collectionId: colId,
       expand,
     },
   } = expandedRecord;
+
   const frameOrder = normaliseFrameOrder(expand);
   const paperWeightOrder = normalisePaperWeightOrder(expand);
 
@@ -105,13 +116,22 @@ const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
     orderNo,
     orderStatus,
     paymentStatus,
-    deliveryAddress,
     occasionDate,
-    addressPostcode,
     updated,
     created,
     paperWeightOrder,
     frameOrder: [...frameOrder],
+    billingAddressLine1,
+    billingAddressLine2,
+    billingTown,
+    billingCounty,
+    billingPostcode,
+    deliverySameAsBilling,
+    deliveryAddressLine1,
+    deliveryAddressLine2,
+    deliveryTown,
+    deliveryCounty,
+    deliveryPostcode,
   };
 };
 
@@ -126,7 +146,9 @@ export const normalisedCustomer = ({
   id,
   collectionId: colId,
 }: CustomersResponse<ExpandedOrdersResponse>) => {
-  const displayName = `${title} ${firstName} ${surname}`;
+  const nameParts = [title, firstName, surname].filter(Boolean);
+  const displayName = nameParts.join(" ");
+
   const orderDetails = normaliseOrder(expand);
 
   return {
