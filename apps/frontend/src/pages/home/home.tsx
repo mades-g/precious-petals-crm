@@ -56,7 +56,7 @@ const Home = () => {
       </Box>
       <CreaeNewOrderModal
         isModalOpen={isModalOpen}
-        nextOrderNo={`${hasData ?  data[0].orderDetails?.orderStatus : 1}`}
+        nextOrderNo={`${hasData ?  data[0].orderDetails?.orderNo : 1}`}
         onCancel={() => setIsModalOpen(false)}
       />
     </Flex>
