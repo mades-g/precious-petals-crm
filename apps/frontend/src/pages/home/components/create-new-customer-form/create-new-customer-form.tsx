@@ -17,7 +17,7 @@ export type BouquetItemFormValues = {
 };
 
 export type CreateOrderFormValues = {
-  orderNo: string;
+  orderNo: number;
   title: string;
   firstName: string;
   surname: string;

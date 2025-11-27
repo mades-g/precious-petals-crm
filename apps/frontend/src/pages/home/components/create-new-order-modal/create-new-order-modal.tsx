@@ -14,7 +14,7 @@ import ReviewData from "../review-data/review-data";
 import ModalFooter from "../modal-footer/modal-footer";
 
 type CreaeNewOrderModalProps = {
-  nextOrderNo: string;
+  nextOrderNo?: number;
   isModalOpen: boolean;
   onCancel: () => void;
 };
@@ -82,8 +82,9 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
         return;
       }
 
-      // ✅ Final order submit via React Query mutation
-      await mutateCreateOrder(values);
+      const orderNo = nextOrderNo ? nextOrderNo + 1 : values.orderNo
+
+      await mutateCreateOrder({ ...values, orderNo });
       return;
     }
 

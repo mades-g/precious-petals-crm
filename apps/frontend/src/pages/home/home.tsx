@@ -71,7 +71,7 @@ const Home = () => {
   const customers = data ?? [];
   const hasData = customers.length > 0;
 
-  const nextOrderNo = (hasData && customers[0].orderDetails ?  customers[0].orderDetails.orderNo : 0) + 1
+  const nextOrderNo = hasData && customers[0].orderDetails ?  customers[0].orderDetails.orderNo : undefined
 
   const handleChange =
     (field: keyof typeof filters) =>
@@ -245,7 +245,7 @@ const Home = () => {
       </Box>
       <CreaeNewOrderModal
         isModalOpen={isModalOpen}
-        nextOrderNo={`${nextOrderNo}`}
+        nextOrderNo={nextOrderNo}
         onCancel={() => setIsModalOpen(false)}
       />
     </Flex>

@@ -12,7 +12,7 @@ import type { CreateOrderFormValues } from "../create-new-customer-form/create-n
 import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
 
 type CustomerDataProps = {
-  nextOrderNo: string;
+  nextOrderNo?: number;
 };
 
 const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
@@ -33,13 +33,18 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           <Box maxWidth="100px">
             <FormField name="orderNo" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
-                <Text>Order No</Text>
+                <Text>
+                  <Text color="red">*</Text> Order No
+                </Text>
               </FormLabel>
               <FormControl asChild>
                 <TextField.Root
                   type="number"
-                  {...register("orderNo")}
-                  disabled={!!nextOrderNo}
+                  {...register("orderNo", {
+                    required: 'Order No is required',
+                    min: { message: 'Min 1', value: 1 },
+                    valueAsNumber: true
+                  })}
                 />
               </FormControl>
               {errors.orderNo && (
@@ -91,12 +96,16 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
         <Box flexGrow="1" minWidth="200px">
           <FormField name="firstName" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
-              <Text>First name</Text>
+              <Text>
+                <Text color="red">*</Text> First name
+              </Text>
             </FormLabel>
             <FormControl asChild>
               <TextField.Root
                 placeholder="First name"
-                {...register("firstName")}
+                {...register("firstName", {
+                  required: 'First name is required'
+                })}
               />
             </FormControl>
             {errors.firstName && (
