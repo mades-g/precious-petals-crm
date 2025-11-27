@@ -71,15 +71,17 @@ const Home = () => {
   const customers = data ?? [];
   const hasData = customers.length > 0;
 
+  const nextOrderNo = (hasData && customers[0].orderDetails ?  customers[0].orderDetails.orderNo : 0) + 1
+
   const handleChange =
     (field: keyof typeof filters) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setFilters((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    };
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setFilters((prev) => ({
+          ...prev,
+          [field]: value,
+        }));
+      };
 
   const handleClear = (field: keyof typeof filters) => {
     setFilters((prev) => ({
@@ -241,14 +243,9 @@ const Home = () => {
           </Flex>
         </Card>
       </Box>
-
       <CreaeNewOrderModal
         isModalOpen={isModalOpen}
-        nextOrderNo={`${
-          hasData && customers[0].orderDetails
-            ? customers[0].orderDetails.orderNo
-            : 1
-        }`}
+        nextOrderNo={`${nextOrderNo}`}
         onCancel={() => setIsModalOpen(false)}
       />
     </Flex>
