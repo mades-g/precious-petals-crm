@@ -1,4 +1,8 @@
-import type { CustomersHowRecommendedOptions } from "@/services/pb/types";
+import type {
+  CustomersHowRecommendedOptions,
+  OrdersOrderStatusOptions,
+  OrdersPaymentStatusOptions,
+} from "@/services/pb/types";
 
 export const formatDate = (date: string) => {
   return new Intl.DateTimeFormat("en-GB", {
@@ -48,4 +52,55 @@ export const formatAddressLines = (opts: {
   if (postcode && postcode.trim().length > 0) lines.push(postcode);
 
   return lines;
+};
+
+/* -----------------------------------------------
+ * ORDER STATUS → RADIX COLOR MAPPING
+ * --------------------------------------------- */
+
+export const ORDER_STATUS_COLOR_MAP: Record<
+  OrdersOrderStatusOptions,
+  "gray" | "green" | "yellow" | "red" | "blue"
+> = {
+  draft: "gray",
+  in_progress: "blue",
+  ready: "yellow",
+  delivered: "green",
+  cancelled: "red",
+};
+
+/* -----------------------------------------------
+ * PAYMENT STATUS → RADIX COLOR MAPPING
+ * --------------------------------------------- */
+
+export const PAYMENT_STATUS_COLOR_MAP: Record<
+  OrdersPaymentStatusOptions,
+  "gray" | "orange" | "green" | "red" | "yellow"
+> = {
+  wainting_first_deposit: "orange",
+  waiting_second_deposit: "orange",
+  waiting_final_balance: "orange",
+
+  first_deposit_paid: "yellow",
+  second_deposit_paid: "yellow",
+
+  final_balance_paid: "green",
+};
+
+/* -----------------------------------------------
+ * Utility getters
+ * --------------------------------------------- */
+
+export const getOrderStatusColor = (
+  status?: OrdersOrderStatusOptions | null,
+) => {
+  if (!status) return "gray";
+  return ORDER_STATUS_COLOR_MAP[status];
+};
+
+export const getPaymentStatusColor = (
+  status?: OrdersPaymentStatusOptions | null,
+) => {
+  if (!status) return "gray";
+  return PAYMENT_STATUS_COLOR_MAP[status];
 };

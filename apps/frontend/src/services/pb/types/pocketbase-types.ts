@@ -189,6 +189,7 @@ export type OrderFrameItemsRecord<Textras = unknown> = {
   layout: OrderFrameItemsLayoutOptions;
   preservationDate?: IsoDateString;
   preservationType: OrderFrameItemsPreservationTypeOptions;
+  frameMountColour: OrderFrameItemsFrameMountColourOptions;
   price: number;
   sizeX: string;
   sizeY: string;

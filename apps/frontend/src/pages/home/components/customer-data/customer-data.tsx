@@ -41,9 +41,9 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                 <TextField.Root
                   type="number"
                   {...register("orderNo", {
-                    required: 'Order No is required',
-                    min: { message: 'Min 1', value: 1 },
-                    valueAsNumber: true
+                    required: "Order No is required",
+                    min: { message: "Min 1", value: 1 },
+                    valueAsNumber: true,
                   })}
                 />
               </FormControl>
@@ -104,7 +104,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               <TextField.Root
                 placeholder="First name"
                 {...register("firstName", {
-                  required: 'First name is required'
+                  required: "First name is required",
                 })}
               />
             </FormControl>

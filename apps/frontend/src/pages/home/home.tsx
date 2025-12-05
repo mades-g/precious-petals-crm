@@ -14,20 +14,21 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getCustomers, type GetCustomersParams } from "@/api/get-customers";
 
-import CustomerTable from "./components/customer-tabel/costumer-tabel";
-import CreaeNewOrderModal from "./components/create-new-order-modal/create-new-order-modal";
+import CustomerTable from "./components/customer-table/costumer-table";
+import { formatDate } from "@/utils";
 
 const DEBOUNCE_MS = 300;
 
 const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
 
   // Raw values bound to inputs
   const [filters, setFilters] = useState({
     email: "",
     surname: "",
     telephone: "",
-    occasionDate: "", // value of the <input type="date" />
+    occasionDate: "",
   });
 
   const { email, surname, telephone, occasionDate } = filters;
@@ -71,17 +72,20 @@ const Home = () => {
   const customers = data ?? [];
   const hasData = customers.length > 0;
 
-  const nextOrderNo = hasData && customers[0].orderDetails ?  customers[0].orderDetails.orderNo : undefined
+  const nextOrderNo =
+    hasData && customers[0].orderDetails
+      ? customers[0].orderDetails.orderNo
+      : undefined;
 
   const handleChange =
     (field: keyof typeof filters) =>
-      (event: React.ChangeEvent<HTMLInputElement>) => {
-        const value = event.target.value;
-        setFilters((prev) => ({
-          ...prev,
-          [field]: value,
-        }));
-      };
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setFilters((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    };
 
   const handleClear = (field: keyof typeof filters) => {
     setFilters((prev) => ({
@@ -139,7 +143,6 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
-
                 <Box>
                   <Text weight="medium">Search by surname</Text>
                   <TextField.Root
@@ -165,7 +168,6 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
-
                 <Box>
                   <Text weight="medium">Search by telephone</Text>
                   <TextField.Root
@@ -191,17 +193,24 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
-
-                {/* Occasion date */}
                 <Box>
                   <Text weight="medium">Search by occasion date</Text>
                   <Flex gap="2" align="center">
-                    <TextField.Root
-                      type="date"
-                      name="search-occasion-date"
-                      value={filters.occasionDate}
-                      onChange={handleChange("occasionDate")}
-                    />
+                    <Flex direction="column">
+                      <TextField.Root
+                        type="date"
+                        name="search-occasion-date"
+                        value={filters.occasionDate}
+                        onChange={handleChange("occasionDate")}
+                      />
+                      {filters.occasionDate && (
+                        <Text size="1" color="gray">
+                          {formatDate(filters.occasionDate)}{" "}
+                          {/* en-GB formatted */}
+                        </Text>
+                      )}
+                    </Flex>
+
                     <Button
                       type="button"
                       variant="soft"
@@ -210,6 +219,7 @@ const Home = () => {
                     >
                       Apply date
                     </Button>
+
                     {filters.occasionDate && (
                       <IconButton
                         size="2"
@@ -223,12 +233,16 @@ const Home = () => {
                   </Flex>
                 </Box>
 
-                <Button onClick={() => setIsModalOpen(true)}>
+                <Button
+                  onClick={() => {
+                    setIsModalOpen(true);
+                    setModalMode("create");
+                  }}
+                >
                   Create new order
                 </Button>
               </Flex>
             </Flex>
-
             {isLoading && (
               <Text size="2" color="gray">
                 Loading customers…
@@ -239,15 +253,19 @@ const Home = () => {
                 {(error as Error)?.message ?? "Failed to load customers."}
               </Text>
             )}
-            {!isLoading && !isError && <CustomerTable customers={customers} />}
+            {!isLoading && !isError && (
+              <CustomerTable
+                customers={customers}
+                nextOrderNo={nextOrderNo}
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+                setModalMode={setModalMode}
+                modalMode={modalMode}
+              />
+            )}
           </Flex>
         </Card>
       </Box>
-      <CreaeNewOrderModal
-        isModalOpen={isModalOpen}
-        nextOrderNo={nextOrderNo}
-        onCancel={() => setIsModalOpen(false)}
-      />
     </Flex>
   );
 };

@@ -59,7 +59,7 @@ export async function getCustomers({
     .getFullList<CustomersResponse<ExpandedOrdersResponse>>({
       expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
       ...(filter ? { filter } : {}),
-      sort: '-orderId.orderNo'
+      sort: "-orderId.orderNo",
     });
 
   return records.map(normalisedCustomer);

@@ -19,10 +19,14 @@ import {
 
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
 import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
+import type { FC } from "react";
 
-const MAX_BOUQUETS = 6;
+const MAX_BOUQUETS = 10;
 
-const BouquetData = () => {
+type BouquetDataProps = {
+  mode: "create" | "edit";
+};
+const BouquetData: FC<BouquetDataProps> = () => {
   const {
     control,
     register,

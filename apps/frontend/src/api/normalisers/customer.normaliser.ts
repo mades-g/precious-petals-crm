@@ -27,6 +27,7 @@ const normaliseFrameOrder = (
       glassEngraving,
       glassType,
       special_notes: specialNotes,
+      frameMountColour: mountColour,
       id: frameId,
     }) => ({
       size: `${sizeX}x${sizeY} inches`,
@@ -46,7 +47,8 @@ const normaliseFrameOrder = (
       framingComplete,
       updated,
       created,
-      extras, // details to create invoice
+      mountColour,
+      extras, // details to Generate Invoice
     }),
   );
 };

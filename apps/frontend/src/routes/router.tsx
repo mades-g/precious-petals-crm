@@ -6,6 +6,7 @@ import RequireAuth from "../auth/require-auth/require-auth";
 import Login from "../pages/login/login";
 import Home from "../pages/home/home";
 import App from "../app";
+import Order from "@/pages/order/order";
 
 export const router = createBrowserRouter([
   {
@@ -28,7 +29,10 @@ export const router = createBrowserRouter([
       // protected routes
       {
         element: <RequireAuth />,
-        children: [{ index: true, element: <Home /> }],
+        children: [
+          { index: true, element: <Home /> },
+          { path: "/order", element: <Order /> },
+        ],
       },
       { path: "*", element: <h1>Not found</h1> },
     ],

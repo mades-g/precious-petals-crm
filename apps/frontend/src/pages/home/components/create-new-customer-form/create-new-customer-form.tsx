@@ -1,9 +1,11 @@
 import * as Form from "@radix-ui/react-form";
-
 import { type FC, type ReactNode } from "react";
 import { useForm, FormProvider, type SubmitHandler } from "react-hook-form";
 
 export type BouquetItemFormValues = {
+  // ID of the related ORDER_FRAME_ITEMS record (for edit mode)
+  id?: string;
+
   measuredWidthIn: number | null;
   measuredHeightIn: number | null;
   layout: string;
@@ -17,6 +19,10 @@ export type BouquetItemFormValues = {
 };
 
 export type CreateOrderFormValues = {
+  // IDs needed for editing existing records
+  customerId?: string; // CUSTOMERS collection id
+  orderId?: string; // ORDERS collection id (if you need it later)
+  paperweightId?: string | null; // ORDER_PAPERWEIGHT_ITEMS id
   orderNo: number;
   title: string;
   firstName: string;
@@ -32,6 +38,7 @@ export type CreateOrderFormValues = {
   hasPaperweight: boolean;
   paperweightQuantity: number | null;
   paperweightPrice: number | null;
+  paperweightReceived: boolean;
   //
   deliverySameAsBilling: boolean;
   deliveryAddressLine1?: string;
@@ -68,6 +75,7 @@ const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
       paperweightQuantity: null,
       paperweightPrice: null,
       deliverySameAsBilling: true,
+      paperweightReceived: false,
       ...defaultValues,
     } as CreateOrderFormValues,
   });

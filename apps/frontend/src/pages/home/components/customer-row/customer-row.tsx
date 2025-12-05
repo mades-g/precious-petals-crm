@@ -1,7 +1,9 @@
 import type { FC } from "react";
 import {
   Badge,
+  Box,
   Code,
+  DropdownMenu,
   Flex,
   IconButton,
   Separator,
@@ -10,7 +12,6 @@ import {
 } from "@radix-ui/themes";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 
-import type { normalisedCustomer } from "@/api/normalisers/customer.normaliser";
 import {
   formatAddressLines,
   formatDate,
@@ -18,13 +19,19 @@ import {
   howRecommendedColour,
 } from "@/utils";
 
+import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
+import { useNavigate } from "react-router";
+import type { NormalisedCustomer } from "@/api/get-customers";
+import { getOrderStatusColor } from "@/utils";
+
 type CustomerRowProps = {
-  customer: ReturnType<typeof normalisedCustomer>;
+  customer: NormalisedCustomer;
+  onClick: (formStage: FormStage) => void;
 };
 
-const CustomerRow: FC<CustomerRowProps> = ({
-  customer: { displayName, email, phoneNumber, howRecommended, orderDetails },
-}) => {
+const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
+  const { displayName, email, phoneNumber, howRecommended, orderDetails } =
+    customer;
   const deliveryLines = orderDetails
     ? formatAddressLines({
         line1: orderDetails.deliveryAddressLine1,
@@ -39,6 +46,8 @@ const CustomerRow: FC<CustomerRowProps> = ({
   const paymentStatus = orderDetails?.paymentStatus;
   const hasHowRecommended = Boolean(howRecommended);
 
+  const navigate = useNavigate();
+
   return (
     <Table.Row>
       {/* Order + status */}
@@ -49,7 +58,11 @@ const CustomerRow: FC<CustomerRowProps> = ({
           </Code>
           <Separator orientation="horizontal" />
           {hasOrder && orderDetails!.orderStatus ? (
-            <Badge color="gray" variant="soft" radius="full">
+            <Badge
+              color={getOrderStatusColor(orderDetails!.orderStatus)}
+              variant="soft"
+              radius="full"
+            >
               {formatSnakeCase(orderDetails!.orderStatus)}
             </Badge>
           ) : (
@@ -83,18 +96,6 @@ const CustomerRow: FC<CustomerRowProps> = ({
       <Table.Cell>
         {hasOrder ? (
           <Flex direction="column" gap="1">
-            <Flex align="center" gap="2">
-              <Text weight="medium">Delivery</Text>
-              {orderDetails!.deliverySameAsBilling ? (
-                <Badge color="green" variant="soft" radius="full" size="1">
-                  Same as billing
-                </Badge>
-              ) : (
-                <Badge color="yellow" variant="soft" radius="full" size="1">
-                  Different from billing
-                </Badge>
-              )}
-            </Flex>
             {deliveryLines.length > 0 ? (
               <Flex gap="1" direction="column" mt="1">
                 {deliveryLines.map((line) => (
@@ -106,6 +107,17 @@ const CustomerRow: FC<CustomerRowProps> = ({
                 No delivery address set
               </Text>
             )}
+            <Box>
+              {orderDetails!.deliverySameAsBilling ? (
+                <Badge color="green" variant="soft" radius="full" size="1">
+                  Same as billing
+                </Badge>
+              ) : (
+                <Badge color="yellow" variant="soft" radius="full" size="1">
+                  Different from billing
+                </Badge>
+              )}
+            </Box>
           </Flex>
         ) : (
           <Text>-</Text>
@@ -156,9 +168,35 @@ const CustomerRow: FC<CustomerRowProps> = ({
         )}
       </Table.Cell>
       <Table.Cell>
-        <IconButton variant="soft">
-          <DotsHorizontalIcon width="18" height="18" />
-        </IconButton>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <IconButton variant="soft">
+              <DotsHorizontalIcon width="18" height="18" />
+            </IconButton>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            <DropdownMenu.Item
+              onClick={() =>
+                navigate("/order", {
+                  state: {
+                    customer,
+                  },
+                })
+              }
+            >
+              <Text>View order</Text>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => onClick("costumer_data")}>
+              <Text>Edit costumer data</Text>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => onClick("bouquet_data")}>
+              <Text>Edit bouquet data</Text>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => onClick("paperweight_data")}>
+              <Text>Edit paperweight data</Text>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </Table.Cell>
     </Table.Row>
   );
