@@ -1,5 +1,5 @@
 // src/pages/Order.tsx
-import { FC, useMemo, useState } from "react";
+import { type FC, useMemo, useState } from "react";
 import {
   Box,
   Flex,
