@@ -9,13 +9,17 @@ import {
   TextField,
   Text,
   IconButton,
+  Popover,
 } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
+import { DayPicker } from "react-day-picker";
 
 import { getCustomers, type GetCustomersParams } from "@/api/get-customers";
 
 import CustomerTable from "./components/customer-table/costumer-table";
 import { formatDate } from "@/utils";
+
+import "react-day-picker/dist/style.css"; // you can move this to your root if you prefer
 
 const DEBOUNCE_MS = 300;
 
@@ -99,11 +103,6 @@ const Home = () => {
     }
   };
 
-  const handleApplyDate = () => {
-    // user explicitly applies the current date
-    setAppliedOccasionDate(occasionDate);
-  };
-
   return (
     <Flex mx="auto" pt="9">
       <Box minWidth="80vw">
@@ -143,6 +142,7 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
+
                 <Box>
                   <Text weight="medium">Search by surname</Text>
                   <TextField.Root
@@ -168,6 +168,7 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
+
                 <Box>
                   <Text weight="medium">Search by telephone</Text>
                   <TextField.Root
@@ -193,39 +194,52 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
+
+                {/* 🔎 Occasion date filter with react-day-picker */}
                 <Box>
                   <Text weight="medium">Search by occasion date</Text>
+
                   <Flex gap="2" align="center">
                     <Flex direction="column">
-                      <TextField.Root
-                        type="date"
-                        name="search-occasion-date"
-                        value={filters.occasionDate}
-                        onChange={handleChange("occasionDate")}
-                      />
-                      {filters.occasionDate && (
-                        <Text size="1" color="gray">
-                          {formatDate(filters.occasionDate)}{" "}
-                          {/* en-GB formatted */}
-                        </Text>
-                      )}
+                      <Popover.Root>
+                        <Popover.Trigger>
+                          <Button variant="outline" type="button" size="2">
+                            {occasionDate
+                              ? formatDate(occasionDate)
+                              : "Pick a date"}
+                          </Button>
+                        </Popover.Trigger>
+
+                        <Popover.Content>
+                          <DayPicker
+                            mode="single"
+                            selected={
+                              occasionDate ? new Date(occasionDate) : undefined
+                            }
+                            onSelect={(date) => {
+                              const iso = date
+                                ? date.toISOString().slice(0, 10)
+                                : "";
+                              setFilters((prev) => ({
+                                ...prev,
+                                occasionDate: iso,
+                              }));
+                              setAppliedOccasionDate(iso); // 🔥 auto-apply immediately
+                            }}
+                          />
+                        </Popover.Content>
+                      </Popover.Root>
                     </Flex>
 
-                    <Button
-                      type="button"
-                      variant="soft"
-                      onClick={handleApplyDate}
-                      disabled={!filters.occasionDate}
-                    >
-                      Apply date
-                    </Button>
-
-                    {filters.occasionDate && (
+                    {occasionDate && (
                       <IconButton
                         size="2"
                         variant="ghost"
                         type="button"
-                        onClick={() => handleClear("occasionDate")}
+                        onClick={() => {
+                          setFilters((prev) => ({ ...prev, occasionDate: "" }));
+                          setAppliedOccasionDate(""); // 🚀 auto-clear filter
+                        }}
                       >
                         <Cross2Icon height="16" width="16" />
                       </IconButton>
@@ -243,6 +257,7 @@ const Home = () => {
                 </Button>
               </Flex>
             </Flex>
+
             {isLoading && (
               <Text size="2" color="gray">
                 Loading customers…

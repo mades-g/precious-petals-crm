@@ -12,6 +12,8 @@ import {
   Badge,
   Switch,
   Select,
+  Dialog,
+  TextField,
   type TextProps,
 } from "@radix-ui/themes";
 import { useLocation, useNavigate } from "react-router";
@@ -28,6 +30,8 @@ import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
   Update,
+  OrderFrameItemsInclusionsOptions,
+  OrderFrameItemsGlassTypeOptions,
 } from "@/services/pb/types";
 import {
   formatDate,
@@ -35,10 +39,32 @@ import {
   getOrderStatusColor,
   getPaymentStatusColor,
 } from "@/utils";
+import { updateBouquet } from "@/api/update-bouquet";
 
 type LocationState = {
   customer: NormalisedCustomer;
 };
+
+// convenience alias
+// @ts-expect-error not sure why
+type OrderFrame = NormalisedCustomer["orderDetails"]["frameOrder"];
+
+const GLASS_TYPE_OPTIONS: {
+  value: OrderFrameItemsGlassTypeOptions;
+  label: string;
+}[] = [
+  { value: "Clearview uv glass", label: "Clearview UV glass" },
+  { value: "Conservation glass", label: "Conservation glass" },
+];
+
+const INCLUSION_OPTIONS: {
+  value: OrderFrameItemsInclusionsOptions;
+  label: string;
+}[] = [
+  { value: "Yes", label: "Yes" },
+  { value: "No", label: "No" },
+  { value: "Buttonhole", label: "Buttonhole" },
+];
 
 const currency = (value?: number | null) =>
   typeof value === "number" ? `£${value.toFixed(2)}` : "£0.00";
@@ -51,7 +77,8 @@ const Order: FC = () => {
   const { customer } = location.state as LocationState;
 
   const order = customer.orderDetails;
-  const frames = order?.frameOrder ?? [];
+  const initialFrames: OrderFrame[] = order?.frameOrder ?? [];
+  const [frames, setFrames] = useState<OrderFrame[]>(initialFrames);
   const paperweight = order?.paperWeightOrder ?? null;
 
   // --- Toggles (still local for now) ---
@@ -101,42 +128,92 @@ const Order: FC = () => {
     });
   };
 
+  // helper to update a single frame locally after dialog save
+  const handleFrameUpdated = (frameId: string, patch: Partial<OrderFrame>) => {
+    setFrames((prev) =>
+      prev.map((f) => (f.frameId === frameId ? { ...f, ...patch } : f)),
+    );
+  };
+
   // --- Build invoice line items from your data ---
+  type LineItemKind = "frame" | "paperweight" | "extra";
+
   type LineItem = {
     id: string;
     description: string;
     qty: number;
     unitPrice: number;
     total: number;
+    kind: LineItemKind;
+    frame?: OrderFrame;
   };
 
   const lineItems: LineItem[] = useMemo(() => {
     const items: LineItem[] = [];
 
-    // Frames
+    // Frames + extras
     frames.forEach((frame, index) => {
       const descParts = [
-        `Frame ${index + 1}`,
         frame.size,
         frame.frameType,
         frame.glassType,
+        frame.preservationType,
       ].filter(Boolean);
 
       const description = descParts.join(", ");
-      const price = typeof frame.price === "number" ? frame.price : 0;
+      const basePrice = typeof frame.price === "number" ? frame.price : 0;
 
+      const baseId = frame.frameId ?? `frame-${index}`;
+
+      // Base frame line
       items.push({
-        id: frame.frameId ?? `frame-${index}`,
+        id: baseId,
         description,
         qty: 1,
-        unitPrice: price,
-        total: price,
+        unitPrice: basePrice,
+        total: basePrice,
+        kind: "frame",
+        frame,
       });
 
-      // extras mapping goes here if needed later
+      // Extras from JSON
+      const extras = (frame.extras || {}) as {
+        glassPrice?: number;
+        glassEngravingPrice?: number;
+      };
+
+      if (typeof extras.glassPrice === "number" && extras.glassPrice > 0) {
+        items.push({
+          id: `${baseId}-glass`,
+          description: `Glass – ${frame.glassType}`,
+          qty: 1,
+          unitPrice: extras.glassPrice,
+          total: extras.glassPrice,
+          kind: "extra",
+          frame,
+        });
+      }
+
+      if (
+        typeof extras.glassEngravingPrice === "number" &&
+        extras.glassEngravingPrice > 0
+      ) {
+        const engravingText = frame.glassEngraving?.trim();
+        items.push({
+          id: `${baseId}-glass-engraving`,
+          description: engravingText
+            ? `Glass engraving – ${engravingText}`
+            : "Glass engraving",
+          qty: 1,
+          unitPrice: extras.glassEngravingPrice,
+          total: extras.glassEngravingPrice,
+          kind: "extra",
+          frame,
+        });
+      }
     });
 
-    // Paperweight
+    // Paperweight as its own main item
     if (paperweight) {
       const total =
         typeof paperweight.price === "number" ? paperweight.price : 0;
@@ -147,9 +224,9 @@ const Order: FC = () => {
         id: paperweight.paperWeightId ?? "paperweight",
         description: "Paperweight",
         qty,
-        // assuming price stored is total; if it's per unit, change to total / qty
         unitPrice: qty ? total / qty : total,
         total,
+        kind: "paperweight",
       });
     }
 
@@ -159,7 +236,7 @@ const Order: FC = () => {
   const subTotal = lineItems.reduce((sum, item) => sum + item.total, 0);
   const vatRate = 0.2; // 20%
   const vatTotal = subTotal * vatRate;
-  const grandTotal = subTotal + vatTotal;
+  const grandTotal = subTotal + vatRate * subTotal;
 
   return (
     <Box p="4" style={{ margin: "0 auto" }} width="60%">
@@ -265,11 +342,11 @@ const Order: FC = () => {
                     </Select.Content>
                   </Select.Root>
                 </Flex>
-
                 <Button
-                  size="1"
+                  size="2"
                   onClick={handleSaveMeta}
                   disabled={!order?.orderId || isSavingMeta}
+                  style={{ alignSelf: "end" }}
                 >
                   {isSavingMeta ? "Saving..." : "Update status"}
                 </Button>
@@ -345,30 +422,70 @@ const Order: FC = () => {
                   <Table.ColumnHeaderCell align="right">
                     Amount
                   </Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell align="right">
+                    Frame options
+                  </Table.ColumnHeaderCell>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {lineItems.map((item, index) => (
-                  <Table.Row key={item.id}>
-                    <Table.RowHeaderCell>
-                      {String(index + 1).padStart(2, "0")}
-                    </Table.RowHeaderCell>
-                    <Table.Cell>{item.description}</Table.Cell>
-                    <Table.Cell align="center">{item.qty}</Table.Cell>
-                    <Table.Cell align="right">
-                      {currency(item.unitPrice)}
-                    </Table.Cell>
-                    <Table.Cell align="right">
-                      {currency(item.total)}
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
+                {(() => {
+                  let runningIndex = 0;
+                  return lineItems.map((item) => {
+                    const isMain =
+                      item.kind === "frame" || item.kind === "paperweight";
+
+                    if (isMain) runningIndex += 1;
+
+                    const indexLabel = isMain ? `Item ${runningIndex}` : "";
+
+                    return (
+                      <Table.Row key={item.id}>
+                        <Table.RowHeaderCell>{indexLabel}</Table.RowHeaderCell>
+
+                        <Table.Cell>
+                          {isMain ? (
+                            <Text>{item.description}</Text>
+                          ) : (
+                            <Box pl="4">
+                              <Text size="2" color="gray">
+                                {item.description}
+                              </Text>
+                            </Box>
+                          )}
+                        </Table.Cell>
+
+                        <Table.Cell align="center">
+                          {isMain ? item.qty : ""}
+                        </Table.Cell>
+
+                        <Table.Cell align="right">
+                          {isMain ? currency(item.unitPrice) : ""}
+                        </Table.Cell>
+
+                        <Table.Cell align="right">
+                          {currency(item.total)}
+                        </Table.Cell>
+
+                        <Table.Cell align="right">
+                          {item.kind === "frame" && item.frame ? (
+                            <FrameExtrasDialog
+                              frame={item.frame}
+                              onUpdated={(patch) =>
+                                handleFrameUpdated(item.frame!.frameId, patch)
+                              }
+                            />
+                          ) : null}
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  });
+                })()}
               </Table.Body>
             </Table.Root>
           )}
         </Box>
 
-        {/* Totals only (bank + notes removed) */}
+        {/* Totals only */}
         <Flex mt="5" justify="end">
           <Box
             minWidth="260"
@@ -406,6 +523,201 @@ const Order: FC = () => {
 
 export default Order;
 
+/* ---------- Frame extras dialog ---------- */
+
+type FrameExtrasDialogProps = {
+  frame: OrderFrame;
+  onUpdated: (patch: Partial<OrderFrame>) => void;
+};
+
+const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
+  frame,
+  onUpdated,
+}) => {
+  const queryClient = useQueryClient();
+
+  const rawExtras = (frame.extras || {}) as {
+    glassPrice?: number;
+    glassEngravingPrice?: number;
+  };
+
+  const [glassEngraving, setGlassEngraving] = useState(
+    frame.glassEngraving ?? "",
+  );
+  const [glassEngravingPrice, setGlassEngravingPrice] = useState<number>(
+    typeof rawExtras.glassEngravingPrice === "number"
+      ? rawExtras.glassEngravingPrice
+      : 0,
+  );
+
+  const [inclusions, setInclusions] =
+    useState<OrderFrameItemsInclusionsOptions>(
+      (frame.inclusions as OrderFrameItemsInclusionsOptions) ?? "No",
+    );
+  const [glassType, setGlassType] = useState<OrderFrameItemsGlassTypeOptions>(
+    (frame.glassType as OrderFrameItemsGlassTypeOptions) ??
+      "Clearview uv glass",
+  );
+  const [glassPrice, setGlassPrice] = useState<number>(
+    typeof rawExtras.glassPrice === "number" ? rawExtras.glassPrice : 0,
+  );
+
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: () =>
+      updateBouquet({
+        frameId: frame.frameId,
+        glassEngraving: glassEngraving || undefined,
+        inclusions,
+        glassType,
+        extras: {
+          ...(frame.extras || {}),
+          glassPrice,
+          glassEngravingPrice,
+        },
+      }),
+    onSuccess: () => {
+      // update local frames state so the table refreshes immediately
+      onUpdated({
+        glassEngraving: glassEngraving || undefined,
+        inclusions,
+        glassType,
+        extras: {
+          ...(frame.extras || {}),
+          glassPrice,
+          glassEngravingPrice,
+        },
+      });
+
+      // keep the rest of the app in sync too
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+  });
+
+  const handleSave = async () => {
+    if (!frame.frameId) return;
+    await mutateAsync();
+  };
+
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger>
+        <Button size="1" variant="soft">
+          Frame options
+        </Button>
+      </Dialog.Trigger>
+      <Dialog.Content maxWidth="520px">
+        <Dialog.Title>Frame options</Dialog.Title>
+        <Dialog.Description size="2" mb="3">
+          Glass engraving, buttonhole and glass type for this frame.
+        </Dialog.Description>
+
+        <Flex direction="column" gap="3">
+          {/* Glass engraving + price */}
+          <Box>
+            <Text size="2" weight="bold">
+              Glass engraving
+            </Text>
+            <TextField.Root
+              mt="1"
+              value={glassEngraving}
+              onChange={(e) => setGlassEngraving(e.target.value)}
+              placeholder='e.g. "Lauren & Simon 18th March 2020"'
+            />
+            <Text size="1" color="gray" mt="1">
+              Price
+            </Text>
+            <TextField.Root
+              type="number"
+              mt="1"
+              value={glassEngravingPrice.toString()}
+              onChange={(e) =>
+                setGlassEngravingPrice(
+                  e.target.value ? Number(e.target.value) : 0,
+                )
+              }
+              min="0"
+            />
+          </Box>
+
+          {/* Buttonhole + glass type + glass price */}
+          <Flex gap="3" wrap="wrap">
+            <Box flexGrow="1" minWidth="200px">
+              <Text size="2" weight="bold">
+                Include button hole
+              </Text>
+              <Select.Root
+                value={inclusions}
+                onValueChange={(value) =>
+                  setInclusions(value as OrderFrameItemsInclusionsOptions)
+                }
+              >
+                <Select.Trigger mt="1" />
+                <Select.Content>
+                  {INCLUSION_OPTIONS.map((opt) => (
+                    <Select.Item key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </Box>
+
+            <Box flexGrow="1" minWidth="200px">
+              <Text size="2" weight="bold">
+                Glass type
+              </Text>
+              <Select.Root
+                value={glassType}
+                onValueChange={(value) =>
+                  setGlassType(value as OrderFrameItemsGlassTypeOptions)
+                }
+              >
+                <Select.Trigger mt="1" />
+                <Select.Content>
+                  {GLASS_TYPE_OPTIONS.map((opt) => (
+                    <Select.Item key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+              <Text size="1" color="gray" mt="1">
+                Glass price
+              </Text>
+              <TextField.Root
+                type="number"
+                mt="1"
+                value={glassPrice.toString()}
+                onChange={(e) =>
+                  setGlassPrice(e.target.value ? Number(e.target.value) : 0)
+                }
+                min="0"
+              />
+            </Box>
+          </Flex>
+        </Flex>
+
+        <Flex justify="end" gap="2" mt="4">
+          <Dialog.Close>
+            <Button type="button" variant="soft">
+              Cancel
+            </Button>
+          </Dialog.Close>
+          <Dialog.Close>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isPending || !frame.frameId}
+            >
+              {isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </Dialog.Close>
+        </Flex>
+      </Dialog.Content>
+    </Dialog.Root>
+  );
+};
+
 /* ---------- Small helper components ---------- */
 
 type MetaProps = {
@@ -415,9 +727,8 @@ type MetaProps = {
 };
 
 const Meta: FC<MetaProps> = ({ label, value, colour = "gray" }) => {
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
+
   return (
     <Text size="1" color={colour as TextProps["color"]}>
       {label}: <Badge variant="soft">{formatSnakeCase(value)}</Badge>

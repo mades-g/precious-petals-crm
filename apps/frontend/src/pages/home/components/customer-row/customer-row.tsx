@@ -6,7 +6,6 @@ import {
   DropdownMenu,
   Flex,
   IconButton,
-  Separator,
   Table,
   Text,
 } from "@radix-ui/themes";
@@ -24,14 +23,171 @@ import { useNavigate } from "react-router";
 import type { NormalisedCustomer } from "@/api/get-customers";
 import { getOrderStatusColor } from "@/utils";
 
+/* Small local currency helper */
+const formatCurrency = (value?: number | null) =>
+  typeof value === "number" ? `£${value.toFixed(2)}` : undefined;
+
+/* ----------------------------------------------------------
+   FrameDetailsCell — the pill-style frame display component
+   (with extras)
+----------------------------------------------------------- */
+
+export const FrameDetailsCell: FC<{
+  size: string | null;
+  frameType: string | null;
+  layout: string | null;
+  preservationType: string | null;
+  price: number | null;
+  glassType?: string | null;
+  inclusions?: string | null;
+  glassEngraving?: string | null;
+  extras?: unknown;
+}> = ({
+  size,
+  frameType,
+  layout,
+  preservationType,
+  price,
+  glassType,
+  inclusions,
+  glassEngraving,
+  extras,
+}) => {
+  const label = size ? `${size} inches` : frameType || "Frame";
+
+  const meta = [
+    price != null ? formatCurrency(price) : null,
+    layout,
+    preservationType,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // extras object is where we stored glassPrice / glassEngravingPrice
+  const extrasObj = (extras || {}) as {
+    glassPrice?: number;
+    glassEngravingPrice?: number;
+  };
+
+  const extrasBits: string[] = [];
+
+  if (glassType) {
+    extrasBits.push(glassType);
+  }
+
+  if (typeof extrasObj.glassPrice === "number" && extrasObj.glassPrice > 0) {
+    extrasBits.push(`Glass ${formatCurrency(extrasObj.glassPrice)}`);
+  }
+
+  if (glassEngraving && glassEngraving.trim().length > 0) {
+    if (
+      typeof extrasObj.glassEngravingPrice === "number" &&
+      extrasObj.glassEngravingPrice > 0
+    ) {
+      extrasBits.push(
+        `Engraving – ${glassEngraving} (${formatCurrency(
+          extrasObj.glassEngravingPrice,
+        )})`,
+      );
+    } else {
+      extrasBits.push(`Engraving – ${glassEngraving}`);
+    }
+  } else if (
+    typeof extrasObj.glassEngravingPrice === "number" &&
+    extrasObj.glassEngravingPrice > 0
+  ) {
+    extrasBits.push(
+      `Engraving ${formatCurrency(extrasObj.glassEngravingPrice)}`,
+    );
+  }
+
+  if (inclusions && inclusions !== "No") {
+    // "Yes" or "Buttonhole"
+    extrasBits.push("Buttonhole");
+  }
+
+  const extrasLine = extrasBits.join(" · ");
+
+  return (
+    <Box
+      px="2"
+      py="1"
+      style={{
+        borderRadius: 10,
+        backgroundColor: "var(--gray-3)",
+      }}
+    >
+      <Text as="div" size="2" weight="medium">
+        {label}
+      </Text>
+
+      {meta && (
+        <Text as="div" size="1" color="gray" weight="medium">
+          {meta}
+        </Text>
+      )}
+
+      {extrasLine && (
+        <Text as="div" size="1" color="gray" weight="bold">
+          {extrasLine}
+        </Text>
+      )}
+    </Box>
+  );
+};
+
+/* ----------------------------------------------------------
+   PaperweightDetailsCell — pill-style for paperweight
+----------------------------------------------------------- */
+
+const PaperweightDetailsCell: FC<{
+  quantity: number;
+  price: number;
+  received?: boolean;
+}> = ({ quantity, price, received }) => {
+  const qtyLabel =
+    quantity === 1 ? "1 paperweight" : `${quantity} paperweights`;
+  const priceLabel = formatCurrency(price);
+
+  return (
+    <Box
+      px="2"
+      py="1"
+      style={{
+        borderRadius: 10,
+        backgroundColor: "var(--yellow-3)", // different colour from frames
+      }}
+    >
+      <Text as="div" size="2" weight="medium">
+        {qtyLabel}
+      </Text>
+
+      <Text as="div" size="1" color="gray" weight="bold">
+        {priceLabel} total
+        {typeof received === "boolean" &&
+          ` · Received: ${received ? "Yes" : "No"}`}
+      </Text>
+    </Box>
+  );
+};
+
+/* ----------------------------------------------------------
+   CustomerRow
+----------------------------------------------------------- */
+
 type CustomerRowProps = {
   customer: NormalisedCustomer;
   onClick: (formStage: FormStage) => void;
 };
 
+const CELL_PAD_STYLE = { paddingTop: "8px", paddingBottom: "8px" };
+
 const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
   const { displayName, email, phoneNumber, howRecommended, orderDetails } =
     customer;
+
+  const navigate = useNavigate();
+
   const deliveryLines = orderDetails
     ? formatAddressLines({
         line1: orderDetails.deliveryAddressLine1,
@@ -46,68 +202,74 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
   const paymentStatus = orderDetails?.paymentStatus;
   const hasHowRecommended = Boolean(howRecommended);
 
-  const navigate = useNavigate();
-
   return (
     <Table.Row>
       {/* Order + status */}
-      <Table.RowHeaderCell>
-        <Flex gap="3" align="center" direction="column">
-          <Code variant="outline">
-            {hasOrder ? `OrderNo ${orderDetails!.orderNo}` : "No order"}
+      <Table.RowHeaderCell style={CELL_PAD_STYLE}>
+        <Flex gap="2" align="start" direction="column">
+          <Code variant="outline" size="1">
+            {hasOrder ? orderDetails!.orderNo : "No order"}
           </Code>
-          <Separator orientation="horizontal" />
+
           {hasOrder && orderDetails!.orderStatus ? (
             <Badge
               color={getOrderStatusColor(orderDetails!.orderStatus)}
               variant="soft"
               radius="full"
+              size="1"
             >
               {formatSnakeCase(orderDetails!.orderStatus)}
             </Badge>
           ) : (
-            <Badge color="gray" variant="soft" radius="full">
+            <Badge color="gray" variant="soft" radius="full" size="1">
               No status
             </Badge>
           )}
         </Flex>
       </Table.RowHeaderCell>
-      <Table.Cell align="center">
-        <Text align="center" weight="medium">
-          {displayName}
-        </Text>
-        <Separator my="3" size="4" />
-        <Flex gap="3" align="center" wrap="wrap" justify="center">
-          {email}
-          <Separator orientation="vertical" />
-          {phoneNumber}
-          <Separator orientation="vertical" />
-          {hasHowRecommended ? (
-            <Badge color={howRecommendedColour(howRecommended!)}>
-              {howRecommended}
-            </Badge>
-          ) : (
-            <Badge color="gray" variant="soft">
-              Not set
-            </Badge>
-          )}
+
+      {/* Customer + contact */}
+      <Table.Cell align="left" style={{ ...CELL_PAD_STYLE, maxWidth: 250 }}>
+        <Flex direction="column" align="start" gap="1">
+          <Text align="center" weight="medium" size="2">
+            {displayName}
+          </Text>
+
+          <Flex gap="2" align="center" wrap="wrap" justify="start">
+            <Text size="1">{email}</Text>
+            <Text size="1">{phoneNumber}</Text>
+            {hasHowRecommended ? (
+              <Badge color={howRecommendedColour(howRecommended!)} size="1">
+                {howRecommended}
+              </Badge>
+            ) : (
+              <Badge color="gray" variant="soft" size="1">
+                Not set
+              </Badge>
+            )}
+          </Flex>
         </Flex>
       </Table.Cell>
-      <Table.Cell>
+
+      {/* Delivery address */}
+      <Table.Cell align="left" style={{ ...CELL_PAD_STYLE, maxWidth: 250 }}>
         {hasOrder ? (
           <Flex direction="column" gap="1">
             {deliveryLines.length > 0 ? (
-              <Flex gap="1" direction="column" mt="1">
+              <Flex direction="column" gap="1">
                 {deliveryLines.map((line) => (
-                  <Text key={line}>{line.toUpperCase()}</Text>
+                  <Text key={line} size="1">
+                    {line.toUpperCase()}
+                  </Text>
                 ))}
               </Flex>
             ) : (
-              <Text size="2" color="gray">
+              <Text size="1" color="gray">
                 No delivery address set
               </Text>
             )}
-            <Box>
+
+            <Box mt="1">
               {orderDetails!.deliverySameAsBilling ? (
                 <Badge color="green" variant="soft" radius="full" size="1">
                   Same as billing
@@ -120,80 +282,97 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
             </Box>
           </Flex>
         ) : (
-          <Text>-</Text>
+          <Text size="1">-</Text>
         )}
       </Table.Cell>
-      <Table.Cell>
+
+      {/* Occasion date */}
+      <Table.Cell style={CELL_PAD_STYLE}>
         {hasOrder && orderDetails!.occasionDate ? (
-          <Text>{formatDate(orderDetails!.occasionDate)}</Text>
+          <Text size="1">{formatDate(orderDetails!.occasionDate)}</Text>
         ) : (
-          <Text>-</Text>
+          <Text size="1">-</Text>
         )}
       </Table.Cell>
-      <Table.Cell>
+
+      {/* Payment status */}
+      <Table.Cell style={CELL_PAD_STYLE}>
         {hasOrder && paymentStatus ? (
-          <Badge color="orange" variant="soft" radius="full">
+          <Badge color="orange" variant="soft" radius="full" size="1">
             {formatSnakeCase(paymentStatus)}
           </Badge>
         ) : (
-          <Text>-</Text>
+          <Text size="1">-</Text>
         )}
       </Table.Cell>
-      <Table.Cell>
-        {orderDetails?.frameOrder && orderDetails.frameOrder.length > 0 ? (
-          orderDetails.frameOrder.map((frameOrder) => (
-            <Flex gap="1" key={frameOrder.frameId} direction="column">
-              <Text>{frameOrder.size}</Text>
-              <Text>{frameOrder.frameType}</Text>
-              <Text>{frameOrder.layout}</Text>
-              <Text>{frameOrder.glassType}</Text>
-              <Text>{frameOrder.preservationType}</Text>
-            </Flex>
-          ))
-        ) : (
-          <Text>-</Text>
-        )}
-      </Table.Cell>
-      <Table.Cell>
-        {orderDetails?.paperWeightOrder ? (
-          <Flex gap="1" direction="column">
-            <Text>Quantity: {orderDetails.paperWeightOrder.quantity}</Text>
-            <Text>
-              Received:{" "}
-              {orderDetails.paperWeightOrder.paperweightReceived ? "Yes" : "No"}
-            </Text>
+
+      {/* Frame details — pill style + extras */}
+      <Table.Cell style={CELL_PAD_STYLE}>
+        {orderDetails?.frameOrder?.length ? (
+          <Flex direction="column" gap="2">
+            {orderDetails.frameOrder.map((frame, index) => (
+              <FrameDetailsCell
+                key={frame.frameId ?? index}
+                size={frame.size}
+                frameType={frame.frameType}
+                layout={frame.layout}
+                preservationType={frame.preservationType}
+                price={frame.price}
+                glassType={frame.glassType}
+                inclusions={frame.inclusions}
+                glassEngraving={frame.glassEngraving}
+                extras={frame.extras}
+              />
+            ))}
           </Flex>
         ) : (
-          <Text>-</Text>
+          <Text size="1">-</Text>
         )}
       </Table.Cell>
-      <Table.Cell>
+
+      {/* Paperweight — pill style */}
+      <Table.Cell style={CELL_PAD_STYLE}>
+        {orderDetails?.paperWeightOrder ? (
+          <PaperweightDetailsCell
+            quantity={orderDetails.paperWeightOrder.quantity}
+            price={orderDetails.paperWeightOrder.price}
+            received={orderDetails.paperWeightOrder.paperweightReceived}
+          />
+        ) : (
+          <Text size="1">-</Text>
+        )}
+      </Table.Cell>
+
+      {/* Actions */}
+      <Table.Cell style={CELL_PAD_STYLE}>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
-            <IconButton variant="soft">
-              <DotsHorizontalIcon width="18" height="18" />
+            <IconButton variant="soft" size="1">
+              <DotsHorizontalIcon width="16" height="16" />
             </IconButton>
           </DropdownMenu.Trigger>
+
           <DropdownMenu.Content>
             <DropdownMenu.Item
               onClick={() =>
                 navigate("/order", {
-                  state: {
-                    customer,
-                  },
+                  state: { customer },
                 })
               }
             >
-              <Text>View order</Text>
+              View order
             </DropdownMenu.Item>
+
             <DropdownMenu.Item onClick={() => onClick("costumer_data")}>
-              <Text>Edit costumer data</Text>
+              Edit customer data
             </DropdownMenu.Item>
+
             <DropdownMenu.Item onClick={() => onClick("bouquet_data")}>
-              <Text>Edit bouquet data</Text>
+              Edit bouquet data
             </DropdownMenu.Item>
+
             <DropdownMenu.Item onClick={() => onClick("paperweight_data")}>
-              <Text>Edit paperweight data</Text>
+              Edit paperweight data
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>

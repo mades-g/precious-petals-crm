@@ -113,10 +113,10 @@ const CustomerTable: FC<CustomerTableProps> = ({
                       measuredHeightIn: frameOrder.extras?.measuredHeightIn,
                       layout: frameOrder.layout,
                       recommendedSizeWidthIn:
-                      // @ts-expect-error need to type `extras`
+                        // @ts-expect-error need to type `extras`
                         frameOrder.extras?.recommendedSizeWidthIn,
                       recommendedSizeHeightIn:
-                      // @ts-expect-error need to type `extras`
+                        // @ts-expect-error need to type `extras`
                         frameOrder.extras?.recommendedSizeHeightIn,
                       preservationType: frameOrder.preservationType,
                       frameType: frameOrder.frameType,

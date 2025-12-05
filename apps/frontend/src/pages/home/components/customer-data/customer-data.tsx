@@ -1,13 +1,24 @@
 import type { FC } from "react";
 import { FormControl, FormField, FormLabel } from "@radix-ui/react-form";
-import { Box, TextField, Text, Flex, Select, Checkbox } from "@radix-ui/themes";
+import {
+  Box,
+  TextField,
+  Text,
+  Flex,
+  Select,
+  Checkbox,
+  Button,
+  Popover,
+} from "@radix-ui/themes";
 import { useFormContext, Controller } from "react-hook-form";
+import { DayPicker } from "react-day-picker";
 
 import {
   CUSTOMERS_HOW_RECOMMENDED_OPTIONS,
   CUSTOMERS_TITLE_OPTIONS,
 } from "@/services/pb/constants";
 
+import { formatDate } from "@/utils";
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
 import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
 
@@ -56,6 +67,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </Box>
         </Flex>
       )}
+
       <Flex gap="3">
         <Box minWidth="70px">
           <FormField name="title" className={formStyles.field}>
@@ -93,6 +105,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
+
         <Box flexGrow="1" minWidth="200px">
           <FormField name="firstName" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -115,6 +128,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
+
         <Box flexGrow="1" minWidth="200px">
           <FormField name="surname" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -138,6 +152,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </FormField>
         </Box>
       </Flex>
+
       <Flex gap="3">
         <Box flexGrow="1" minWidth="220px">
           <FormField name="email" className={formStyles.field}>
@@ -165,6 +180,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
+
         <Box flexGrow="1" minWidth="180px">
           <FormField name="telephone" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -190,6 +206,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
+
         <Box flexGrow="1" minWidth="220px">
           <FormField name="howRecommended" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -227,6 +244,8 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </FormField>
         </Box>
       </Flex>
+
+      {/* Billing address */}
       <Flex direction="column" gap="2" mt="2">
         <Text weight="bold">Billing address</Text>
         <Flex gap="3">
@@ -252,6 +271,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               )}
             </FormField>
           </Box>
+
           <Box flexGrow="1" minWidth="260px">
             <FormField name="billingAddressLine2" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
@@ -266,6 +286,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormField>
           </Box>
         </Flex>
+
         <Flex gap="3">
           <Box flexGrow="1" minWidth="200px">
             <FormField name="billingTown" className={formStyles.field}>
@@ -289,6 +310,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               )}
             </FormField>
           </Box>
+
           <Box flexGrow="1" minWidth="200px">
             <FormField name="billingCounty" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
@@ -302,6 +324,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               </FormControl>
             </FormField>
           </Box>
+
           <Box flexGrow="1" minWidth="160px">
             <FormField name="billingPostcode" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
@@ -326,6 +349,8 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </Box>
         </Flex>
       </Flex>
+
+      {/* Delivery address */}
       <Flex direction="column" gap="2" mt="3">
         <Flex align="center" justify="between">
           <Text weight="bold">Delivery address</Text>
@@ -345,6 +370,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             />
           </Flex>
         </Flex>
+
         {deliverySameAsBilling ? (
           <Text size="2" color="gray">
             Delivery will be sent to the billing address above.
@@ -380,6 +406,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   )}
                 </FormField>
               </Box>
+
               <Box flexGrow="1" minWidth="260px">
                 <FormField
                   name="deliveryAddressLine2"
@@ -397,6 +424,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                 </FormField>
               </Box>
             </Flex>
+
             <Flex gap="3">
               <Box flexGrow="1" minWidth="200px">
                 <FormField name="deliveryTown" className={formStyles.field}>
@@ -423,6 +451,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   )}
                 </FormField>
               </Box>
+
               <Box flexGrow="1" minWidth="200px">
                 <FormField name="deliveryCounty" className={formStyles.field}>
                   <FormLabel className={formStyles.label} asChild>
@@ -436,6 +465,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   </FormControl>
                 </FormField>
               </Box>
+
               <Box flexGrow="1" minWidth="160px">
                 <FormField name="deliveryPostcode" className={formStyles.field}>
                   <FormLabel className={formStyles.label} asChild>
@@ -465,7 +495,10 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </>
         )}
       </Flex>
+
+      {/* Dates: Occasion + Preservation using DayPicker */}
       <Flex gap="3" mt="2">
+        {/* Occasion date (required) */}
         <Box>
           <FormField name="occasionDate" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -474,11 +507,40 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               </Text>
             </FormLabel>
             <FormControl asChild>
-              <TextField.Root
-                type="date"
-                {...register("occasionDate", {
-                  required: "Occasion date is required",
-                })}
+              <Controller
+                name="occasionDate"
+                control={control}
+                rules={{ required: "Occasion date is required" }}
+                render={({ field }) => (
+                  <Popover.Root>
+                    <Popover.Trigger>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="2"
+                        style={{ width: "100%" }}
+                      >
+                        {field.value ? formatDate(field.value) : "Pick date"}
+                      </Button>
+                    </Popover.Trigger>
+                    <Popover.Content>
+                      <DayPicker
+                        mode="single"
+                        selected={
+                          field.value ? new Date(field.value) : undefined
+                        }
+                        onSelect={(date) => {
+                          const iso = date
+                            ? date.toISOString().slice(0, 10)
+                            : "";
+                          field.onChange(iso);
+                        }}
+                      />
+                    </Popover.Content>
+                    {/* Hidden input so RHF still has a real field */}
+                    <input type="hidden" {...field} />
+                  </Popover.Root>
+                )}
               />
             </FormControl>
             {errors.occasionDate && (
@@ -488,13 +550,49 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
+
+        {/* Preservation date (optional) */}
         <Box>
           <FormField name="preservationDate" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
               <Text>Preservation date</Text>
             </FormLabel>
             <FormControl asChild>
-              <TextField.Root type="date" {...register("preservationDate")} />
+              <Controller
+                name="preservationDate"
+                control={control}
+                render={({ field }) => (
+                  <Popover.Root>
+                    <Popover.Trigger>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="2"
+                        style={{ width: "100%" }}
+                      >
+                        {field.value
+                          ? formatDate(field.value)
+                          : "Pick date (optional)"}
+                      </Button>
+                    </Popover.Trigger>
+                    <Popover.Content>
+                      <DayPicker
+                        mode="single"
+                        selected={
+                          field.value ? new Date(field.value) : undefined
+                        }
+                        onSelect={(date) => {
+                          const iso = date
+                            ? date.toISOString().slice(0, 10)
+                            : "";
+                          field.onChange(iso || undefined);
+                        }}
+                      />
+                    </Popover.Content>
+                    <input type="hidden" {...field} />
+                  </Popover.Root>
+                )}
+              />
             </FormControl>
             {errors.preservationDate && (
               <Text size="1" color="red">

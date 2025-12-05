@@ -148,7 +148,7 @@ export const createNewOrder = async (
       : (values.deliveryPostcode ?? ""),
 
     notes: "", // hook this up when you add notes to the form
-    payment_status: 'wainting_first_deposit',
+    payment_status: "wainting_first_deposit",
     orderStatus: "draft" as const,
 
     frameOrderId: frameItems.map((fi) => fi.id),
