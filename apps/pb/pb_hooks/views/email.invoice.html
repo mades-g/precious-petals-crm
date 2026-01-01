@@ -1,0 +1,35 @@
+{{define "title"}}Invoice #{{.order.invoiceNumber}}{{end}} {{define "body"}}
+<p>Hi {{.customer.firstName}},</p>
+
+<p>Thank you for your order. Here is your invoice:</p>
+
+<h2>Order summary</h2>
+
+{{if .bouquet}}
+<h3>Bouquet</h3>
+<p>
+  Style: {{.bouquet.style}}<br />
+  Price: €{{.bouquet.price}}
+</p>
+{{end}} {{if .paperweight}}
+<h3>Paperweight</h3>
+<p>
+  Type: {{.paperweight.type}}<br />
+  Price: €{{.paperweight.price}}
+</p>
+{{end}} {{if .frame}}
+<h3>Frame</h3>
+<p>
+  Layout: {{.frame.layout}}<br />
+  Price: €{{.frame.price}}
+</p>
+{{end}}
+
+<p><strong>Total:</strong> €{{.order.total}}</p>
+
+{{if .order.occasionDate}}
+<p><strong>Occasion date:</strong> {{.order.occasionDate}}</p>
+{{end}}
+
+<p>If anything looks wrong, just reply to this email.</p>
+{{end}}

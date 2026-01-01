@@ -24,6 +24,7 @@ export type GetCustomersParams = {
   email?: string;
   telephone?: string;
   surname?: string;
+  orderNo?: string;
 };
 
 export async function getCustomers({
@@ -31,8 +32,13 @@ export async function getCustomers({
   email = "",
   telephone = "",
   surname = "",
+  orderNo = "",
 }: GetCustomersParams) {
   const filters: string[] = [];
+
+  if (orderNo) {
+    filters.push(`orderId.orderNo ~ "${orderNo}"`);
+  }
 
   // occasionDate is on the related orders collection
   if (occasionDate) {

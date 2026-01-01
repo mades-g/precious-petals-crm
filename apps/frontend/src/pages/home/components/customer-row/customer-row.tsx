@@ -42,6 +42,10 @@ export const FrameDetailsCell: FC<{
   inclusions?: string | null;
   glassEngraving?: string | null;
   extras?: unknown;
+
+  // optional mount colour keys depending on normaliser
+  mountColour?: string | null;
+  frameMountColour?: string | null;
 }> = ({
   size,
   frameType,
@@ -52,6 +56,8 @@ export const FrameDetailsCell: FC<{
   inclusions,
   glassEngraving,
   extras,
+  mountColour,
+  frameMountColour,
 }) => {
   const label = size ? `${size} inches` : frameType || "Frame";
 
@@ -63,50 +69,71 @@ export const FrameDetailsCell: FC<{
     .filter(Boolean)
     .join(" · ");
 
-  // extras object is where we stored glassPrice / glassEngravingPrice
+  // extras object is where we stored add-on prices
   const extrasObj = (extras || {}) as {
     glassPrice?: number;
     glassEngravingPrice?: number;
+    mountPrice?: number;
+    mountCost?: number; // fallback if named differently
   };
 
-  const extrasBits: string[] = [];
+  const resolvedMountColour = mountColour ?? frameMountColour ?? null;
 
-  if (glassType) {
-    extrasBits.push(glassType);
-  }
+  const mountPrice =
+    typeof extrasObj.mountPrice === "number"
+      ? extrasObj.mountPrice
+      : typeof extrasObj.mountCost === "number"
+        ? extrasObj.mountCost
+        : null;
 
+  // Build grouped lines (new lines) so it doesn't become one mega string
+  const mountBits: string[] = [];
+  const glassBits: string[] = [];
+  const otherBits: string[] = [];
+
+  // Mount line
+  if (resolvedMountColour) mountBits.push(`Mount – ${resolvedMountColour}`);
+  if (typeof mountPrice === "number" && mountPrice > 0)
+    mountBits.push(`Mount ${formatCurrency(mountPrice)}`);
+
+  // Glass line (and buttonhole lives here)
+  if (glassType) glassBits.push(glassType);
   if (typeof extrasObj.glassPrice === "number" && extrasObj.glassPrice > 0) {
-    extrasBits.push(`Glass ${formatCurrency(extrasObj.glassPrice)}`);
+    glassBits.push(`Glass ${formatCurrency(extrasObj.glassPrice)}`);
+  }
+  if (inclusions && inclusions !== "No") {
+    // "Yes" or "Buttonhole" -> label as Buttonhole
+    glassBits.push("Buttonhole");
   }
 
+  // Other line (engraving)
   if (glassEngraving && glassEngraving.trim().length > 0) {
     if (
       typeof extrasObj.glassEngravingPrice === "number" &&
       extrasObj.glassEngravingPrice > 0
     ) {
-      extrasBits.push(
+      otherBits.push(
         `Engraving – ${glassEngraving} (${formatCurrency(
           extrasObj.glassEngravingPrice,
         )})`,
       );
     } else {
-      extrasBits.push(`Engraving – ${glassEngraving}`);
+      otherBits.push(`Engraving – ${glassEngraving}`);
     }
   } else if (
     typeof extrasObj.glassEngravingPrice === "number" &&
     extrasObj.glassEngravingPrice > 0
   ) {
-    extrasBits.push(
+    otherBits.push(
       `Engraving ${formatCurrency(extrasObj.glassEngravingPrice)}`,
     );
   }
 
-  if (inclusions && inclusions !== "No") {
-    // "Yes" or "Buttonhole"
-    extrasBits.push("Buttonhole");
-  }
-
-  const extrasLine = extrasBits.join(" · ");
+  const extrasLines = [
+    mountBits.length ? mountBits.join(" · ") : null,
+    glassBits.length ? glassBits.join(" · ") : null,
+    otherBits.length ? otherBits.join(" · ") : null,
+  ].filter(Boolean) as string[];
 
   return (
     <Box
@@ -127,10 +154,14 @@ export const FrameDetailsCell: FC<{
         </Text>
       )}
 
-      {extrasLine && (
-        <Text as="div" size="1" color="gray" weight="bold">
-          {extrasLine}
-        </Text>
+      {extrasLines.length > 0 && (
+        <Box mt="1">
+          {extrasLines.map((line, i) => (
+            <Text key={i} as="div" size="1" color="gray" weight="bold">
+              {line}
+            </Text>
+          ))}
+        </Box>
       )}
     </Box>
   );
@@ -322,6 +353,9 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
                 inclusions={frame.inclusions}
                 glassEngraving={frame.glassEngraving}
                 extras={frame.extras}
+                // support both key names without breaking if one is missing
+                mountColour={(frame as any).mountColour}
+                frameMountColour={(frame as any).frameMountColour}
               />
             ))}
           </Flex>

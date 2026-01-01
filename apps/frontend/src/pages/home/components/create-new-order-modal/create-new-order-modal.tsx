@@ -229,7 +229,7 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
               .filter((bq) => bq.id)
               .map((bq) =>
                 pb
-                  .collection(COLLECTIONS.ORDER_FRAME_ITMES)
+                  .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
                   .delete(bq.id as string),
               ),
           );
@@ -288,7 +288,7 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
                   values.preservationDate,
                 );
                 return pb
-                  .collection(COLLECTIONS.ORDER_FRAME_ITMES)
+                  .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
                   .create(payload, { requestKey: `extra-${index}` });
               }),
             );
@@ -325,7 +325,7 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
                 values.preservationDate,
               );
               return pb
-                .collection(COLLECTIONS.ORDER_FRAME_ITMES)
+                .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
                 .create(payload, { requestKey: `${index}` });
             }),
           );
@@ -449,7 +449,7 @@ const CreaeNewOrderModal: FC<CreaeNewOrderModalProps> = ({
         return;
       }
 
-      const orderNo = nextOrderNo ? nextOrderNo + 1 : values.orderNo;
+      const orderNo = nextOrderNo ? 0 : values.orderNo;
 
       await mutateCreateOrder({ ...values, orderNo });
       return;

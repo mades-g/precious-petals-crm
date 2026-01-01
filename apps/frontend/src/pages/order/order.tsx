@@ -1,4 +1,3 @@
-// src/pages/Order.tsx
 import { type FC, useMemo, useState } from "react";
 import {
   Box,
@@ -69,6 +68,8 @@ const INCLUSION_OPTIONS: {
 const currency = (value?: number | null) =>
   typeof value === "number" ? `£${value.toFixed(2)}` : "£0.00";
 
+type EmailAction = "recommendation" | "invoice";
+
 const Order: FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -80,6 +81,7 @@ const Order: FC = () => {
   const initialFrames: OrderFrame[] = order?.frameOrder ?? [];
   const [frames, setFrames] = useState<OrderFrame[]>(initialFrames);
   const paperweight = order?.paperWeightOrder ?? null;
+  const hasBouquetFrames = frames.length > 0;
 
   // --- Toggles (still local for now) ---
   const [artworkComplete, setArtworkComplete] = useState(
@@ -96,7 +98,7 @@ const Order: FC = () => {
 
   const [paymentStatus, setPaymentStatus] =
     useState<OrdersPaymentStatusOptions>(
-      order?.paymentStatus ?? "wainting_first_deposit",
+      order?.paymentStatus ?? "waiting_first_deposit",
     );
 
   const { mutateAsync: mutateOrderMeta, isPending: isSavingMeta } = useMutation(
@@ -153,11 +155,16 @@ const Order: FC = () => {
 
     // Frames + extras
     frames.forEach((frame, index) => {
+      // mount colour naming can differ depending on normaliser, so support both
+      const mountColour =
+        (frame).mountColour ?? (frame).frameMountColour ?? null;
+
       const descParts = [
         frame.size,
         frame.frameType,
         frame.glassType,
         frame.preservationType,
+        mountColour ? `Mount: ${mountColour}` : null,
       ].filter(Boolean);
 
       const description = descParts.join(", ");
@@ -180,7 +187,21 @@ const Order: FC = () => {
       const extras = (frame.extras || {}) as {
         glassPrice?: number;
         glassEngravingPrice?: number;
+        mountPrice?: number;
       };
+
+      // Mount price as an extra line item
+      if (typeof extras.mountPrice === "number" && extras.mountPrice > 0) {
+        items.push({
+          id: `${baseId}-mount`,
+          description: mountColour ? `Mount – ${mountColour}` : "Mount",
+          qty: 1,
+          unitPrice: extras.mountPrice,
+          total: extras.mountPrice,
+          kind: "extra",
+          frame,
+        });
+      }
 
       if (typeof extras.glassPrice === "number" && extras.glassPrice > 0) {
         items.push({
@@ -238,6 +259,148 @@ const Order: FC = () => {
   const vatTotal = subTotal * vatRate;
   const grandTotal = subTotal + vatRate * subTotal;
 
+  // -----------------------------
+  // Email actions: send recommendation + invoice
+  // Now sends FULL payload (order + customer + frames + paperweight + totals)
+  // -----------------------------
+
+  const canSendEmails = useMemo(() => {
+    return !!pb.authStore.token && typeof pb.baseUrl === "string";
+  }, []);
+
+  const emailPayload = useMemo(() => {
+    return {
+      customer: {
+        id: (customer).customerId, // depends on your normaliser
+        title: (customer).title ?? undefined,
+        firstName: (customer).firstName ?? "",
+        surname: (customer).surname ?? "",
+        email: customer.email ?? "",
+        displayName: customer.displayName,
+        phoneNumber: customer.phoneNumber ?? "",
+      },
+      order: {
+        orderId: order?.orderId,
+        orderNo: order?.orderNo,
+        created: order?.created ? formatDate(order?.created) : "",
+        occasionDate: order?.occasionDate
+          ? formatDate(order?.occasionDate)
+          : "",
+        billingAddressLine1: (order)?.billingAddressLine1,
+        billingAddressLine2: (order)?.billingAddressLine2,
+        billingTown: (order)?.billingTown,
+        billingCounty: (order)?.billingCounty,
+        billingPostcode: (order)?.billingPostcode,
+      },
+      frames,
+      paperweight,
+      totals: {
+        subTotal,
+        vatRate,
+        vatTotal,
+        grandTotal,
+      },
+    };
+  }, [customer, order, frames, paperweight, subTotal, vatTotal, grandTotal]);
+
+  const getAuthHeader = () => {
+    const token = pb.authStore.token;
+    // Your curl used raw token; keep that.
+    // If PB expects "Bearer", change to: `Bearer ${token}`
+    return token ? { Authorization: token } : {};
+  };
+
+  const postEmailAction = async (
+    action: EmailAction,
+    payload: typeof emailPayload,
+  ) => {
+    const url =
+      action === "recommendation"
+        ? `${pb.baseUrl}/api/email/recommendation`
+        : `${pb.baseUrl}/api/email/invoice`;
+
+    const res = await fetch(url, {
+      method: "POST",
+      // @ts-expect-error not sure what
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const msg =
+        (json && (json.error || json.message)) ||
+        `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+
+    return json as { ok: true };
+  };
+
+  const [emailStatus, setEmailStatus] = useState<{
+    kind: EmailAction;
+    state: "idle" | "sending" | "success" | "error";
+    message?: string;
+  } | null>(null);
+
+  const { mutateAsync: sendRecommendation, isPending: isSendingRec } =
+    useMutation({
+      mutationFn: (payload: typeof emailPayload) =>
+        postEmailAction("recommendation", payload),
+      onMutate: () =>
+        setEmailStatus({ kind: "recommendation", state: "sending" }),
+      onSuccess: () =>
+        setEmailStatus({
+          kind: "recommendation",
+          state: "success",
+          message: "Recommendation email sent",
+        }),
+      onError: (err: any) =>
+        setEmailStatus({
+          kind: "recommendation",
+          state: "error",
+          message: err?.message || "Failed to send recommendation",
+        }),
+    });
+
+  const { mutateAsync: sendInvoice, isPending: isSendingInv } = useMutation({
+    mutationFn: (payload: typeof emailPayload) =>
+      postEmailAction("invoice", payload),
+    onMutate: () => setEmailStatus({ kind: "invoice", state: "sending" }),
+    onSuccess: () =>
+      setEmailStatus({
+        kind: "invoice",
+        state: "success",
+        message: "Invoice email sent",
+      }),
+    onError: (err: any) =>
+      setEmailStatus({
+        kind: "invoice",
+        state: "error",
+        message: err?.message || "Failed to send invoice",
+      }),
+  });
+
+  const handleSendRecommendation = async () => {
+    if (!canSendEmails) return;
+    await sendRecommendation(emailPayload);
+  };
+
+  const handleSendInvoice = async () => {
+    if (!canSendEmails) return;
+    await sendInvoice(emailPayload);
+  };
+
+  const statusColor = (state: string) => {
+    if (state === "success") return "green";
+    if (state === "error") return "red";
+    return "gray";
+  };
+
   return (
     <Box p="4" style={{ margin: "0 auto" }} width="60%">
       {/* Header + back to customers */}
@@ -254,24 +417,45 @@ const Order: FC = () => {
           <Heading size="4" mt="2">
             Order / Invoice
           </Heading>
-          <Text size="1" color="gray">
-            {order?.orderNo ? `Order ${order.orderNo}` : "Order"}
-          </Text>
         </Box>
 
-        <Flex gap="3">
-          <Button>Generate Invoice</Button>
+        <Flex gap="3" align="center">
+          <Button
+            variant="soft"
+            onClick={handleSendRecommendation}
+            disabled={!canSendEmails || isSendingRec}
+          >
+            {isSendingRec ? "Sending..." : "Send recommendation"}
+          </Button>
+
+          <Button
+            onClick={handleSendInvoice}
+            disabled={!canSendEmails || isSendingInv}
+          >
+            {isSendingInv ? "Sending..." : "Send invoice"}
+          </Button>
         </Flex>
       </Flex>
+
+      {emailStatus && emailStatus.state !== "idle" ? (
+        <Box mb="3">
+          <Text size="2" color={statusColor(emailStatus.state)}>
+            {emailStatus.message ||
+              (emailStatus.state === "sending" ? "Sending email..." : "")}
+          </Text>
+          {!canSendEmails ? (
+            <Text size="1" color="gray">
+              Make sure you’re logged in before sending emails.
+            </Text>
+          ) : null}
+        </Box>
+      ) : null}
 
       {/* Main invoice card */}
       <Card>
         {/* Top bar: order meta + toggles */}
         <Flex justify="between" align="start" mb="4">
           <Box>
-            <Text size="1" color="gray">
-              Document
-            </Text>
             <Heading size="3" mb="1">
               Invoice {order?.orderNo ?? order?.orderId ?? ""}
             </Heading>
@@ -342,6 +526,7 @@ const Order: FC = () => {
                     </Select.Content>
                   </Select.Root>
                 </Flex>
+
                 <Button
                   size="2"
                   onClick={handleSaveMeta}
@@ -354,18 +539,20 @@ const Order: FC = () => {
             </Box>
           </Box>
 
-          <Flex gap="4">
-            <ToggleBlock
-              label="Artwork complete"
-              checked={artworkComplete}
-              onChange={setArtworkComplete}
-            />
-            <ToggleBlock
-              label="Framing complete"
-              checked={framingComplete}
-              onChange={setFramingComplete}
-            />
-          </Flex>
+          {hasBouquetFrames ? (
+            <Flex gap="4">
+              <ToggleBlock
+                label="Artwork complete"
+                checked={artworkComplete}
+                onChange={setArtworkComplete}
+              />
+              <ToggleBlock
+                label="Framing complete"
+                checked={framingComplete}
+                onChange={setFramingComplete}
+              />
+            </Flex>
+          ) : null}
         </Flex>
 
         <Separator size="4" />
@@ -423,7 +610,7 @@ const Order: FC = () => {
                     Amount
                   </Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell align="right">
-                    Frame options
+                    Options
                   </Table.ColumnHeaderCell>
                 </Table.Row>
               </Table.Header>
@@ -435,7 +622,6 @@ const Order: FC = () => {
                       item.kind === "frame" || item.kind === "paperweight";
 
                     if (isMain) runningIndex += 1;
-
                     const indexLabel = isMain ? `Item ${runningIndex}` : "";
 
                     return (
@@ -539,6 +725,7 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
   const rawExtras = (frame.extras || {}) as {
     glassPrice?: number;
     glassEngravingPrice?: number;
+    mountPrice?: number;
   };
 
   const [glassEngraving, setGlassEngraving] = useState(
@@ -576,7 +763,6 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
         },
       }),
     onSuccess: () => {
-      // update local frames state so the table refreshes immediately
       onUpdated({
         glassEngraving: glassEngraving || undefined,
         inclusions,
@@ -588,7 +774,6 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
         },
       });
 
-      // keep the rest of the app in sync too
       queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
   });
@@ -612,7 +797,6 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
         </Dialog.Description>
 
         <Flex direction="column" gap="3">
-          {/* Glass engraving + price */}
           <Box>
             <Text size="2" weight="bold">
               Glass engraving
@@ -639,7 +823,6 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
             />
           </Box>
 
-          {/* Buttonhole + glass type + glass price */}
           <Flex gap="3" wrap="wrap">
             <Box flexGrow="1" minWidth="200px">
               <Text size="2" weight="bold">

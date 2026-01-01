@@ -17,7 +17,7 @@ export const COLLECTIONS: Record<
   | "CUSTOMERS"
   | "ORDERS"
   | "ORDER_PAPERWEIGHT_ITEMS"
-  | "ORDER_FRAME_ITMES",
+  | "ORDER_FRAME_ITEMS",
   Extract<
     Collections,
     | "customers"
@@ -30,7 +30,7 @@ export const COLLECTIONS: Record<
   USERS: "users",
   CUSTOMERS: "customers",
   ORDERS: "orders",
-  ORDER_FRAME_ITMES: "order_frame_items",
+  ORDER_FRAME_ITEMS: "order_frame_items",
   ORDER_PAPERWEIGHT_ITEMS: "order_paperweight_items",
 };
 
@@ -106,7 +106,7 @@ export const FRAME_PRESERVATION_TYPE_OPTIONS: OrderFrameItemsPreservationTypeOpt
   ["3D", "pressed"];
 
 export const ORDER_PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
-  "wainting_first_deposit",
+  "waiting_first_deposit",
   "waiting_second_deposit",
   "waiting_final_balance",
   "first_deposit_paid",

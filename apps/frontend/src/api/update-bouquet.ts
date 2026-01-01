@@ -44,6 +44,6 @@ export async function updateBouquet(
   const { frameId, ...data } = payload;
 
   return pb
-    .collection(COLLECTIONS.ORDER_FRAME_ITMES)
+    .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
     .update<OrderFrameItemsResponse<FrameExtras>>(frameId, data);
 }

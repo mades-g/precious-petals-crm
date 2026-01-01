@@ -15,13 +15,13 @@ import { useQuery } from "@tanstack/react-query";
 import { DayPicker } from "react-day-picker";
 
 import { getCustomers, type GetCustomersParams } from "@/api/get-customers";
-
-import CustomerTable from "./components/customer-table/costumer-table";
 import { formatDate } from "@/utils";
 
-import "react-day-picker/dist/style.css"; // you can move this to your root if you prefer
+import CustomerTable from "./components/customer-table/costumer-table";
 
-const DEBOUNCE_MS = 300;
+import "react-day-picker/dist/style.css";
+
+const DEBOUNCE_MS = 500;
 
 const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,38 +33,40 @@ const Home = () => {
     surname: "",
     telephone: "",
     occasionDate: "",
+    orderNo: "", // ✅ NEW
   });
 
-  const { email, surname, telephone, occasionDate } = filters;
+  const { email, surname, telephone, occasionDate, orderNo } = filters;
 
   // Debounced text filters
   const [debouncedTextFilters, setDebouncedTextFilters] = useState({
     email: "",
     surname: "",
     telephone: "",
+    orderNo: "", // ✅ NEW
   });
 
   // Occasion date that is *actually* applied to the search
   const [appliedOccasionDate, setAppliedOccasionDate] = useState("");
 
   // Final params used by the query
-  const searchParams = {
+  const searchParams: GetCustomersParams = {
     email: debouncedTextFilters.email,
     surname: debouncedTextFilters.surname,
     telephone: debouncedTextFilters.telephone,
+    orderNo: debouncedTextFilters.orderNo, // ✅ NEW
     occasionDate: appliedOccasionDate,
   };
 
   // 🔁 Debounce text filters
   useEffect(() => {
     const id = window.setTimeout(() => {
-      setDebouncedTextFilters({ email, surname, telephone });
+      setDebouncedTextFilters({ email, surname, telephone, orderNo });
     }, DEBOUNCE_MS);
 
     return () => window.clearTimeout(id);
-  }, [email, surname, telephone]);
+  }, [email, surname, telephone, orderNo]);
 
-  // React Query fetch using the *applied* params
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["customers", searchParams],
     queryFn: ({ queryKey }) => {
@@ -118,6 +120,33 @@ const Home = () => {
                 wrap="wrap"
               >
                 <Box>
+                  <Text weight="medium">Search by order #</Text>
+                  <TextField.Root
+                    type="search"
+                    name="search-order"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    value={filters.orderNo}
+                    onChange={handleChange("orderNo")}
+                  >
+                    <TextField.Slot>
+                      <MagnifyingGlassIcon height="16" width="16" />
+                    </TextField.Slot>
+                    {filters.orderNo && (
+                      <TextField.Slot pr="3">
+                        <IconButton
+                          size="2"
+                          variant="ghost"
+                          type="button"
+                          onClick={() => handleClear("orderNo")}
+                        >
+                          <Cross2Icon height="16" width="16" />
+                        </IconButton>
+                      </TextField.Slot>
+                    )}
+                  </TextField.Root>
+                </Box>
+                <Box>
                   <Text weight="medium">Search by email</Text>
                   <TextField.Root
                     type="search"
@@ -142,7 +171,6 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
-
                 <Box>
                   <Text weight="medium">Search by surname</Text>
                   <TextField.Root
@@ -168,12 +196,11 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
-
                 <Box>
                   <Text weight="medium">Search by telephone</Text>
                   <TextField.Root
-                    type="search"
                     name="search-telephone"
+                    type="number"
                     value={filters.telephone}
                     onChange={handleChange("telephone")}
                   >
@@ -195,7 +222,7 @@ const Home = () => {
                   </TextField.Root>
                 </Box>
 
-                {/* 🔎 Occasion date filter with react-day-picker */}
+                {/* 🔎 Occasion date filter */}
                 <Box>
                   <Text weight="medium">Search by occasion date</Text>
 
@@ -224,7 +251,7 @@ const Home = () => {
                                 ...prev,
                                 occasionDate: iso,
                               }));
-                              setAppliedOccasionDate(iso); // 🔥 auto-apply immediately
+                              setAppliedOccasionDate(iso);
                             }}
                           />
                         </Popover.Content>
@@ -238,7 +265,7 @@ const Home = () => {
                         type="button"
                         onClick={() => {
                           setFilters((prev) => ({ ...prev, occasionDate: "" }));
-                          setAppliedOccasionDate(""); // 🚀 auto-clear filter
+                          setAppliedOccasionDate("");
                         }}
                       >
                         <Cross2Icon height="16" width="16" />

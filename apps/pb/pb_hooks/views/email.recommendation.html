@@ -1,0 +1,99 @@
+{{define "title"}}Your flower preservation order – reference
+{{.order.ref}}{{end}} {{define "body"}}
+<p>Dear {{.customer.title}} {{.customer.surname}}</p>
+
+<p>
+  <strong>Reference:</strong>
+  Name:{{.customer.surname}} &nbsp;&nbsp;Occasion Date: {{.order.occasionDate}}
+  &nbsp;&nbsp;{{.order.ref}}
+</p>
+
+<p>
+  We are delighted to have been asked to preserve your flowers. They have been
+  photographed, measured and the 3-Dimensional preservation process has begun.
+</p>
+
+<p>
+  The next step is for you to complete our order form to confirm how you would
+  like us to display your flowers. We kindly request that you return this within
+  four weeks. See the link below.
+</p>
+
+<p><a href="{{.links.jotform}}">{{.links.jotform}}</a></p>
+
+<p>
+  If you would prefer to come our studio to complete the form and discuss your
+  options with one of our artists or would like a phone consultation please call
+  us as soon as possible for an appointment. The flowers will be ready for you
+  to view in a month's time.
+</p>
+
+<p>
+  We would like to suggest that a
+  <strong>{{.suggestions.frame.name}}</strong> would look lovely with your
+  flowers, the price of this is <strong>{{.suggestions.frame.price}}</strong> to
+  include the frame with conservation glass and a single mount. An additional
+  sage mount would also complement the flowers which would be
+  <strong>{{.suggestions.sageMountPrice}}</strong>.
+</p>
+
+<p>
+  There are many more ideas for you to see on our website, including beautiful
+  optional extras you may like to add to your order.
+</p>
+
+<p>
+  If you are having a hand tied bouquet framed you may prefer your bouquet
+  displayed as a side profile (showing the stems and ribbons), we can do this
+  for you in a larger frame for an extra
+  <strong>{{.suggestions.sideProfileUpsizePrice}}</strong>.
+</p>
+
+<p>
+  The price includes the replacement of any damaged flowers which we recommended
+  that you consider. We will require from you a list of the varieties that your
+  florist used, so that we can be sure to source the correct ones, seasonal
+  flowers may need to be ordered straight away.
+</p>
+
+{{.recommendation.tableHtml}}
+
+<p>
+  The order form can be found on the frame styles section of our website
+  <a href="{{.links.frameStyles}}">{{.links.frameStyles}}</a>.
+</p>
+
+<p>
+  Don't forget to specify any special requirements that you may have in the
+  additional instructions box.
+</p>
+
+<p>
+  Your order is accepted on the basis that you have read and agree to our terms
+  and conditions
+  <a href="{{.links.terms}}">{{.links.terms}}</a>, in particular please note
+  that flowers can change colour when they are preserved due to the removal of
+  moisture from them.
+</p>
+
+<p>
+  Please do not hesitate to get in touch with us if you would like any help
+  completing the form or if you have any questions about your order.
+</p>
+
+<p>
+  Your preserved arrangement will then be ready 4 weeks from the point we
+  receive your final payment.
+</p>
+
+<p><strong>Portal total:</strong> {{.recommendation.portalTotal}}</p>
+
+<p>
+  Kind Regards<br />
+  The Team<br />
+  {{.brand.name}}<br />
+  {{.brand.tagline}}<br />
+  {{.brand.phone}}<br />
+  <a href="{{.brand.website}}">{{.brand.website}}</a>
+</p>
+{{end}}

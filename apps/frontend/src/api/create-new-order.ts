@@ -89,7 +89,7 @@ export const createNewOrder = async (
     };
 
     const created = await pb
-      .collection(COLLECTIONS.ORDER_FRAME_ITMES)
+      .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
       .create<OrderFrameItemsResponse<FrameExtras>>(framePayload);
 
     frameItems.push(created);
@@ -148,7 +148,7 @@ export const createNewOrder = async (
       : (values.deliveryPostcode ?? ""),
 
     notes: "", // hook this up when you add notes to the form
-    payment_status: "wainting_first_deposit",
+    payment_status: "waiting_first_deposit",
     orderStatus: "draft" as const,
 
     frameOrderId: frameItems.map((fi) => fi.id),

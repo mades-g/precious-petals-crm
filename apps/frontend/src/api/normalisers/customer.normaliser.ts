@@ -161,5 +161,8 @@ export const normalisedCustomer = ({
     email,
     orderDetails,
     howRecommended,
+    title,
+    firstName,
+    surname,
   };
 };

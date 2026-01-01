@@ -207,7 +207,7 @@ export type OrderPaperweightItemsRecord = {
 };
 
 export type OrdersPaymentStatusOptions =
-  | "wainting_first_deposit"
+  | "waiting_first_deposit"
   | "waiting_second_deposit"
   | "waiting_final_balance"
   | "first_deposit_paid"

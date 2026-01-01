@@ -77,7 +77,7 @@ export const PAYMENT_STATUS_COLOR_MAP: Record<
   OrdersPaymentStatusOptions,
   "gray" | "orange" | "green" | "red" | "yellow"
 > = {
-  wainting_first_deposit: "orange",
+  waiting_first_deposit: "orange",
   waiting_second_deposit: "orange",
   waiting_final_balance: "orange",
 
