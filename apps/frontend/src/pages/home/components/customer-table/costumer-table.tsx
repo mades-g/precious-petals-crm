@@ -4,18 +4,19 @@ import { Table } from "@radix-ui/themes";
 import type { NormalisedCustomer } from "@/api/get-customers";
 
 import CustomerRow from "../customer-row/customer-row";
-import CreaeNewOrderModal, {
+import CreateNewOrderModal, {
   type FormStage,
 } from "../create-new-order-modal/create-new-order-modal";
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
+import type { ModalMode } from "../../home";
 
 type CustomerTableProps = {
   customers: NormalisedCustomer[] | undefined;
   nextOrderNo?: number;
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setModalMode: React.Dispatch<React.SetStateAction<"create" | "edit">>;
-  modalMode: "create" | "edit";
+  setModalMode: React.Dispatch<React.SetStateAction<ModalMode>>;
+  modalMode: ModalMode;
 };
 
 const CustomerTable: FC<CustomerTableProps> = ({
@@ -133,7 +134,7 @@ const CustomerTable: FC<CustomerTableProps> = ({
           ))}
         </Table.Body>
       </Table.Root>
-      <CreaeNewOrderModal
+      <CreateNewOrderModal
         modalMode={modalMode}
         isModalOpen={isModalOpen}
         nextOrderNo={nextOrderNo}

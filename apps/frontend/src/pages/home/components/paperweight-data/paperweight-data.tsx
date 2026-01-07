@@ -11,10 +11,11 @@ import {
 import { useFormContext, useWatch } from "react-hook-form";
 
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
+import formStyles from "../../form.module.css";
+import type { ModalMode } from "../../home";
 
 type PaperWeightDataProps = {
-  mode: "create" | "edit";
+  mode: ModalMode;
 };
 
 const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {

@@ -20,7 +20,7 @@ import {
 
 import { formatDate } from "@/utils";
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
+import formStyles from "../../form.module.css";
 
 type CustomerDataProps = {
   nextOrderNo?: number;
@@ -67,7 +67,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </Box>
         </Flex>
       )}
-
       <Flex gap="3">
         <Box minWidth="70px">
           <FormField name="title" className={formStyles.field}>
@@ -105,7 +104,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
-
         <Box flexGrow="1" minWidth="200px">
           <FormField name="firstName" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -128,7 +126,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
-
         <Box flexGrow="1" minWidth="200px">
           <FormField name="surname" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -152,7 +149,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </FormField>
         </Box>
       </Flex>
-
       <Flex gap="3">
         <Box flexGrow="1" minWidth="220px">
           <FormField name="email" className={formStyles.field}>
@@ -180,7 +176,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
-
         <Box flexGrow="1" minWidth="180px">
           <FormField name="telephone" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -206,7 +201,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
-
         <Box flexGrow="1" minWidth="220px">
           <FormField name="howRecommended" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -244,7 +238,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </FormField>
         </Box>
       </Flex>
-
       {/* Billing address */}
       <Flex direction="column" gap="2" mt="2">
         <Text weight="bold">Billing address</Text>
@@ -271,7 +264,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               )}
             </FormField>
           </Box>
-
           <Box flexGrow="1" minWidth="260px">
             <FormField name="billingAddressLine2" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
@@ -286,7 +278,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             </FormField>
           </Box>
         </Flex>
-
         <Flex gap="3">
           <Box flexGrow="1" minWidth="200px">
             <FormField name="billingTown" className={formStyles.field}>
@@ -310,7 +301,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               )}
             </FormField>
           </Box>
-
           <Box flexGrow="1" minWidth="200px">
             <FormField name="billingCounty" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
@@ -324,7 +314,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
               </FormControl>
             </FormField>
           </Box>
-
           <Box flexGrow="1" minWidth="160px">
             <FormField name="billingPostcode" className={formStyles.field}>
               <FormLabel className={formStyles.label} asChild>
@@ -349,7 +338,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </Box>
         </Flex>
       </Flex>
-
       {/* Delivery address */}
       <Flex direction="column" gap="2" mt="3">
         <Flex align="center" justify="between">
@@ -370,7 +358,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             />
           </Flex>
         </Flex>
-
         {deliverySameAsBilling ? (
           <Text size="2" color="gray">
             Delivery will be sent to the billing address above.
@@ -406,7 +393,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   )}
                 </FormField>
               </Box>
-
               <Box flexGrow="1" minWidth="260px">
                 <FormField
                   name="deliveryAddressLine2"
@@ -424,7 +410,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                 </FormField>
               </Box>
             </Flex>
-
             <Flex gap="3">
               <Box flexGrow="1" minWidth="200px">
                 <FormField name="deliveryTown" className={formStyles.field}>
@@ -451,7 +436,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   )}
                 </FormField>
               </Box>
-
               <Box flexGrow="1" minWidth="200px">
                 <FormField name="deliveryCounty" className={formStyles.field}>
                   <FormLabel className={formStyles.label} asChild>
@@ -465,7 +449,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                   </FormControl>
                 </FormField>
               </Box>
-
               <Box flexGrow="1" minWidth="160px">
                 <FormField name="deliveryPostcode" className={formStyles.field}>
                   <FormLabel className={formStyles.label} asChild>
@@ -495,7 +478,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </>
         )}
       </Flex>
-
       {/* Dates: Occasion + Preservation using DayPicker */}
       <Flex gap="3" mt="2">
         {/* Occasion date (required) */}
@@ -550,7 +532,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             )}
           </FormField>
         </Box>
-
         {/* Preservation date (optional) */}
         <Box>
           <FormField name="preservationDate" className={formStyles.field}>

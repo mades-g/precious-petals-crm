@@ -19,19 +19,15 @@ export type UpdatePaperweightResult = OrderPaperweightItemsResponse;
  * Only touches quantity, price and paperweightReceived.
  */
 export const updatePaperweight = async (
-  input: UpdatePaperweightInput,
+  { id, quantity, price, paperweightReceived }: UpdatePaperweightInput,
 ): Promise<UpdatePaperweightResult> => {
-  const { id, quantity, price, paperweightReceived } = input;
-
   const payload: Update<"order_paperweight_items"> = {
     quantity,
     price,
     paperweightReceived,
   };
 
-  const updated = await pb
+  return await pb
     .collection(COLLECTIONS.ORDER_PAPERWEIGHT_ITEMS)
     .update<OrderPaperweightItemsResponse>(id, payload);
-
-  return updated;
 };

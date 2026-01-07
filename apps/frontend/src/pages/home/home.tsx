@@ -23,42 +23,39 @@ import "react-day-picker/dist/style.css";
 
 const DEBOUNCE_MS = 500;
 
+export type ModalMode = "create" | "edit"
+
 const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
 
-  // Raw values bound to inputs
   const [filters, setFilters] = useState({
     email: "",
     surname: "",
     telephone: "",
     occasionDate: "",
-    orderNo: "", // ✅ NEW
+    orderNo: "",
   });
 
   const { email, surname, telephone, occasionDate, orderNo } = filters;
 
-  // Debounced text filters
   const [debouncedTextFilters, setDebouncedTextFilters] = useState({
     email: "",
     surname: "",
     telephone: "",
-    orderNo: "", // ✅ NEW
+    orderNo: "",
   });
 
-  // Occasion date that is *actually* applied to the search
   const [appliedOccasionDate, setAppliedOccasionDate] = useState("");
 
-  // Final params used by the query
   const searchParams: GetCustomersParams = {
     email: debouncedTextFilters.email,
     surname: debouncedTextFilters.surname,
     telephone: debouncedTextFilters.telephone,
-    orderNo: debouncedTextFilters.orderNo, // ✅ NEW
+    orderNo: debouncedTextFilters.orderNo,
     occasionDate: appliedOccasionDate,
   };
 
-  // 🔁 Debounce text filters
   useEffect(() => {
     const id = window.setTimeout(() => {
       setDebouncedTextFilters({ email, surname, telephone, orderNo });
@@ -105,9 +102,13 @@ const Home = () => {
     }
   };
 
+  /**
+   * TODO:
+   *  - Create wrapper component for each search type
+   */
   return (
-    <Flex mx="auto" pt="9">
-      <Box minWidth="80vw">
+    <Flex mx="auto" pt="4">
+      <Box maxWidth="90vw" minWidth="90vw">
         <Card>
           <Flex gap="2" direction="column">
             <Flex gap="9">
@@ -221,11 +222,8 @@ const Home = () => {
                     )}
                   </TextField.Root>
                 </Box>
-
-                {/* 🔎 Occasion date filter */}
                 <Box>
                   <Text weight="medium">Search by occasion date</Text>
-
                   <Flex gap="2" align="center">
                     <Flex direction="column">
                       <Popover.Root>
@@ -257,7 +255,6 @@ const Home = () => {
                         </Popover.Content>
                       </Popover.Root>
                     </Flex>
-
                     {occasionDate && (
                       <IconButton
                         size="2"
@@ -273,7 +270,6 @@ const Home = () => {
                     )}
                   </Flex>
                 </Box>
-
                 <Button
                   onClick={() => {
                     setIsModalOpen(true);
@@ -284,7 +280,6 @@ const Home = () => {
                 </Button>
               </Flex>
             </Flex>
-
             {isLoading && (
               <Text size="2" color="gray">
                 Loading customers…

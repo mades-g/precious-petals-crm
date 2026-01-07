@@ -1,3 +1,4 @@
+import type { FC } from "react";
 import * as Form from "@radix-ui/react-form";
 import {
   Box,
@@ -18,13 +19,13 @@ import {
 } from "@/services/pb/constants";
 
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
-import formStyles from "../create-new-customer-form/create-new-customer-form.module.css";
-import type { FC } from "react";
+import formStyles from "../../form.module.css";
+import type { ModalMode } from "../../home";
 
 const MAX_BOUQUETS = 10;
 
 type BouquetDataProps = {
-  mode: "create" | "edit";
+  mode: ModalMode;
 };
 const BouquetData: FC<BouquetDataProps> = () => {
   const {
@@ -59,24 +60,21 @@ const BouquetData: FC<BouquetDataProps> = () => {
               frameType: "",
               framePrice: null,
               mountColour: "",
-              mountPrice: null, // ✅ new
+              mountPrice: null,
             })
           }
         >
           Add bouquet ({fields.length}/{MAX_BOUQUETS})
         </Button>
       </Flex>
-
       {fields.length === 0 && (
         <Text size="1" color="gray">
           No bouquets added yet. Click “Add bouquet” to create one.
         </Text>
       )}
-
       {fields.map((field, index) => {
         const prefix = `bouquets.${index}` as const;
         const bouquetErrors = errors.bouquets?.[index] ?? {};
-
         return (
           <Box
             key={field.id}
@@ -98,7 +96,6 @@ const BouquetData: FC<BouquetDataProps> = () => {
                 Remove
               </Button>
             </Flex>
-
             <Flex direction="column" gap="3">
               <Flex direction="row" gap="3" wrap="wrap" justify="between">
                 {/* Measured size */}
@@ -144,7 +141,6 @@ const BouquetData: FC<BouquetDataProps> = () => {
                     )}
                   </Form.Field>
                 </Box>
-
                 {/* Layout */}
                 <Box minWidth="250px">
                   <Form.Field
@@ -185,7 +181,6 @@ const BouquetData: FC<BouquetDataProps> = () => {
                     )}
                   </Form.Field>
                 </Box>
-
                 {/* Recommended size */}
                 <Box>
                   <Form.Field
@@ -229,7 +224,6 @@ const BouquetData: FC<BouquetDataProps> = () => {
                     )}
                   </Form.Field>
                 </Box>
-
                 {/* Preservation type */}
                 <Box minWidth="250px">
                   <Form.Field
@@ -271,9 +265,7 @@ const BouquetData: FC<BouquetDataProps> = () => {
                   </Form.Field>
                 </Box>
               </Flex>
-
               <Separator orientation="horizontal" size="4" />
-
               {/* Frame type + price */}
               <Flex gap="3" justify="between" direction="row">
                 <Box minWidth="250px">
@@ -315,7 +307,6 @@ const BouquetData: FC<BouquetDataProps> = () => {
                     )}
                   </Form.Field>
                 </Box>
-
                 <Box>
                   <Form.Field name={`${prefix}.framePrice`}>
                     <Form.Label className={formStyles.label} asChild>
@@ -342,9 +333,7 @@ const BouquetData: FC<BouquetDataProps> = () => {
                   </Form.Field>
                 </Box>
               </Flex>
-
               <Separator orientation="horizontal" size="4" />
-
               {/* Mount colour + mount price */}
               <Flex gap="3" justify="between" direction="row">
                 <Box minWidth="250px">
@@ -386,7 +375,6 @@ const BouquetData: FC<BouquetDataProps> = () => {
                     )}
                   </Form.Field>
                 </Box>
-
                 <Box>
                   <Form.Field name={`${prefix}.mountPrice`}>
                     <Form.Label className={formStyles.label} asChild>

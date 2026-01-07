@@ -4,6 +4,15 @@ import type {
   OrdersPaymentStatusOptions,
 } from "@/services/pb/types";
 
+export const formatCurrency = (
+  value?: number | null,
+  currency: "GBP" | "EUR" = "GBP",
+  locale = "en-GB",
+) => {
+  if (typeof value !== "number" || Number.isNaN(value)) return undefined;
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);
+};
+
 export const formatDate = (date: string) => {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "short",
@@ -54,10 +63,6 @@ export const formatAddressLines = (opts: {
   return lines;
 };
 
-/* -----------------------------------------------
- * ORDER STATUS → RADIX COLOR MAPPING
- * --------------------------------------------- */
-
 export const ORDER_STATUS_COLOR_MAP: Record<
   OrdersOrderStatusOptions,
   "gray" | "green" | "yellow" | "red" | "blue"
@@ -68,10 +73,6 @@ export const ORDER_STATUS_COLOR_MAP: Record<
   delivered: "green",
   cancelled: "red",
 };
-
-/* -----------------------------------------------
- * PAYMENT STATUS → RADIX COLOR MAPPING
- * --------------------------------------------- */
 
 export const PAYMENT_STATUS_COLOR_MAP: Record<
   OrdersPaymentStatusOptions,
@@ -86,10 +87,6 @@ export const PAYMENT_STATUS_COLOR_MAP: Record<
 
   final_balance_paid: "green",
 };
-
-/* -----------------------------------------------
- * Utility getters
- * --------------------------------------------- */
 
 export const getOrderStatusColor = (
   status?: OrdersOrderStatusOptions | null,

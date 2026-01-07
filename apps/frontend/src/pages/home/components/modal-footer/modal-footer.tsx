@@ -1,6 +1,7 @@
 import { Box, Button, Flex } from "@radix-ui/themes";
 import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
+import type { ModalMode } from "../../home";
 
 const getSubmitBtnTitle = (
   currentCustomerForm: Partial<CreateOrderFormValues> | null,
@@ -33,7 +34,7 @@ type ModalFooterProps = {
   onSubmitAndGo: (stage: FormStage) => void;
   formId: string;
   isSubmitting?: boolean;
-  mode: "create" | "edit";
+  mode: ModalMode;
   currentCustomerForm: Partial<CreateOrderFormValues> | null;
 };
 

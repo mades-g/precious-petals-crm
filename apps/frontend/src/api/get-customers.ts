@@ -59,14 +59,13 @@ export async function getCustomers({
 
   const filter = filters.join(" && ");
 
-  const records = await pb
+  return (await pb
     .collection(COLLECTIONS.CUSTOMERS)
     // TODO: switch to paginated API instead of getFullList
     .getFullList<CustomersResponse<ExpandedOrdersResponse>>({
       expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
       ...(filter ? { filter } : {}),
       sort: "-orderId.orderNo",
-    });
+    })).map(normalisedCustomer);
 
-  return records.map(normalisedCustomer);
 }

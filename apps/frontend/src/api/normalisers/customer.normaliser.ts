@@ -7,6 +7,8 @@ const normaliseFrameOrder = (
 ) => {
   if (!expandedRecord.frameOrderId) return [];
 
+  console.log("expandedRecord", expandedRecord.frameOrderId[0])
+
   return expandedRecord.frameOrderId.map(
     ({
       updated,

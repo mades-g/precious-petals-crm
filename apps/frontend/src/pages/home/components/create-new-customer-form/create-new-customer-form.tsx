@@ -4,54 +4,51 @@ import { useForm, FormProvider, type SubmitHandler } from "react-hook-form";
 
 export type BouquetItemFormValues = {
   // ID of the related ORDER_FRAME_ITEMS record (for edit mode)
-  id?: string;
+  id?: string
+  measuredWidthIn: number | null
+  measuredHeightIn: number | null
+  layout: string
+  recommendedSizeWidthIn: number | null
+  recommendedSizeHeightIn: number | null
+  preservationType: string
+  frameType: string
+  framePrice: number | null
+  mountColour: string
+  mountPrice: number | null
+}
 
-  measuredWidthIn: number | null;
-  measuredHeightIn: number | null;
-  layout: string;
-  recommendedSizeWidthIn: number | null;
-  recommendedSizeHeightIn: number | null;
-  preservationType: string;
-  frameType: string;
-  framePrice: number | null;
-  mountColour: string;
-  mountPrice: number | null;
-};
-
+// TODO: Create a type for each respective collection ID
 export type CreateOrderFormValues = {
-  // IDs needed for editing existing records
-  customerId?: string; // CUSTOMERS collection id
-  orderId?: string; // ORDERS collection id (if you need it later)
-  paperweightId?: string | null; // ORDER_PAPERWEIGHT_ITEMS id
-  orderNo: number;
-  title: string;
-  firstName: string;
-  surname: string;
-  email: string;
-  telephone: string;
-  howRecommended: string;
-  deliveryAddress: string;
-  occasionDate: string;
-  preservationDate: string;
-  bouquets: BouquetItemFormValues[];
-  //
-  hasPaperweight: boolean;
-  paperweightQuantity: number | null;
-  paperweightPrice: number | null;
-  paperweightReceived: boolean;
-  //
-  deliverySameAsBilling: boolean;
-  deliveryAddressLine1?: string;
-  deliveryAddressLine2?: string;
-  deliveryTown?: string;
-  deliveryCounty?: string;
-  deliveryPostcode?: string;
-  //
-  billingAddressLine1: string;
-  billingAddressLine2?: string;
-  billingTown: string;
-  billingCounty?: string;
-  billingPostcode: string;
+  customerId?: string
+  orderId?: string
+  paperweightId?: string | null
+  // Above for collections IDS
+  orderNo: number
+  title: string
+  firstName: string
+  surname: string
+  email: string
+  telephone: string
+  howRecommended: string
+  deliveryAddress: string
+  occasionDate: string
+  preservationDate: string
+  bouquets: BouquetItemFormValues[]
+  hasPaperweight: boolean
+  paperweightQuantity: number | null
+  paperweightPrice: number | null
+  paperweightReceived: boolean
+  deliverySameAsBilling: boolean
+  deliveryAddressLine1?: string
+  deliveryAddressLine2?: string
+  deliveryTown?: string
+  deliveryCounty?: string
+  deliveryPostcode?: string
+  billingAddressLine1: string
+  billingAddressLine2?: string
+  billingTown: string
+  billingCounty?: string
+  billingPostcode: string
 };
 
 type CreateNewCustomerFormProps = {

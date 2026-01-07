@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   Separator,
-  Table,
   Badge,
   Switch,
   Select,
@@ -80,15 +79,16 @@ const Order: FC = () => {
   const order = customer.orderDetails;
   const initialFrames: OrderFrame[] = order?.frameOrder ?? [];
   const [frames, setFrames] = useState<OrderFrame[]>(initialFrames);
-  const paperweight = order?.paperWeightOrder ?? null;
-  const hasBouquetFrames = frames.length > 0;
 
-  // --- Toggles (still local for now) ---
-  const [artworkComplete, setArtworkComplete] = useState(
-    frames.some((f) => f.artworkComplete),
-  );
-  const [framingComplete, setFramingComplete] = useState(
-    frames.some((f) => f.framingComplete),
+  const paperweight = order?.paperWeightOrder ?? null;
+
+  // best-effort: this field name must match your PB schema
+  const initialPaperweightReceived =
+    // @ts-expect-error depends on your normaliser/schema
+    Boolean(order?.paperweightReceived ?? order?.paperWeightReceived ?? false);
+
+  const [paperweightReceived, setPaperweightReceived] = useState<boolean>(
+    initialPaperweightReceived,
   );
 
   // --- Editable status fields (typed to PB enums) ---
@@ -101,6 +101,9 @@ const Order: FC = () => {
       order?.paymentStatus ?? "waiting_first_deposit",
     );
 
+  // -----------------------------
+  // Order meta update (status + payment)
+  // -----------------------------
   const { mutateAsync: mutateOrderMeta, isPending: isSavingMeta } = useMutation(
     {
       mutationFn: (payload: {
@@ -130,6 +133,41 @@ const Order: FC = () => {
     });
   };
 
+  // -----------------------------
+  // Paperweight received update (best-effort field name)
+  // -----------------------------
+  const { mutateAsync: mutatePaperweightReceived, isPending: isSavingPw } =
+    useMutation({
+      mutationFn: async (payload: { orderId: string; received: boolean }) => {
+        // IMPORTANT:
+        // Update the key below to match your actual PB field name.
+        // Common options:
+        // - paperweightReceived
+        // - paperweight_received
+        // - paperWeightReceived
+        const data = {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          paperweightReceived: payload.received,
+        } as any;
+
+        return pb.collection(COLLECTIONS.ORDERS).update(payload.orderId, data);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+      },
+    });
+
+  const handleTogglePaperweightReceived = async (next: boolean) => {
+    setPaperweightReceived(next);
+    if (!order?.orderId) return;
+    try {
+      await mutatePaperweightReceived({ orderId: order.orderId, received: next });
+    } catch {
+      // revert on error
+      setPaperweightReceived((prev) => !prev);
+    }
+  };
+
   // helper to update a single frame locally after dialog save
   const handleFrameUpdated = (frameId: string, patch: Partial<OrderFrame>) => {
     setFrames((prev) =>
@@ -137,7 +175,69 @@ const Order: FC = () => {
     );
   };
 
-  // --- Build invoice line items from your data ---
+  // -----------------------------
+  // Frame completion toggles per bouquet (persist to BE)
+  // -----------------------------
+  const { mutateAsync: mutateFrameCompletion, isPending: isSavingCompletion } =
+    useMutation({
+      mutationFn: async (payload: {
+        frameId: string;
+        artworkComplete?: boolean;
+        framingComplete?: boolean;
+      }) => {
+        // updateBouquet should accept these fields in your API.
+        // If it doesn't yet, add them server-side or extend the function typing.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return updateBouquet(payload as any);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+      },
+    });
+
+  const handleToggleArtworkComplete = async (
+    frame: OrderFrame,
+    next: boolean,
+  ) => {
+    if (!frame.frameId) return;
+    handleFrameUpdated(frame.frameId, { artworkComplete: next });
+
+    try {
+      await mutateFrameCompletion({
+        frameId: frame.frameId,
+        artworkComplete: next,
+      });
+    } catch {
+      // revert on error
+      handleFrameUpdated(frame.frameId, {
+        artworkComplete: !next,
+      });
+    }
+  };
+
+  const handleToggleFramingComplete = async (
+    frame: OrderFrame,
+    next: boolean,
+  ) => {
+    if (!frame.frameId) return;
+    handleFrameUpdated(frame.frameId, { framingComplete: next });
+
+    try {
+      await mutateFrameCompletion({
+        frameId: frame.frameId,
+        framingComplete: next,
+      });
+    } catch {
+      // revert on error
+      handleFrameUpdated(frame.frameId, {
+        framingComplete: !next,
+      });
+    }
+  };
+
+  // -----------------------------
+  // Build invoice line items (kept for email payload, but not shown)
+  // -----------------------------
   type LineItemKind = "frame" | "paperweight" | "extra";
 
   type LineItem = {
@@ -153,11 +253,9 @@ const Order: FC = () => {
   const lineItems: LineItem[] = useMemo(() => {
     const items: LineItem[] = [];
 
-    // Frames + extras
     frames.forEach((frame, index) => {
-      // mount colour naming can differ depending on normaliser, so support both
       const mountColour =
-        (frame).mountColour ?? (frame).frameMountColour ?? null;
+        (frame as any).mountColour ?? (frame as any).frameMountColour ?? null;
 
       const descParts = [
         frame.size,
@@ -172,7 +270,6 @@ const Order: FC = () => {
 
       const baseId = frame.frameId ?? `frame-${index}`;
 
-      // Base frame line
       items.push({
         id: baseId,
         description,
@@ -183,14 +280,12 @@ const Order: FC = () => {
         frame,
       });
 
-      // Extras from JSON
       const extras = (frame.extras || {}) as {
         glassPrice?: number;
         glassEngravingPrice?: number;
         mountPrice?: number;
       };
 
-      // Mount price as an extra line item
       if (typeof extras.mountPrice === "number" && extras.mountPrice > 0) {
         items.push({
           id: `${baseId}-mount`,
@@ -234,7 +329,6 @@ const Order: FC = () => {
       }
     });
 
-    // Paperweight as its own main item
     if (paperweight) {
       const total =
         typeof paperweight.price === "number" ? paperweight.price : 0;
@@ -255,15 +349,13 @@ const Order: FC = () => {
   }, [frames, paperweight]);
 
   const subTotal = lineItems.reduce((sum, item) => sum + item.total, 0);
-  const vatRate = 0.2; // 20%
+  const vatRate = 0.2;
   const vatTotal = subTotal * vatRate;
-  const grandTotal = subTotal + vatRate * subTotal;
+  const grandTotal = subTotal + vatTotal;
 
   // -----------------------------
-  // Email actions: send recommendation + invoice
-  // Now sends FULL payload (order + customer + frames + paperweight + totals)
+  // Email actions
   // -----------------------------
-
   const canSendEmails = useMemo(() => {
     return !!pb.authStore.token && typeof pb.baseUrl === "string";
   }, []);
@@ -271,10 +363,10 @@ const Order: FC = () => {
   const emailPayload = useMemo(() => {
     return {
       customer: {
-        id: (customer).customerId, // depends on your normaliser
-        title: (customer).title ?? undefined,
-        firstName: (customer).firstName ?? "",
-        surname: (customer).surname ?? "",
+        id: (customer as any).customerId,
+        title: (customer as any).title ?? undefined,
+        firstName: (customer as any).firstName ?? "",
+        surname: (customer as any).surname ?? "",
         email: customer.email ?? "",
         displayName: customer.displayName,
         phoneNumber: customer.phoneNumber ?? "",
@@ -283,14 +375,12 @@ const Order: FC = () => {
         orderId: order?.orderId,
         orderNo: order?.orderNo,
         created: order?.created ? formatDate(order?.created) : "",
-        occasionDate: order?.occasionDate
-          ? formatDate(order?.occasionDate)
-          : "",
-        billingAddressLine1: (order)?.billingAddressLine1,
-        billingAddressLine2: (order)?.billingAddressLine2,
-        billingTown: (order)?.billingTown,
-        billingCounty: (order)?.billingCounty,
-        billingPostcode: (order)?.billingPostcode,
+        occasionDate: order?.occasionDate ? formatDate(order?.occasionDate) : "",
+        billingAddressLine1: (order as any)?.billingAddressLine1,
+        billingAddressLine2: (order as any)?.billingAddressLine2,
+        billingTown: (order as any)?.billingTown,
+        billingCounty: (order as any)?.billingCounty,
+        billingPostcode: (order as any)?.billingPostcode,
       },
       frames,
       paperweight,
@@ -305,8 +395,6 @@ const Order: FC = () => {
 
   const getAuthHeader = () => {
     const token = pb.authStore.token;
-    // Your curl used raw token; keep that.
-    // If PB expects "Bearer", change to: `Bearer ${token}`
     return token ? { Authorization: token } : {};
   };
 
@@ -401,10 +489,45 @@ const Order: FC = () => {
     return "gray";
   };
 
+  // -----------------------------
+  // Preview invoice (wire this to your real route / endpoint)
+  // -----------------------------
+  const handlePreviewInvoice = () => {
+    // Option A: navigate to a preview page
+    // navigate("/invoice-preview", { state: { customer } });
+
+    // Option B: open a backend preview endpoint (adjust path to match your API)
+    if (!order?.orderId) return;
+    const url = `${pb.baseUrl}/api/invoice/preview?orderId=${encodeURIComponent(
+      order.orderId,
+    )}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  // -----------------------------
+  // Derived UI pieces
+  // -----------------------------
+  const frameExtrasByFrameId = useMemo(() => {
+    const map = new Map<
+      string,
+      Array<{ id: string; description: string; total: number }>
+    >();
+
+    lineItems.forEach((li) => {
+      if (li.kind !== "extra" || !li.frame?.frameId) return;
+      const key = li.frame.frameId;
+      const arr = map.get(key) ?? [];
+      arr.push({ id: li.id, description: li.description, total: li.total });
+      map.set(key, arr);
+    });
+
+    return map;
+  }, [lineItems]);
+
   return (
-    <Box p="4" style={{ margin: "0 auto" }} width="60%">
-      {/* Header + back to customers */}
-      <Flex justify="between" align="center" mb="3">
+    <Box p="4" style={{ margin: "0 auto", maxWidth: 1100 }} width="100%">
+      {/* Top header */}
+      <Flex justify="between" align="start" mb="3" gap="3" wrap="wrap">
         <Box>
           <Button
             variant="ghost"
@@ -414,12 +537,52 @@ const Order: FC = () => {
           >
             ← Customers
           </Button>
-          <Heading size="4" mt="2">
-            Order / Invoice
-          </Heading>
+
+          <Flex align="center" gap="2" mt="2" wrap="wrap">
+            <Heading size="4">
+              Order {order?.orderNo ?? order?.orderId ?? ""}
+            </Heading>
+
+            {order?.created ? (
+              <Badge variant="soft" color="gray">
+                Created {formatDate(order.created)}
+              </Badge>
+            ) : null}
+
+            {order?.occasionDate ? (
+              <Badge variant="soft" color="gray">
+                Occasion {formatDate(order.occasionDate)}
+              </Badge>
+            ) : null}
+          </Flex>
+
+          <Flex gap="2" mt="2" wrap="wrap">
+            <Badge
+              variant="soft"
+              color={getOrderStatusColor(orderStatus) as any}
+            >
+              {formatSnakeCase(orderStatus)}
+            </Badge>
+            <Badge
+              variant="soft"
+              color={getPaymentStatusColor(paymentStatus) as any}
+            >
+              {formatSnakeCase(paymentStatus)}
+            </Badge>
+
+            {paperweight ? (
+              <Badge variant="soft" color={paperweightReceived ? "green" : "gray"}>
+                Paperweight {paperweightReceived ? "received" : "not received"}
+              </Badge>
+            ) : null}
+          </Flex>
         </Box>
 
-        <Flex gap="3" align="center">
+        <Flex gap="2" align="center" wrap="wrap" justify="end">
+          <Button variant="soft" onClick={handlePreviewInvoice} disabled={!order?.orderId}>
+            Preview invoice
+          </Button>
+
           <Button
             variant="soft"
             onClick={handleSendRecommendation}
@@ -428,10 +591,7 @@ const Order: FC = () => {
             {isSendingRec ? "Sending..." : "Send recommendation"}
           </Button>
 
-          <Button
-            onClick={handleSendInvoice}
-            disabled={!canSendEmails || isSendingInv}
-          >
+          <Button onClick={handleSendInvoice} disabled={!canSendEmails || isSendingInv}>
             {isSendingInv ? "Sending..." : "Send invoice"}
           </Button>
         </Flex>
@@ -451,258 +611,222 @@ const Order: FC = () => {
         </Box>
       ) : null}
 
-      {/* Main invoice card */}
+      {/* Controls */}
       <Card>
-        {/* Top bar: order meta + toggles */}
-        <Flex justify="between" align="start" mb="4">
+        <Flex justify="between" align="start" gap="4" wrap="wrap">
           <Box>
             <Heading size="3" mb="1">
-              Invoice {order?.orderNo ?? order?.orderId ?? ""}
+              Actions
             </Heading>
-            <Flex gap="3" wrap="wrap">
-              <Meta
-                label="Occasion date"
-                value={
-                  order?.occasionDate ? formatDate(order?.occasionDate) : ""
-                }
-              />
-              <Meta
-                label="Created"
-                value={order?.created ? formatDate(order?.created) : ""}
-              />
-              <Meta
-                colour={getOrderStatusColor(orderStatus)}
-                label="Status"
+            <Text size="2" color="gray">
+              Update status/payment, and manage items below.
+            </Text>
+          </Box>
+
+          <Flex gap="3" align="end" wrap="wrap">
+            <Flex direction="column" gap="1">
+              <Text size="1" color="gray">
+                Order status
+              </Text>
+              <Select.Root
                 value={orderStatus}
-              />
-              <Meta
-                colour={getPaymentStatusColor(paymentStatus)}
-                label="Payment"
+                onValueChange={(value) =>
+                  setOrderStatus(value as OrdersOrderStatusOptions)
+                }
+              >
+                <Select.Trigger />
+                <Select.Content>
+                  {ORDER_STATUS_OPTIONS.map((status) => (
+                    <Select.Item key={status} value={status}>
+                      {formatSnakeCase(status)}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
+            </Flex>
+
+            <Flex direction="column" gap="1">
+              <Text size="1" color="gray">
+                Payment status
+              </Text>
+              <Select.Root
                 value={paymentStatus}
-              />
+                onValueChange={(value) =>
+                  setPaymentStatus(value as OrdersPaymentStatusOptions)
+                }
+              >
+                <Select.Trigger />
+                <Select.Content>
+                  {ORDER_PAYMENT_STATUS_OPTIONS.map((status) => (
+                    <Select.Item key={status} value={status}>
+                      {formatSnakeCase(status)}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
             </Flex>
 
-            {/* Editable status / payment controls */}
-            <Box mt="3">
-              <Flex gap="3" align="center" wrap="wrap">
-                <Flex direction="column" gap="1">
-                  <Text size="1" color="gray">
-                    Order status
-                  </Text>
-                  <Select.Root
-                    value={orderStatus}
-                    onValueChange={(value) =>
-                      setOrderStatus(value as OrdersOrderStatusOptions)
-                    }
-                  >
-                    <Select.Trigger />
-                    <Select.Content>
-                      {ORDER_STATUS_OPTIONS.map((status) => (
-                        <Select.Item key={status} value={status}>
-                          {formatSnakeCase(status)}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Root>
-                </Flex>
+            <Button
+              size="2"
+              onClick={handleSaveMeta}
+              disabled={!order?.orderId || isSavingMeta}
+            >
+              {isSavingMeta ? "Saving..." : "Update"}
+            </Button>
+          </Flex>
+        </Flex>
 
-                <Flex direction="column" gap="1">
-                  <Text size="1" color="gray">
-                    Payment status
-                  </Text>
-                  <Select.Root
-                    value={paymentStatus}
-                    onValueChange={(value) =>
-                      setPaymentStatus(value as OrdersPaymentStatusOptions)
-                    }
-                  >
-                    <Select.Trigger />
-                    <Select.Content>
-                      {ORDER_PAYMENT_STATUS_OPTIONS.map((status) => (
-                        <Select.Item key={status} value={status}>
-                          {formatSnakeCase(status)}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Root>
-                </Flex>
+        {paperweight ? (
+          <>
+            <Separator my="3" size="4" />
+            <Flex justify="between" align="center" wrap="wrap" gap="3">
+              <Box>
+                <Text size="2" weight="bold">
+                  Paperweight
+                </Text>
+                <Text size="2" color="gray">
+                  Qty {paperweight.quantity ?? 1} · {currency(paperweight.price)}
+                </Text>
+              </Box>
 
-                <Button
-                  size="2"
-                  onClick={handleSaveMeta}
-                  disabled={!order?.orderId || isSavingMeta}
-                  style={{ alignSelf: "end" }}
-                >
-                  {isSavingMeta ? "Saving..." : "Update status"}
-                </Button>
+              <Flex align="center" gap="2">
+                <Text size="2" color="gray">
+                  Received
+                </Text>
+                <Switch
+                  checked={paperweightReceived}
+                  onCheckedChange={handleTogglePaperweightReceived}
+                  disabled={!order?.orderId || isSavingPw}
+                />
               </Flex>
-            </Box>
-          </Box>
-
-          {hasBouquetFrames ? (
-            <Flex gap="4">
-              <ToggleBlock
-                label="Artwork complete"
-                checked={artworkComplete}
-                onChange={setArtworkComplete}
-              />
-              <ToggleBlock
-                label="Framing complete"
-                checked={framingComplete}
-                onChange={setFramingComplete}
-              />
             </Flex>
-          ) : null}
+          </>
+        ) : null}
+      </Card>
+
+      {/* Items list */}
+      <Box mt="4">
+        <Flex justify="between" align="center" mb="2" wrap="wrap" gap="2">
+          <Heading size="3">Item details</Heading>
+          <Text size="2" color="gray">
+            {frames.length} bouquet{frames.length === 1 ? "" : "s"}
+            {paperweight ? " + paperweight" : ""}
+          </Text>
         </Flex>
 
-        <Separator size="4" />
-
-        {/* Customer details ONLY (no From block) */}
-        <Flex mt="4" gap="6" wrap="wrap" align="start">
-          <Box flexGrow="1">
-            <Text size="1" color="gray" mb="1">
-              To
-            </Text>
-            <Heading size="3" mb="1">
-              {customer.displayName}
-            </Heading>
-            <AddressBlock
-              line1={order?.billingAddressLine1}
-              line2={order?.billingAddressLine2}
-              town={order?.billingTown}
-              county={order?.billingCounty}
-              postcode={order?.billingPostcode}
-            />
-            <Text as="p" size="2" mt="1">
-              Phone: {customer.phoneNumber || "—"}
-            </Text>
-            <Text as="p" size="2">
-              Email: {customer.email || "—"}
-            </Text>
-          </Box>
-        </Flex>
-
-        <Separator my="4" size="4" />
-
-        {/* Item table */}
-        <Box>
-          <Heading size="3" mb="2">
-            Item details
-          </Heading>
-
-          {lineItems.length === 0 ? (
+        {frames.length === 0 && !paperweight ? (
+          <Card>
             <Text size="2" color="gray">
               No items found on this order.
             </Text>
-          ) : (
-            <Table.Root variant="surface">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>#</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell align="center">
-                    Qty
-                  </Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell align="right">
-                    Unit price
-                  </Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell align="right">
-                    Amount
-                  </Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell align="right">
-                    Options
-                  </Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {(() => {
-                  let runningIndex = 0;
-                  return lineItems.map((item) => {
-                    const isMain =
-                      item.kind === "frame" || item.kind === "paperweight";
+          </Card>
+        ) : (
+          <Flex direction="column" gap="3">
+            {frames.map((frame, idx) => {
+              const mountColour =
+                (frame as any).mountColour ??
+                (frame as any).frameMountColour ??
+                null;
 
-                    if (isMain) runningIndex += 1;
-                    const indexLabel = isMain ? `Item ${runningIndex}` : "";
+              const title = [
+                frame.size,
+                frame.frameType,
+                frame.preservationType,
+              ]
+                .filter(Boolean)
+                .join(" · ");
 
-                    return (
-                      <Table.Row key={item.id}>
-                        <Table.RowHeaderCell>{indexLabel}</Table.RowHeaderCell>
+              const subtitle = [
+                frame.glassType ? `Glass: ${frame.glassType}` : null,
+                mountColour ? `Mount: ${mountColour}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ");
 
-                        <Table.Cell>
-                          {isMain ? (
-                            <Text>{item.description}</Text>
-                          ) : (
-                            <Box pl="4">
-                              <Text size="2" color="gray">
-                                {item.description}
-                              </Text>
-                            </Box>
-                          )}
-                        </Table.Cell>
+              const extras = frame.frameId
+                ? frameExtrasByFrameId.get(frame.frameId) ?? []
+                : [];
 
-                        <Table.Cell align="center">
-                          {isMain ? item.qty : ""}
-                        </Table.Cell>
+              return (
+                <Card key={frame.frameId ?? `frame-${idx}`}>
+                  <Flex justify="between" align="start" gap="3" wrap="wrap">
+                    <Box>
+                      <Flex align="center" gap="2" wrap="wrap">
+                        <Badge variant="soft" color="gray">
+                          Bouquet {idx + 1}
+                        </Badge>
+                        <Text size="3" weight="bold">
+                          {title || "Bouquet frame"}
+                        </Text>
+                      </Flex>
 
-                        <Table.Cell align="right">
-                          {isMain ? currency(item.unitPrice) : ""}
-                        </Table.Cell>
+                      {subtitle ? (
+                        <Text size="2" color="gray" mt="1">
+                          {subtitle}
+                        </Text>
+                      ) : null}
 
-                        <Table.Cell align="right">
-                          {currency(item.total)}
-                        </Table.Cell>
+                      <Text size="2" mt="2">
+                        Price: <Text weight="bold">{currency(frame.price)}</Text>
+                      </Text>
 
-                        <Table.Cell align="right">
-                          {item.kind === "frame" && item.frame ? (
-                            <FrameExtrasDialog
-                              frame={item.frame}
-                              onUpdated={(patch) =>
-                                handleFrameUpdated(item.frame!.frameId, patch)
-                              }
-                            />
-                          ) : null}
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  });
-                })()}
-              </Table.Body>
-            </Table.Root>
-          )}
-        </Box>
+                      {extras.length ? (
+                        <Box mt="2">
+                          <Text size="2" color="gray">
+                            Extras
+                          </Text>
+                          <Flex direction="column" gap="1" mt="1">
+                            {extras.map((e) => (
+                              <Flex key={e.id} justify="between" gap="3">
+                                <Text size="2" color="gray">
+                                  {e.description}
+                                </Text>
+                                <Text size="2" color="gray">
+                                  {currency(e.total)}
+                                </Text>
+                              </Flex>
+                            ))}
+                          </Flex>
+                        </Box>
+                      ) : null}
+                    </Box>
 
-        {/* Totals only */}
-        <Flex mt="5" justify="end">
-          <Box
-            minWidth="260"
-            style={{
-              borderRadius: 8,
-              border: "1px solid var(--gray-5)",
-              padding: "12px 16px",
-            }}
-          >
-            <Flex justify="between" mb="1">
-              <Text size="2">Sub total (ex VAT)</Text>
-              <Text size="2">{currency(subTotal)}</Text>
-            </Flex>
-            <Flex justify="between" mb="1">
-              <Text size="2">VAT (20%)</Text>
-              <Text size="2">{currency(vatTotal)}</Text>
-            </Flex>
-            <Separator my="2" />
-            <Flex justify="between" mb="1">
-              <Text weight="bold">Total</Text>
-              <Text weight="bold">{currency(grandTotal)}</Text>
-            </Flex>
-            <Flex justify="between" mt="2">
-              <Text size="2" color="gray">
-                Balance due
-              </Text>
-              <Text size="2">{currency(grandTotal)}</Text>
-            </Flex>
-          </Box>
-        </Flex>
-      </Card>
+                    <Flex direction="column" align="end" gap="3">
+                      <Flex align="center" gap="3" wrap="wrap">
+                        <InlineToggle
+                          label="Artwork complete"
+                          checked={Boolean(frame.artworkComplete)}
+                          onChange={(next) =>
+                            handleToggleArtworkComplete(frame, next)
+                          }
+                          disabled={!frame.frameId || isSavingCompletion}
+                        />
+                        <InlineToggle
+                          label="Framing complete"
+                          checked={Boolean(frame.framingComplete)}
+                          onChange={(next) =>
+                            handleToggleFramingComplete(frame, next)
+                          }
+                          disabled={!frame.frameId || isSavingCompletion}
+                        />
+                      </Flex>
+
+                      <Box>
+                        <FrameExtrasDialog
+                          frame={frame}
+                          onUpdated={(patch) =>
+                            handleFrameUpdated(frame.frameId, patch)
+                          }
+                        />
+                      </Box>
+                    </Flex>
+                  </Flex>
+                </Card>
+              );
+            })}
+          </Flex>
+        )}
+      </Box>
     </Box>
   );
 };
@@ -787,10 +911,10 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
     <Dialog.Root>
       <Dialog.Trigger>
         <Button size="1" variant="soft">
-          Frame options
+          Options
         </Button>
       </Dialog.Trigger>
-      <Dialog.Content maxWidth="520px">
+      <Dialog.Content maxWidth="560px">
         <Dialog.Title>Frame options</Dialog.Title>
         <Dialog.Description size="2" mb="3">
           Glass engraving, buttonhole and glass type for this frame.
@@ -808,7 +932,7 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
               placeholder='e.g. "Lauren & Simon 18th March 2020"'
             />
             <Text size="1" color="gray" mt="1">
-              Price
+              Engraving price
             </Text>
             <TextField.Root
               type="number"
@@ -824,9 +948,9 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
           </Box>
 
           <Flex gap="3" wrap="wrap">
-            <Box flexGrow="1" minWidth="200px">
+            <Box flexGrow="1" minWidth="220px">
               <Text size="2" weight="bold">
-                Include button hole
+                Inclusions
               </Text>
               <Select.Root
                 value={inclusions}
@@ -845,7 +969,7 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
               </Select.Root>
             </Box>
 
-            <Box flexGrow="1" minWidth="200px">
+            <Box flexGrow="1" minWidth="220px">
               <Text size="2" weight="bold">
                 Glass type
               </Text>
@@ -864,6 +988,7 @@ const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
                   ))}
                 </Select.Content>
               </Select.Root>
+
               <Text size="1" color="gray" mt="1">
                 Glass price
               </Text>
@@ -919,53 +1044,16 @@ const Meta: FC<MetaProps> = ({ label, value, colour = "gray" }) => {
   );
 };
 
-type ToggleBlockProps = {
+const InlineToggle: FC<{
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-};
-
-const ToggleBlock: FC<ToggleBlockProps> = ({ label, checked, onChange }) => (
-  <Flex direction="column" align="end" gap="1">
-    <Text size="1">{label}</Text>
-    <Switch checked={checked} onCheckedChange={onChange} />
+  disabled?: boolean;
+}> = ({ label, checked, onChange, disabled }) => (
+  <Flex align="center" gap="2">
+    <Text size="2" color="gray">
+      {label}
+    </Text>
+    <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
   </Flex>
 );
-
-type AddressBlockProps = {
-  line1?: string | null;
-  line2?: string | null;
-  town?: string | null;
-  county?: string | null;
-  postcode?: string | null;
-};
-
-const AddressBlock: FC<AddressBlockProps> = ({
-  line1,
-  line2,
-  town,
-  county,
-  postcode,
-}) => {
-  const hasAny = line1 || line2 || town || county || postcode;
-
-  if (!hasAny) {
-    return (
-      <Text size="2" color="gray">
-        No address on file.
-      </Text>
-    );
-  }
-
-  return (
-    <Box>
-      {line1 && <Text as="p">{line1}</Text>}
-      {line2 && <Text as="p">{line2}</Text>}
-      {(town || county || postcode) && (
-        <Text as="p">
-          {[town, county, postcode].filter(Boolean).join(", ")}
-        </Text>
-      )}
-    </Box>
-  );
-};

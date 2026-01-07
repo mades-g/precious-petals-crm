@@ -18,13 +18,10 @@ export type UpdateCustomerInput = {
 };
 
 export const updateCustomer = async (
-  input: UpdateCustomerInput,
+  {id, title, howRecommended, ...rest}: UpdateCustomerInput,
 ): Promise<CustomersResponse> => {
-  const { id, title, howRecommended, ...rest } = input;
-
   const data: Update<"customers"> = {
     ...rest,
-    // empty string → undefined, so PB clears or leaves optional
     title: title || undefined,
     howRecommended: howRecommended || undefined,
   };
