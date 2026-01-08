@@ -97,11 +97,6 @@ func (d *StringDate) UnmarshalJSON(b []byte) error {
 //
 // -------- Payload models --------
 //
-// We keep the payload structs tolerant:
-// - allow extra fields
-// - accept orderNo as Number (string or number)
-// - accept paperweight either as "paperweight" OR "paperWeightOrder"
-//
 
 type invoicePayload struct {
 	Customer struct {
@@ -162,8 +157,6 @@ type invoicePayload struct {
 	} `json:"frames"`
 
 	// Support BOTH keys:
-	// - "paperweight" (your payload might send this)
-	// - "paperWeightOrder" (some FE models may send this)
 	Paperweight      *paperweightPayload `json:"paperweight"`
 	PaperWeightOrder *paperweightPayload `json:"paperWeightOrder"`
 
@@ -453,9 +446,6 @@ func renderInvoiceTemplate(templatePath string, view invoiceViewModel) (string, 
 
 	pattern := filepath.Join(dir, "*.html")
 
-	// Helpful options:
-	// - missingkey=error: fail loudly if the template references a missing field
-	// - Funcs: in case you later add template helper functions (safeHTML etc.)
 	funcs := template.FuncMap{
 		"safeHTML": func(s string) template.HTML { return template.HTML(s) },
 	}
@@ -467,8 +457,6 @@ func renderInvoiceTemplate(templatePath string, view invoiceViewModel) (string, 
 
 	mainName := filepath.Base(templatePath)
 
-	// If the file uses {{define "something"}} the template name might NOT be the filename.
-	// This check makes that obvious.
 	if tmpl.Lookup(mainName) == nil {
 		return "", fmt.Errorf(
 			"no template named %q found (parsed templates: %s). If your file uses {{define \"...\"}}, ExecuteTemplate must use that name.",
@@ -580,32 +568,31 @@ func main() {
 		templatePath := resolvePathFromExecutable("pb_hooks", "views", "invoice.preview.html")
 
 		se.Router.POST("/api/invoice/preview", func(e *core.RequestEvent) error {
-	var payload invoicePayload
-	if err := bindPayload(e, &payload); err != nil {
-		return e.JSON(http.StatusBadRequest, map[string]any{
-			"ok":      false,
-			"error":   "Invalid payload.",
-			"details": err.Error(),
-		})
-	}
+			var payload invoicePayload
+			if err := bindPayload(e, &payload); err != nil {
+				return e.JSON(http.StatusBadRequest, map[string]any{
+					"ok":      false,
+					"error":   "Invalid payload.",
+					"details": err.Error(),
+				})
+			}
 
-	view := buildInvoiceViewModel(payload)
+			view := buildInvoiceViewModel(payload)
 
-	html, err := renderInvoiceTemplate(templatePath, view)
-	if err != nil {
-		fmt.Println("invoice templatePath:", templatePath)
-		fmt.Println("invoice render error:", err.Error())
+			html, err := renderInvoiceTemplate(templatePath, view)
+			if err != nil {
+				fmt.Println("invoice templatePath:", templatePath)
+				fmt.Println("invoice render error:", err.Error())
 
-		return e.JSON(http.StatusInternalServerError, map[string]any{
-			"ok":      false,
-			"error":   "Failed to render invoice.",
-			"details": err.Error(),
-		})
-	}
+				return e.JSON(http.StatusInternalServerError, map[string]any{
+					"ok":      false,
+					"error":   "Failed to render invoice.",
+					"details": err.Error(),
+				})
+			}
 
-	return e.HTML(http.StatusOK, html)
-}).Bind(apis.RequireAuth())
-
+			return e.HTML(http.StatusOK, html)
+		}).Bind(apis.RequireAuth())
 
 		se.Router.POST("/api/email/invoice", func(e *core.RequestEvent) error {
 			var payload invoicePayload
@@ -688,6 +675,10 @@ func main() {
 
 			return e.JSON(http.StatusOK, map[string]any{"ok": true})
 		}).Bind(apis.RequireAuth())
+
+    // serving SPA
+		publicDir := resolvePathFromExecutable("pb_public")
+		se.Router.GET("/{path...}", apis.Static(os.DirFS(publicDir), true))
 
 		return se.Next()
 	})
