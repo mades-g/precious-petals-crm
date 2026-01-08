@@ -57,7 +57,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
 
   return (
     <Table.Row>
-      {/* Order + status */}
       <Table.RowHeaderCell style={CELL_PAD_STYLE}>
         <Flex gap="2" align="start" direction="column">
           <Code variant="outline" size="1">
@@ -79,7 +78,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           )}
         </Flex>
       </Table.RowHeaderCell>
-      {/* Customer + contact */}
       <Table.Cell align="left" style={{ ...CELL_PAD_STYLE, maxWidth: 250 }}>
         <Flex direction="column" align="start" gap="1">
           <Text align="center" weight="medium" size="2">
@@ -100,7 +98,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           </Flex>
         </Flex>
       </Table.Cell>
-      {/* Delivery address */}
       <Table.Cell align="left" style={{ ...CELL_PAD_STYLE, maxWidth: 250 }}>
         {hasOrder ? (
           <Flex direction="column" gap="1">
@@ -133,7 +130,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Text size="1">-</Text>
         )}
       </Table.Cell>
-      {/* Occasion date */}
       <Table.Cell style={CELL_PAD_STYLE}>
         {hasOrder && orderDetails!.occasionDate ? (
           <Text size="1">{formatDate(orderDetails!.occasionDate)}</Text>
@@ -141,7 +137,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Text size="1">-</Text>
         )}
       </Table.Cell>
-      {/* Payment status */}
       <Table.Cell style={CELL_PAD_STYLE}>
         {hasOrder && paymentStatus ? (
           <Badge color={getPaymentStatusColor(paymentStatus)} variant="soft" radius="full" size="1">
@@ -151,7 +146,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Text size="1">-</Text>
         )}
       </Table.Cell>
-      {/* Frame details — pill style + extras */}
       <Table.Cell style={CELL_PAD_STYLE}>
         {orderDetails?.frameOrder?.length ? (
           <Flex direction="column" gap="2">
@@ -164,7 +158,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Text size="1">-</Text>
         )}
       </Table.Cell>
-      {/* Paperweight — pill style */}
       <Table.Cell style={CELL_PAD_STYLE}>
         {orderDetails?.paperWeightOrder ? (
           <PaperweightDetailsCell paperweight={orderDetails.paperWeightOrder} />
@@ -172,7 +165,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Text size="1">-</Text>
         )}
       </Table.Cell>
-      {/* Actions */}
       <Table.Cell style={CELL_PAD_STYLE}>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>

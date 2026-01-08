@@ -38,7 +38,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
 
   return (
     <Flex gap="3" direction="column">
-      {/* Order number (only shown if there's no auto-generated order no) */}
       {!nextOrderNo && (
         <Flex>
           <Box maxWidth="100px">
@@ -238,7 +237,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </FormField>
         </Box>
       </Flex>
-      {/* Billing address */}
       <Flex direction="column" gap="2" mt="2">
         <Text weight="bold">Billing address</Text>
         <Flex gap="3">
@@ -338,7 +336,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </Box>
         </Flex>
       </Flex>
-      {/* Delivery address */}
       <Flex direction="column" gap="2" mt="3">
         <Flex align="center" justify="between">
           <Text weight="bold">Delivery address</Text>
@@ -478,9 +475,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </>
         )}
       </Flex>
-      {/* Occasion date using DayPicker */}
       <Flex gap="3" mt="2">
-        {/* Occasion date (required) */}
         <Box>
           <FormField name="occasionDate" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
@@ -519,7 +514,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                         }}
                       />
                     </Popover.Content>
-                    {/* Hidden input so RHF still has a real field */}
                     <input type="hidden" {...field} />
                   </Popover.Root>
                 )}

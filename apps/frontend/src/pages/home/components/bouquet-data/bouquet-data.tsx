@@ -138,7 +138,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
             </Flex>
             <Flex direction="column" gap="3">
               <Flex direction="row" gap="3" wrap="wrap" justify="between">
-                {/* Measured size */}
                 <Box>
                   <Form.Field
                     name={`${prefix}.measuredSize`}
@@ -181,7 +180,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                       )}
                   </Form.Field>
                 </Box>
-                {/* Layout */}
                 <Box minWidth="250px">
                   <Form.Field
                     name={`${prefix}.layout`}
@@ -221,7 +219,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                     )}
                   </Form.Field>
                 </Box>
-                {/* Recommended size */}
                 <Box>
                   <Form.Field
                     name={`${prefix}.recommendedSize`}
@@ -264,7 +261,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                       )}
                   </Form.Field>
                 </Box>
-                {/* Preservation type */}
                 <Box minWidth="250px">
                   <Form.Field
                     name={`${prefix}.preservationType`}
@@ -358,7 +354,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                 </Box>
               </Flex>
               <Separator orientation="horizontal" size="4" />
-              {/* Frame type + price */}
               <Flex gap="3" justify="between" direction="row">
                 <Box minWidth="250px">
                   <Form.Field
@@ -426,7 +421,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                 </Box>
               </Flex>
               <Separator orientation="horizontal" size="4" />
-              {/* Mount colour + mount price */}
               <Flex gap="3" justify="between" direction="row">
                 <Box minWidth="250px">
                   <Form.Field
@@ -496,7 +490,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
               {mode === 'edit' && (
                 <>
                   <Separator orientation="horizontal" size="4" />
-                  {/* Glass options */}
                   <Flex gap="3" justify="between" direction="row" wrap="wrap">
                     <Box minWidth="250px">
                       <Form.Field

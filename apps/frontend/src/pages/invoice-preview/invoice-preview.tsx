@@ -146,7 +146,6 @@ const InvoicePreview: FC = () => {
             background: "var(--gray-a2)",
           }}
         >
-          {/* Centered "paper" */}
           <Box
             style={{
               width: A4_WIDTH_PX,
@@ -173,7 +172,6 @@ const InvoicePreview: FC = () => {
             />
           </Box>
 
-          {/* Spacer to keep bottom reachable when scaled */}
           <Box style={{ height: Math.max(0, (1 - scale) * A4_HEIGHT_PX) }} />
         </Card>
       ) : (

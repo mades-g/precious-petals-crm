@@ -93,7 +93,6 @@ const ReviewData: FC<ReviewDataProps> = ({
         </Box>
       )}
 
-      {/* Customer details card */}
       <Box
         style={{
           borderRadius: 8,
@@ -143,8 +142,6 @@ const ReviewData: FC<ReviewDataProps> = ({
           </ReviewDataRow>
         </Flex>
       </Box>
-
-      {/* Bouquets card */}
       <Box
         style={{
           borderRadius: 8,
@@ -169,7 +166,6 @@ const ReviewData: FC<ReviewDataProps> = ({
           </Button>
         </Flex>
         <Separator orientation="horizontal" size="3" mb="2" />
-
         {completedBouquets.length === 0 ? (
           <Text size="2" color="gray">
             No bouquets added.
@@ -225,8 +221,6 @@ const ReviewData: FC<ReviewDataProps> = ({
           </Flex>
         )}
       </Box>
-
-      {/* Paperweight card */}
       <Box
         style={{
           borderRadius: 8,
@@ -264,8 +258,6 @@ const ReviewData: FC<ReviewDataProps> = ({
           </Flex>
         )}
       </Box>
-
-      {/* Totals card */}
       <Box
         style={{
           borderRadius: 8,

@@ -38,18 +38,13 @@ const CustomerTable: FC<CustomerTableProps> = ({
       <Table.Root variant="surface">
         <Table.Header>
           <Table.Row>
-            {/* order number - column needs to be smaller */}
-            {/* order id map */}
             <Table.ColumnHeaderCell>Order</Table.ColumnHeaderCell>
-            {/* Should include - title First and last name, email, phonenumer how recommed */}
             <Table.ColumnHeaderCell>Customer</Table.ColumnHeaderCell>
-            {/* postcode and delivery address */}
             <Table.ColumnHeaderCell>Delivery address</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Occasion date</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Payment status</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Frame Details</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Paper weight</Table.ColumnHeaderCell>
-            {/* list of actions */}
             <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
           </Table.Row>
         </Table.Header>
