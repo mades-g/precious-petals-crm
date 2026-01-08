@@ -50,7 +50,6 @@ const editCustomerStage = async ({
     await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
       orderNo: values.orderNo,
       occasionDate: values.occasionDate,
-      preservationDate: values.preservationDate || null,
       ...mapOrderAddressesToPayload(values),
     });
   }
@@ -103,8 +102,9 @@ const editBouquetStage = async ({
         const bq = newBouquets[idx];
         if (!existing?.id) return Promise.resolve();
 
-        const payload = mapBouquetToFrameItemPayload(bq, values.preservationDate);
+        const payload = mapBouquetToFrameItemPayload(bq);
 
+        // @ts-expect-error - Need to fix this at some point
         return updateBouquet({
           frameId: existing.id,
           ...payload,
@@ -123,7 +123,7 @@ const editBouquetStage = async ({
 
       const createdFrameItems = await Promise.all(
         extraBouquets.map((bq, index) => {
-          const payload = mapBouquetToFrameItemPayload(bq, values.preservationDate);
+          const payload = mapBouquetToFrameItemPayload(bq);
           return pb
             .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
             .create(payload, { requestKey: `extra-${index}` });
@@ -152,7 +152,7 @@ const editBouquetStage = async ({
 
     const createdFrameItems = await Promise.all(
       newBouquets.map((bq, index) => {
-        const payload = mapBouquetToFrameItemPayload(bq, values.preservationDate);
+        const payload = mapBouquetToFrameItemPayload(bq);
         return pb
           .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
           .create(payload, { requestKey: `${index}` });

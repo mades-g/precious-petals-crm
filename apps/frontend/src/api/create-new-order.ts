@@ -27,15 +27,24 @@ export type CreateNewOrderResult = {
 export const createNewOrder = async (
   values: CreateOrderFormValues,
 ): Promise<CreateNewOrderResult> => {
-  const bouquets = values.bouquets ?? [];
+  const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) =>
+    bq.measuredWidthIn !== null &&
+    bq.measuredHeightIn !== null &&
+    bq.layout &&
+    bq.recommendedSizeWidthIn !== null &&
+    bq.recommendedSizeHeightIn !== null &&
+    bq.preservationType &&
+    bq.frameType &&
+    typeof bq.framePrice === "number" &&
+    bq.mountColour &&
+    typeof bq.mountPrice === "number";
+
+  const bouquets = (values.bouquets ?? []).filter(isBouquetComplete);
 
   const frameItems: OrderFrameItemsResponse<FrameExtras>[] = [];
 
   for (const bq of bouquets) {
-    const framePayload = mapBouquetToFrameItemPayload(
-      bq,
-      values.preservationDate,
-    );
+    const framePayload = mapBouquetToFrameItemPayload(bq);
 
     const created = await pb
       .collection(COLLECTIONS.ORDER_FRAME_ITEMS)

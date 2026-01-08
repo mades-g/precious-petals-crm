@@ -15,7 +15,6 @@ export type UpdateBouquetPayload = {
   glassEngraving?: string
   sizeX?: string
   sizeY?: string
-  artistHours?: number | null
   extras?: FrameExtras | null
   preservationType?: string
   special_notes?: string

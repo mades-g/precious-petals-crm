@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "./pocketbase serve --http=0.0.0.0:8090",
-    "build": "echo 'Pocketbase has no build step"
+    "dev": "./precious-petals-crm serve --http=0.0.0.0:8090",
+    "build": "go build -o precious-petals-crm ."
   },
   "keywords": [],
   "author": "",

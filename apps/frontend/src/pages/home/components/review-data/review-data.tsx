@@ -21,8 +21,24 @@ const ReviewData: FC<ReviewDataProps> = ({
   const { getValues } = useFormContext<CreateOrderFormValues>();
   const values = getValues();
 
+  const isBouquetComplete = (
+    bq: CreateOrderFormValues["bouquets"][number],
+  ) =>
+    bq.measuredWidthIn !== null &&
+    bq.measuredHeightIn !== null &&
+    bq.layout &&
+    bq.recommendedSizeWidthIn !== null &&
+    bq.recommendedSizeHeightIn !== null &&
+    bq.preservationType &&
+    bq.frameType &&
+    typeof bq.framePrice === "number" &&
+    bq.mountColour &&
+    typeof bq.mountPrice === "number";
+
+  const completedBouquets = values.bouquets.filter(isBouquetComplete);
+
   // --- Bouquets totals (frame + mount) ------------------------------------
-  const bouquetTotal = values.bouquets.reduce((sum, bq) => {
+  const bouquetTotal = completedBouquets.reduce((sum, bq) => {
     const frame = typeof bq.framePrice === "number" ? bq.framePrice : 0;
     const mount = typeof bq.mountPrice === "number" ? bq.mountPrice : 0;
     return sum + frame + mount;
@@ -125,9 +141,6 @@ const ReviewData: FC<ReviewDataProps> = ({
           <ReviewDataRow label="Occasion date">
             {values.occasionDate}
           </ReviewDataRow>
-          <ReviewDataRow label="Preservation date">
-            {values.preservationDate || "—"}
-          </ReviewDataRow>
         </Flex>
       </Box>
 
@@ -142,7 +155,9 @@ const ReviewData: FC<ReviewDataProps> = ({
         <Flex justify="between" align="center" mb="2">
           <Text weight="bold">
             Bouquets{" "}
-            {values.bouquets.length > 0 ? `(${values.bouquets.length})` : ""}
+            {completedBouquets.length > 0
+              ? `(${completedBouquets.length})`
+              : ""}
           </Text>
           <Button
             type="button"
@@ -155,13 +170,13 @@ const ReviewData: FC<ReviewDataProps> = ({
         </Flex>
         <Separator orientation="horizontal" size="3" mb="2" />
 
-        {values.bouquets.length === 0 ? (
+        {completedBouquets.length === 0 ? (
           <Text size="2" color="gray">
             No bouquets added.
           </Text>
         ) : (
           <Flex direction="column" gap="3">
-            {values.bouquets.map((bq, index) => (
+            {completedBouquets.map((bq, index) => (
               <Box key={index}>
                 <Text weight="medium">Bouquet #{index + 1}</Text>
                 <Flex direction="column" gap="1" mt="1">
@@ -181,6 +196,9 @@ const ReviewData: FC<ReviewDataProps> = ({
                   <ReviewDataRow label="Preservation type">
                     {bq.preservationType || "—"}
                   </ReviewDataRow>
+                  <ReviewDataRow label="Preservation date">
+                    {bq.preservationDate || "—"}
+                  </ReviewDataRow>
                   <ReviewDataRow label="Frame type">
                     {bq.frameType || "—"}
                   </ReviewDataRow>
@@ -199,7 +217,7 @@ const ReviewData: FC<ReviewDataProps> = ({
                   </ReviewDataRow>
                 </Flex>
 
-                {index < values.bouquets.length - 1 && (
+                {index < completedBouquets.length - 1 && (
                   <Separator orientation="horizontal" size="2" mt="2" />
                 )}
               </Box>

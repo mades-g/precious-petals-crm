@@ -1,27 +1,41 @@
+# ---------- build custom pocketbase ----------
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /src
+
+RUN apk add --no-cache git ca-certificates
+
+# go deps
+COPY go.mod go.sum ./
+RUN go mod download
+
+# copy only what's needed to build
+COPY main.go ./
+
+# build custom PB binary
+RUN go build -o /precious-petals-crm .
+
+# ---------- runtime ----------
 FROM alpine:latest
 
-ARG PB_VERSION=0.34.0
-
 RUN apk add --no-cache \
-    unzip \
     ca-certificates \
-    # this is needed only if you want to use scp to copy later your pb_data locally
-    openssh
+    openssh \
+    wkhtmltopdf \
+    ttf-dejavu \
+    fontconfig
 
-# download and unzip PocketBase
-ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
-RUN unzip /tmp/pb.zip -d /pb/
+WORKDIR /pb
 
-# uncomment to copy the local pb_migrations dir into the container
-# COPY ./pb_migrations /pb/pb_migrations
+# custom pocketbase binary
+COPY --from=builder /precious-petals-crm /pb/precious-petals-crm
 
-# uncomment to copy the local pb_hooks dir into the container
-# COPY ./pb_hooks /pb/pb_hooks
-
-# copying local db to fly.io
+# runtime assets only
+COPY ./pb_hooks /pb/pb_hooks
 COPY ./pb_public /pb/pb_public
 
 EXPOSE 8080
 
-# start PocketBase
-CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
+ENV INVOICE_PDF_BIN=wkhtmltopdf
+
+CMD ["/pb/precious-petals-crm", "serve", "--http=0.0.0.0:8080"]

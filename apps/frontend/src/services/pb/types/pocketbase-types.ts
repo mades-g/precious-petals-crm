@@ -176,7 +176,6 @@ export type OrderFrameItemsInclusionsOptions = "Yes" | "No" | "Buttonhole";
 export type OrderFrameItemsPreservationTypeOptions = "3D" | "pressed";
 
 export type OrderFrameItemsRecord<Textras = unknown> = {
-  artistHours: number;
   artworkComplete?: boolean;
   created: IsoAutoDateString;
   extras?: null | Textras;
@@ -232,6 +231,18 @@ export type OrdersRecord = {
   paperweightOrderId?: RecordIdString;
   payment_status?: OrdersPaymentStatusOptions;
   updated: IsoAutoDateString;
+  replacementFlowers?: boolean;
+  replacementFlowersQty?: number;
+  replacementFlowersPrice?: number;
+  collectionQty?: number;
+  collectionPrice?: number;
+  deliveryQty?: number;
+  deliveryPrice?: number;
+  recreateButtonholeQty?: number;
+  recreateButtonholePrice?: number;
+  returnUnusedFlowers?: boolean;
+  returnUnusedFlowersPrice?: number;
+  artistHours?: number;
 
   // New structured billing address fields
   billingAddressLine1: string;

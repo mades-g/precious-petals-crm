@@ -13,10 +13,10 @@ import CreateNewCustomerForm, {
 } from "../create-new-customer-form/create-new-customer-form";
 import ReviewData from "../review-data/review-data";
 import ModalFooter from "../modal-footer/modal-footer";
+import type { ModalMode } from "../../home";
 
 import { getModalTitle } from "./create-new-order-modal.utils";
 import { editOrderStage } from "./services/edit-order.service";
-import type { ModalMode } from "../../home";
 
 export type FormStage =
   | "costumer_data"
@@ -34,6 +34,7 @@ type CreateNewOrderModalProps = {
   setCurrentFormStage: React.Dispatch<React.SetStateAction<FormStage>>;
   currentFormStage: FormStage;
   currentCustomerForm: Partial<CreateOrderFormValues> | null;
+  selectedBouquetId?: string | null;
 };
 
 const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
@@ -44,6 +45,7 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
   setCurrentFormStage,
   modalMode,
   currentCustomerForm,
+  selectedBouquetId,
 }) => {
   const [nextStageAfterSubmit, setNextStageAfterSubmit] =
     useState<FormStage | null>(null);
@@ -57,6 +59,11 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
     onSuccess: () => {
       setSubmitError(null);
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+      if (currentCustomerForm?.orderId) {
+        queryClient.invalidateQueries({
+          queryKey: ["customer", currentCustomerForm.orderId],
+        });
+      }
       handleCancel();
     },
     onError: (error: unknown) => {
@@ -88,6 +95,11 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
     }
 
     await queryClient.invalidateQueries({ queryKey: ["customers"] });
+    if (currentCustomerForm?.orderId) {
+      await queryClient.invalidateQueries({
+        queryKey: ["customer", currentCustomerForm.orderId],
+      });
+    }
     handleCancel();
   };
 
@@ -157,7 +169,10 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
             <CustomerData nextOrderNo={nextOrderNo} />
           )}
           {currentFormStage === "bouquet_data" && (
-            <BouquetData mode={modalMode} />
+            <BouquetData
+              mode={modalMode}
+              selectedBouquetId={selectedBouquetId}
+            />
           )}
           {currentFormStage === "paperweight_data" && (
             <PaperWeightData mode={modalMode} />

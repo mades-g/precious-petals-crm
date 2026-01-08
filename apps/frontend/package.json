@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
+    "@radix-ui/react-accordion": "^1.2.12",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",

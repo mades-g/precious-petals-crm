@@ -1,4 +1,5 @@
-import { type FC, useMemo, useState } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Fragment, type FC, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Flex,
@@ -6,18 +7,20 @@ import {
   Text,
   Button,
   Card,
-  Separator,
   Badge,
-  Switch,
+  Checkbox,
   Select,
-  Dialog,
+  Table,
+  TextArea,
   TextField,
-  type TextProps,
 } from "@radix-ui/themes";
-import { useLocation, useNavigate } from "react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as Accordion from "@radix-ui/react-accordion";
+import { ChevronDownIcon } from "@radix-ui/react-icons";
+import { useNavigate, useParams } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { NormalisedCustomer } from "@/api/get-customers";
+import { getCustomerByOrderId } from "@/api/get-customers";
 import { pb } from "@/services/pb/client";
 import {
   COLLECTIONS,
@@ -28,78 +31,151 @@ import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
   Update,
-  OrderFrameItemsInclusionsOptions,
-  OrderFrameItemsGlassTypeOptions,
 } from "@/services/pb/types";
 import {
+  formatCurrency,
   formatDate,
   formatSnakeCase,
   getOrderStatusColor,
   getPaymentStatusColor,
 } from "@/utils";
 import { updateBouquet } from "@/api/update-bouquet";
+import { updatePaperweight } from "@/api/update-paperweight";
+import CreateNewOrderModal, {
+  type FormStage,
+} from "@/pages/home/components/create-new-order-modal/create-new-order-modal";
+import { buildCustomerFormDefaults } from "@/pages/home/components/create-new-order-modal/create-new-order-modal.utils";
+import type { ModalMode } from "@/pages/home/home";
 
-type LocationState = {
-  customer: NormalisedCustomer;
-};
+import accordionStyles from "./order-accordion.module.css";
 
 // convenience alias
-// @ts-expect-error not sure why
-type OrderFrame = NormalisedCustomer["orderDetails"]["frameOrder"];
-
-const GLASS_TYPE_OPTIONS: {
-  value: OrderFrameItemsGlassTypeOptions;
-  label: string;
-}[] = [
-  { value: "Clearview uv glass", label: "Clearview UV glass" },
-  { value: "Conservation glass", label: "Conservation glass" },
-];
-
-const INCLUSION_OPTIONS: {
-  value: OrderFrameItemsInclusionsOptions;
-  label: string;
-}[] = [
-  { value: "Yes", label: "Yes" },
-  { value: "No", label: "No" },
-  { value: "Buttonhole", label: "Buttonhole" },
-];
-
-const currency = (value?: number | null) =>
-  typeof value === "number" ? `£${value.toFixed(2)}` : "£0.00";
+type OrderFrame =
+  NonNullable<NormalisedCustomer["orderDetails"]>["frameOrder"][number];
 
 type EmailAction = "recommendation" | "invoice";
+type BadgeColor = React.ComponentProps<typeof Badge>["color"];
+type OrderExtrasState = {
+  replacementFlowers: boolean;
+  replacementFlowersQty: number | null;
+  replacementFlowersPrice: number | null;
+  collectionQty: number | null;
+  collectionPrice: number | null;
+  deliveryQty: number | null;
+  deliveryPrice: number | null;
+  returnUnusedFlowers: boolean;
+  returnUnusedFlowersPrice: number | null;
+  artistHours: number | null;
+  notes: string;
+};
+type StatusControl<T extends string> = {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly T[];
+};
 
 const Order: FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const { orderId } = useParams<{ orderId: string }>();
   const queryClient = useQueryClient();
 
-  const { customer } = location.state as LocationState;
+  const {
+    data: customer,
+    isLoading: isLoadingCustomer,
+    isError: isCustomerError,
+  } = useQuery({
+    queryKey: ["customer", orderId],
+    queryFn: () => getCustomerByOrderId(orderId ?? ""),
+    enabled: Boolean(orderId),
+  });
 
-  const order = customer.orderDetails;
-  const initialFrames: OrderFrame[] = order?.frameOrder ?? [];
-  const [frames, setFrames] = useState<OrderFrame[]>(initialFrames);
+  const order = customer?.orderDetails;
+  const [frames, setFrames] = useState<OrderFrame[]>([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentFormStage, setCurrentFormStage] =
+    useState<FormStage>("bouquet_data");
+  const [selectedBouquetId, setSelectedBouquetId] = useState<string | null>(
+    null,
+  );
+  const modalMode: ModalMode = "edit";
+  const currentCustomerForm = useMemo(() => {
+    if (!customer) return null;
+    return buildCustomerFormDefaults(customer);
+  }, [customer]);
 
   const paperweight = order?.paperWeightOrder ?? null;
 
-  // best-effort: this field name must match your PB schema
-  const initialPaperweightReceived =
-    // @ts-expect-error depends on your normaliser/schema
-    Boolean(order?.paperweightReceived ?? order?.paperWeightReceived ?? false);
-
-  const [paperweightReceived, setPaperweightReceived] = useState<boolean>(
-    initialPaperweightReceived,
-  );
+  const [paperweightReceived, setPaperweightReceived] =
+    useState<boolean>(false);
 
   // --- Editable status fields (typed to PB enums) ---
   const [orderStatus, setOrderStatus] = useState<OrdersOrderStatusOptions>(
-    order?.orderStatus ?? "draft",
+    "draft",
   );
 
   const [paymentStatus, setPaymentStatus] =
-    useState<OrdersPaymentStatusOptions>(
-      order?.paymentStatus ?? "waiting_first_deposit",
-    );
+    useState<OrdersPaymentStatusOptions>("waiting_first_deposit");
+  const [orderExtrasOpen, setOrderExtrasOpen] = useState(false);
+  const [orderExtras, setOrderExtras] = useState<OrderExtrasState>({
+    replacementFlowers: false,
+    replacementFlowersQty: null,
+    replacementFlowersPrice: null,
+    collectionQty: null,
+    collectionPrice: null,
+    deliveryQty: null,
+    deliveryPrice: null,
+    returnUnusedFlowers: false,
+    returnUnusedFlowersPrice: null,
+    artistHours: null,
+    notes: "",
+  });
+
+  const normalizeLoadedNumber = (value?: number | null) =>
+    value == null || value === 0 ? null : value;
+
+  useEffect(() => {
+    if (!order) return;
+    setFrames(order.frameOrder ?? []);
+    setOrderStatus(order.orderStatus ?? "draft");
+    setPaymentStatus(order.paymentStatus ?? "waiting_first_deposit");
+    setPaperweightReceived(Boolean(order.paperWeightOrder?.paperweightReceived));
+    setOrderExtras({
+      replacementFlowers: Boolean(order.replacementFlowers),
+      replacementFlowersQty: normalizeLoadedNumber(order.replacementFlowersQty),
+      replacementFlowersPrice: normalizeLoadedNumber(
+        order.replacementFlowersPrice,
+      ),
+      collectionQty: normalizeLoadedNumber(order.collectionQty),
+      collectionPrice: normalizeLoadedNumber(order.collectionPrice),
+      deliveryQty: normalizeLoadedNumber(order.deliveryQty),
+      deliveryPrice: normalizeLoadedNumber(order.deliveryPrice),
+      returnUnusedFlowers: Boolean(order.returnUnusedFlowers),
+      returnUnusedFlowersPrice: normalizeLoadedNumber(
+        order.returnUnusedFlowersPrice,
+      ),
+      artistHours: normalizeLoadedNumber(order.artistHours),
+      notes: order.notes ?? "",
+    });
+  }, [order]);
+
+  const statusControls: [
+    StatusControl<OrdersOrderStatusOptions>,
+    StatusControl<OrdersPaymentStatusOptions>,
+  ] = [
+      {
+        label: "Order status",
+        value: orderStatus,
+        onChange: setOrderStatus,
+        options: ORDER_STATUS_OPTIONS,
+      },
+      {
+        label: "Payment status",
+        value: paymentStatus,
+        onChange: setPaymentStatus,
+        options: ORDER_PAYMENT_STATUS_OPTIONS,
+      },
+    ];
 
   // -----------------------------
   // Order meta update (status + payment)
@@ -120,9 +196,24 @@ const Order: FC = () => {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (orderId) {
+          queryClient.invalidateQueries({ queryKey: ["customer", orderId] });
+        }
       },
     },
   );
+
+  const { mutateAsync: mutateOrderExtras, isPending: isSavingExtras } =
+    useMutation({
+      mutationFn: (payload: Update<"orders">) =>
+        pb.collection(COLLECTIONS.ORDERS).update(order?.orderId || "", payload),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (orderId) {
+          queryClient.invalidateQueries({ queryKey: ["customer", orderId] });
+        }
+      },
+    });
 
   const handleSaveMeta = async () => {
     if (!order?.orderId) return;
@@ -133,35 +224,59 @@ const Order: FC = () => {
     });
   };
 
+  const handleSaveExtras = async () => {
+    if (!order?.orderId) return;
+    await mutateOrderExtras({
+      notes: orderExtras.notes ?? "",
+      replacementFlowers: orderExtras.replacementFlowers,
+      replacementFlowersQty: orderExtras.replacementFlowersQty ?? undefined,
+      replacementFlowersPrice: orderExtras.replacementFlowersPrice ?? undefined,
+      collectionQty: orderExtras.collectionQty ?? undefined,
+      collectionPrice: orderExtras.collectionPrice ?? undefined,
+      deliveryQty: orderExtras.deliveryQty ?? undefined,
+      deliveryPrice: orderExtras.deliveryPrice ?? undefined,
+      returnUnusedFlowers: orderExtras.returnUnusedFlowers,
+      returnUnusedFlowersPrice: orderExtras.returnUnusedFlowersPrice ?? undefined,
+      artistHours: orderExtras.artistHours ?? undefined,
+    });
+  };
+
   // -----------------------------
-  // Paperweight received update (best-effort field name)
+  // Paperweight received update
   // -----------------------------
   const { mutateAsync: mutatePaperweightReceived, isPending: isSavingPw } =
     useMutation({
-      mutationFn: async (payload: { orderId: string; received: boolean }) => {
-        // IMPORTANT:
-        // Update the key below to match your actual PB field name.
-        // Common options:
-        // - paperweightReceived
-        // - paperweight_received
-        // - paperWeightReceived
-        const data = {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mutationFn: async (payload: {
+        paperweightId: string;
+        received: boolean;
+        quantity: number;
+        price: number;
+      }) => {
+        return updatePaperweight({
+          id: payload.paperweightId,
+          quantity: payload.quantity,
+          price: payload.price,
           paperweightReceived: payload.received,
-        } as any;
-
-        return pb.collection(COLLECTIONS.ORDERS).update(payload.orderId, data);
+        });
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (orderId) {
+          queryClient.invalidateQueries({ queryKey: ["customer", orderId] });
+        }
       },
     });
 
   const handleTogglePaperweightReceived = async (next: boolean) => {
+    if (!paperweight?.paperWeightId) return;
     setPaperweightReceived(next);
-    if (!order?.orderId) return;
     try {
-      await mutatePaperweightReceived({ orderId: order.orderId, received: next });
+      await mutatePaperweightReceived({
+        paperweightId: paperweight.paperWeightId,
+        received: next,
+        quantity: paperweight.quantity ?? 1,
+        price: paperweight.price ?? 0,
+      });
     } catch {
       // revert on error
       setPaperweightReceived((prev) => !prev);
@@ -185,13 +300,13 @@ const Order: FC = () => {
         artworkComplete?: boolean;
         framingComplete?: boolean;
       }) => {
-        // updateBouquet should accept these fields in your API.
-        // If it doesn't yet, add them server-side or extend the function typing.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return updateBouquet(payload as any);
+        return updateBouquet(payload);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (orderId) {
+          queryClient.invalidateQueries({ queryKey: ["customer", orderId] });
+        }
       },
     });
 
@@ -236,6 +351,8 @@ const Order: FC = () => {
   };
 
   // -----------------------------
+  const getMountColour = (frame: OrderFrame) => frame.mountColour ?? null;
+
   // Build invoice line items (kept for email payload, but not shown)
   // -----------------------------
   type LineItemKind = "frame" | "paperweight" | "extra";
@@ -254,8 +371,7 @@ const Order: FC = () => {
     const items: LineItem[] = [];
 
     frames.forEach((frame, index) => {
-      const mountColour =
-        (frame as any).mountColour ?? (frame as any).frameMountColour ?? null;
+      const mountColour = getMountColour(frame);
 
       const descParts = [
         frame.size,
@@ -280,16 +396,15 @@ const Order: FC = () => {
         frame,
       });
 
-      const extras = (frame.extras || {}) as {
-        glassPrice?: number;
-        glassEngravingPrice?: number;
-        mountPrice?: number;
-      };
+      const extras = frame.extras ?? null;
 
-      if (typeof extras.mountPrice === "number" && extras.mountPrice > 0) {
+      if (typeof extras?.mountPrice === "number" && extras.mountPrice > 0) {
+        const mountSuffix =
+          frame.inclusions === "Buttonhole" ? " · Buttonhole" : "";
         items.push({
           id: `${baseId}-mount`,
-          description: mountColour ? `Mount – ${mountColour}` : "Mount",
+          description: `${mountColour ? `Mount – ${mountColour}` : "Mount"
+            }${mountSuffix}`,
           qty: 1,
           unitPrice: extras.mountPrice,
           total: extras.mountPrice,
@@ -298,7 +413,7 @@ const Order: FC = () => {
         });
       }
 
-      if (typeof extras.glassPrice === "number" && extras.glassPrice > 0) {
+      if (typeof extras?.glassPrice === "number" && extras.glassPrice > 0) {
         items.push({
           id: `${baseId}-glass`,
           description: `Glass – ${frame.glassType}`,
@@ -311,7 +426,7 @@ const Order: FC = () => {
       }
 
       if (
-        typeof extras.glassEngravingPrice === "number" &&
+        typeof extras?.glassEngravingPrice === "number" &&
         extras.glassEngravingPrice > 0
       ) {
         const engravingText = frame.glassEngraving?.trim();
@@ -363,24 +478,37 @@ const Order: FC = () => {
   const emailPayload = useMemo(() => {
     return {
       customer: {
-        id: (customer as any).customerId,
-        title: (customer as any).title ?? undefined,
-        firstName: (customer as any).firstName ?? "",
-        surname: (customer as any).surname ?? "",
-        email: customer.email ?? "",
-        displayName: customer.displayName,
-        phoneNumber: customer.phoneNumber ?? "",
+        id: customer?.customerId,
+        title: customer?.title ?? undefined,
+        firstName: customer?.firstName ?? "",
+        surname: customer?.surname ?? "",
+        email: customer?.email ?? "",
+        displayName: customer?.displayName,
+        phoneNumber: customer?.phoneNumber ?? "",
       },
       order: {
         orderId: order?.orderId,
         orderNo: order?.orderNo,
         created: order?.created ? formatDate(order?.created) : "",
         occasionDate: order?.occasionDate ? formatDate(order?.occasionDate) : "",
-        billingAddressLine1: (order as any)?.billingAddressLine1,
-        billingAddressLine2: (order as any)?.billingAddressLine2,
-        billingTown: (order as any)?.billingTown,
-        billingCounty: (order as any)?.billingCounty,
-        billingPostcode: (order as any)?.billingPostcode,
+        billingAddressLine1: order?.billingAddressLine1,
+        billingAddressLine2: order?.billingAddressLine2,
+        billingTown: order?.billingTown,
+        billingCounty: order?.billingCounty,
+        billingPostcode: order?.billingPostcode,
+      },
+      orderExtras: {
+        replacementFlowers: orderExtras.replacementFlowers,
+        replacementFlowersQty: orderExtras.replacementFlowersQty,
+        replacementFlowersPrice: orderExtras.replacementFlowersPrice,
+        collectionQty: orderExtras.collectionQty,
+        collectionPrice: orderExtras.collectionPrice,
+        deliveryQty: orderExtras.deliveryQty,
+        deliveryPrice: orderExtras.deliveryPrice,
+        returnUnusedFlowers: orderExtras.returnUnusedFlowers,
+        returnUnusedFlowersPrice: orderExtras.returnUnusedFlowersPrice,
+        artistHours: orderExtras.artistHours,
+        notes: orderExtras.notes,
       },
       frames,
       paperweight,
@@ -391,7 +519,16 @@ const Order: FC = () => {
         grandTotal,
       },
     };
-  }, [customer, order, frames, paperweight, subTotal, vatTotal, grandTotal]);
+  }, [
+    customer,
+    order,
+    orderExtras,
+    frames,
+    paperweight,
+    subTotal,
+    vatTotal,
+    grandTotal,
+  ]);
 
   const getAuthHeader = () => {
     const token = pb.authStore.token;
@@ -409,11 +546,12 @@ const Order: FC = () => {
 
     const res = await fetch(url, {
       method: "POST",
-      // @ts-expect-error not sure what
+      // @ts-expect-error - TODO figure how to fix this issue
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
-      },
+        // @ts-expect-error - TODO figure how to fix this issue
+      } satisfies Record<string, string>,
       body: JSON.stringify(payload),
     });
 
@@ -435,6 +573,7 @@ const Order: FC = () => {
     message?: string;
   } | null>(null);
 
+  // @ts-expect-error - It would be hooked after
   const { mutateAsync: sendRecommendation, isPending: isSendingRec } =
     useMutation({
       mutationFn: (payload: typeof emailPayload) =>
@@ -447,14 +586,18 @@ const Order: FC = () => {
           state: "success",
           message: "Recommendation email sent",
         }),
-      onError: (err: any) =>
+      onError: (err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : "Failed to send recommendation";
         setEmailStatus({
           kind: "recommendation",
           state: "error",
-          message: err?.message || "Failed to send recommendation",
-        }),
+          message,
+        });
+      },
     });
 
+  // @ts-expect-error - It would be hooked after
   const { mutateAsync: sendInvoice, isPending: isSendingInv } = useMutation({
     mutationFn: (payload: typeof emailPayload) =>
       postEmailAction("invoice", payload),
@@ -465,43 +608,51 @@ const Order: FC = () => {
         state: "success",
         message: "Invoice email sent",
       }),
-    onError: (err: any) =>
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to send invoice";
       setEmailStatus({
         kind: "invoice",
         state: "error",
-        message: err?.message || "Failed to send invoice",
-      }),
+        message,
+      });
+    },
   });
 
+  // @ts-expect-error - It would be hooked after
   const handleSendRecommendation = async () => {
     if (!canSendEmails) return;
     await sendRecommendation(emailPayload);
   };
 
+  // @ts-expect-error - It would be hooked after
   const handleSendInvoice = async () => {
     if (!canSendEmails) return;
     await sendInvoice(emailPayload);
   };
 
-  const statusColor = (state: string) => {
+  const statusColor = (state: string): BadgeColor => {
     if (state === "success") return "green";
     if (state === "error") return "red";
     return "gray";
   };
 
   // -----------------------------
-  // Preview invoice (wire this to your real route / endpoint)
+  // ✅ UPDATED: Preview invoice (navigate to InvoicePreview page; no popups)
   // -----------------------------
   const handlePreviewInvoice = () => {
-    // Option A: navigate to a preview page
-    // navigate("/invoice-preview", { state: { customer } });
+    if (!pb.authStore.token) {
+      setEmailStatus({
+        kind: "invoice",
+        state: "error",
+        message: "You must be logged in to preview invoices.",
+      });
+      return;
+    }
 
-    // Option B: open a backend preview endpoint (adjust path to match your API)
-    if (!order?.orderId) return;
-    const url = `${pb.baseUrl}/api/invoice/preview?orderId=${encodeURIComponent(
-      order.orderId,
-    )}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    navigate("/invoice-preview", {
+      state: { payload: emailPayload },
+    });
   };
 
   // -----------------------------
@@ -524,11 +675,169 @@ const Order: FC = () => {
     return map;
   }, [lineItems]);
 
+  const openEditModal = (stage: FormStage, bouquetId?: string | null) => {
+    setCurrentFormStage(stage);
+    setSelectedBouquetId(bouquetId ?? null);
+    setIsEditModalOpen(true);
+  };
+
+  const mainItems = lineItems.filter((item) => item.kind !== "extra");
+
+  const updateExtrasField = <K extends keyof OrderExtrasState>(
+    key: K,
+    value: OrderExtrasState[K],
+  ) => {
+    setOrderExtras((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const parseNumberInput = (value: string) =>
+    value.trim() === "" ? null : Number(value);
+
+  const orderExtrasRows: Array<{
+    id: string;
+    label: string;
+    toggleKey?: "replacementFlowers" | "returnUnusedFlowers";
+    qtyKey?: keyof OrderExtrasState;
+    priceKey?: keyof OrderExtrasState;
+  }> = [
+      {
+        id: "replacement-flowers",
+        label: "Replacement flowers",
+        toggleKey: "replacementFlowers",
+        qtyKey: "replacementFlowersQty",
+        priceKey: "replacementFlowersPrice",
+      },
+      {
+        id: "collection",
+        label: "Collection",
+        qtyKey: "collectionQty",
+        priceKey: "collectionPrice",
+      },
+      {
+        id: "delivery",
+        label: "Delivery",
+        qtyKey: "deliveryQty",
+        priceKey: "deliveryPrice",
+      },
+      {
+        id: "return-unused-flowers",
+        label: "Return unused flowers",
+        toggleKey: "returnUnusedFlowers",
+        priceKey: "returnUnusedFlowersPrice",
+      },
+    ];
+
+  const orderExtrasSummary = useMemo(() => {
+    const items: string[] = [];
+    const formatQtyPrice = (
+      label: string,
+      qty?: number | null,
+      price?: number | null,
+    ) => {
+      if (!qty || !price || price === 0 || qty === 0) return null;
+      const parts = [label];
+      if (qty != null && qty > 0) parts.push(`Qty ${qty}`);
+      if (price != null) parts.push(formatCurrency(price) as string);
+      return parts.join(" · ");
+    };
+
+    if (
+      orderExtras.replacementFlowers ||
+      (orderExtras.replacementFlowersQty &&
+        orderExtras.replacementFlowersQty > 0) ||
+      (orderExtras.replacementFlowersPrice &&
+        orderExtras.replacementFlowersPrice > 0)
+    ) {
+      items.push(
+        formatQtyPrice(
+          "Replacement flowers",
+          orderExtras.replacementFlowersQty,
+          orderExtras.replacementFlowersPrice,
+        ) || "Replacement flowers",
+      );
+    }
+
+    const collection = formatQtyPrice(
+      "Collection",
+      orderExtras.collectionQty,
+      orderExtras.collectionPrice,
+    );
+    if (collection) items.push(collection);
+
+    const delivery = formatQtyPrice(
+      "Delivery",
+      orderExtras.deliveryQty,
+      orderExtras.deliveryPrice,
+    );
+    if (delivery) items.push(delivery);
+
+    if (
+      orderExtras.returnUnusedFlowers ||
+      (orderExtras.returnUnusedFlowersPrice &&
+        orderExtras.returnUnusedFlowersPrice > 0)
+    ) {
+      const returnUnused =
+        orderExtras.returnUnusedFlowersPrice != null
+          ? `Return unused flowers · ${formatCurrency(
+            orderExtras.returnUnusedFlowersPrice,
+          )}`
+          : "Return unused flowers";
+      items.push(returnUnused);
+    }
+
+    if (orderExtras && orderExtras.artistHours && orderExtras.artistHours > 0) {
+      items.push(`Artist hours · ${orderExtras.artistHours}`);
+    }
+
+    const trimmedNotes = orderExtras.notes.trim();
+    if (trimmedNotes.length > 0) {
+      const shortNote =
+        trimmedNotes.length > 36
+          ? `${trimmedNotes.slice(0, 36)}…`
+          : trimmedNotes;
+      items.push(`Notes · ${shortNote}`);
+    }
+
+    return items;
+  }, [orderExtras]);
+
+  if (!orderId) {
+    return (
+      <Box p="4">
+        <Text size="2" color="gray">
+          Missing order ID.
+        </Text>
+      </Box>
+    );
+  }
+
+  if (isLoadingCustomer) {
+    return (
+      <Box p="4">
+        <Text size="2" color="gray">
+          Loading order...
+        </Text>
+      </Box>
+    );
+  }
+
+  if (isCustomerError || !customer) {
+    return (
+      <Box p="4">
+        <Text size="2" color="gray">
+          We couldn’t load this order.
+        </Text>
+        <Button variant="ghost" size="1" onClick={() => navigate("/")}>
+          ← Customers
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box p="4" style={{ margin: "0 auto", maxWidth: 1100 }} width="100%">
-      {/* Top header */}
-      <Flex justify="between" align="start" mb="3" gap="3" wrap="wrap">
-        <Box>
+      <Flex justify="between" align="center" mb="3" gap="3" wrap="wrap">
+        <Flex direction="column" gap="1">
           <Button
             variant="ghost"
             size="1"
@@ -537,65 +846,64 @@ const Order: FC = () => {
           >
             ← Customers
           </Button>
-
-          <Flex align="center" gap="2" mt="2" wrap="wrap">
-            <Heading size="4">
-              Order {order?.orderNo ?? order?.orderId ?? ""}
-            </Heading>
-
-            {order?.created ? (
-              <Badge variant="soft" color="gray">
-                Created {formatDate(order.created)}
-              </Badge>
-            ) : null}
-
-            {order?.occasionDate ? (
-              <Badge variant="soft" color="gray">
-                Occasion {formatDate(order.occasionDate)}
-              </Badge>
-            ) : null}
-          </Flex>
-
-          <Flex gap="2" mt="2" wrap="wrap">
-            <Badge
-              variant="soft"
-              color={getOrderStatusColor(orderStatus) as any}
-            >
-              {formatSnakeCase(orderStatus)}
-            </Badge>
-            <Badge
-              variant="soft"
-              color={getPaymentStatusColor(paymentStatus) as any}
-            >
-              {formatSnakeCase(paymentStatus)}
-            </Badge>
-
-            {paperweight ? (
-              <Badge variant="soft" color={paperweightReceived ? "green" : "gray"}>
-                Paperweight {paperweightReceived ? "received" : "not received"}
-              </Badge>
-            ) : null}
-          </Flex>
-        </Box>
-
+          <Heading size="4">
+            Order {order?.orderNo ?? order?.orderId ?? ""}
+          </Heading>
+        </Flex>
         <Flex gap="2" align="center" wrap="wrap" justify="end">
-          <Button variant="soft" onClick={handlePreviewInvoice} disabled={!order?.orderId}>
+          <Button
+            variant="soft"
+            onClick={handlePreviewInvoice}
+            disabled={!order?.orderId}
+          >
             Preview invoice
           </Button>
-
-          <Button
+          {/* <Button
             variant="soft"
             onClick={handleSendRecommendation}
             disabled={!canSendEmails || isSendingRec}
           >
             {isSendingRec ? "Sending..." : "Send recommendation"}
           </Button>
-
-          <Button onClick={handleSendInvoice} disabled={!canSendEmails || isSendingInv}>
+          <Button
+            onClick={handleSendInvoice}
+            disabled={!canSendEmails || isSendingInv}
+          >
             {isSendingInv ? "Sending..." : "Send invoice"}
-          </Button>
+          </Button> */}
         </Flex>
       </Flex>
+
+      <Card mb="3">
+        <Flex justify="between" align="center" wrap="wrap" gap="3">
+          <Flex gap="2" wrap="wrap">
+            {order?.created ? (
+              <Badge variant="soft" color="gray">
+                Created {formatDate(order.created)}
+              </Badge>
+            ) : null}
+            {order?.occasionDate ? (
+              <Badge variant="soft" color="gray">
+                Occasion {formatDate(order.occasionDate)}
+              </Badge>
+            ) : null}
+          </Flex>
+          <Flex gap="2" wrap="wrap">
+            <Badge
+              variant="soft"
+              color={getOrderStatusColor(orderStatus) as BadgeColor}
+            >
+              {formatSnakeCase(orderStatus)}
+            </Badge>
+            <Badge
+              variant="soft"
+              color={getPaymentStatusColor(paymentStatus) as BadgeColor}
+            >
+              {formatSnakeCase(paymentStatus)}
+            </Badge>
+          </Flex>
+        </Flex>
+      </Card>
 
       {emailStatus && emailStatus.state !== "idle" ? (
         <Box mb="3">
@@ -611,7 +919,6 @@ const Order: FC = () => {
         </Box>
       ) : null}
 
-      {/* Controls */}
       <Card>
         <Flex justify="between" align="start" gap="4" wrap="wrap">
           <Box>
@@ -622,50 +929,30 @@ const Order: FC = () => {
               Update status/payment, and manage items below.
             </Text>
           </Box>
-
           <Flex gap="3" align="end" wrap="wrap">
-            <Flex direction="column" gap="1">
-              <Text size="1" color="gray">
-                Order status
-              </Text>
-              <Select.Root
-                value={orderStatus}
-                onValueChange={(value) =>
-                  setOrderStatus(value as OrdersOrderStatusOptions)
-                }
-              >
-                <Select.Trigger />
-                <Select.Content>
-                  {ORDER_STATUS_OPTIONS.map((status) => (
-                    <Select.Item key={status} value={status}>
-                      {formatSnakeCase(status)}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </Flex>
-
-            <Flex direction="column" gap="1">
-              <Text size="1" color="gray">
-                Payment status
-              </Text>
-              <Select.Root
-                value={paymentStatus}
-                onValueChange={(value) =>
-                  setPaymentStatus(value as OrdersPaymentStatusOptions)
-                }
-              >
-                <Select.Trigger />
-                <Select.Content>
-                  {ORDER_PAYMENT_STATUS_OPTIONS.map((status) => (
-                    <Select.Item key={status} value={status}>
-                      {formatSnakeCase(status)}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </Flex>
-
+            {statusControls.map((control) => (
+              <Flex key={control.label} direction="column" gap="1">
+                <Text size="1" color="gray">
+                  {control.label}
+                </Text>
+                <Select.Root
+                  value={control.value}
+                  onValueChange={(value) =>
+                    // @ts-expect-error - onChange is never
+                    control.onChange(value as typeof control.value)
+                  }
+                >
+                  <Select.Trigger />
+                  <Select.Content>
+                    {control.options.map((status) => (
+                      <Select.Item key={status} value={status}>
+                        {formatSnakeCase(status)}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+              </Flex>
+            ))}
             <Button
               size="2"
               onClick={handleSaveMeta}
@@ -675,375 +962,333 @@ const Order: FC = () => {
             </Button>
           </Flex>
         </Flex>
-
-        {paperweight ? (
-          <>
-            <Separator my="3" size="4" />
-            <Flex justify="between" align="center" wrap="wrap" gap="3">
-              <Box>
-                <Text size="2" weight="bold">
-                  Paperweight
-                </Text>
-                <Text size="2" color="gray">
-                  Qty {paperweight.quantity ?? 1} · {currency(paperweight.price)}
-                </Text>
-              </Box>
-
-              <Flex align="center" gap="2">
-                <Text size="2" color="gray">
-                  Received
-                </Text>
-                <Switch
-                  checked={paperweightReceived}
-                  onCheckedChange={handleTogglePaperweightReceived}
-                  disabled={!order?.orderId || isSavingPw}
-                />
-              </Flex>
-            </Flex>
-          </>
-        ) : null}
       </Card>
 
-      {/* Items list */}
       <Box mt="4">
-        <Flex justify="between" align="center" mb="2" wrap="wrap" gap="2">
-          <Heading size="3">Item details</Heading>
-          <Text size="2" color="gray">
-            {frames.length} bouquet{frames.length === 1 ? "" : "s"}
-            {paperweight ? " + paperweight" : ""}
-          </Text>
-        </Flex>
-
-        {frames.length === 0 && !paperweight ? (
+        {mainItems.length === 0 ? (
           <Card>
             <Text size="2" color="gray">
               No items found on this order.
             </Text>
           </Card>
         ) : (
-          <Flex direction="column" gap="3">
-            {frames.map((frame, idx) => {
-              const mountColour =
-                (frame as any).mountColour ??
-                (frame as any).frameMountColour ??
-                null;
+          <Table.Root variant="surface">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeaderCell>#</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Unit price</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Amount</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Options</Table.ColumnHeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {mainItems.map((item, index) => {
+                const isFrame = item.kind === "frame";
+                const extras =
+                  isFrame && item.frame?.frameId
+                    ? frameExtrasByFrameId.get(item.frame.frameId) ?? []
+                    : [];
 
-              const title = [
-                frame.size,
-                frame.frameType,
-                frame.preservationType,
-              ]
-                .filter(Boolean)
-                .join(" · ");
-
-              const subtitle = [
-                frame.glassType ? `Glass: ${frame.glassType}` : null,
-                mountColour ? `Mount: ${mountColour}` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ");
-
-              const extras = frame.frameId
-                ? frameExtrasByFrameId.get(frame.frameId) ?? []
-                : [];
-
-              return (
-                <Card key={frame.frameId ?? `frame-${idx}`}>
-                  <Flex justify="between" align="start" gap="3" wrap="wrap">
-                    <Box>
-                      <Flex align="center" gap="2" wrap="wrap">
-                        <Badge variant="soft" color="gray">
-                          Bouquet {idx + 1}
-                        </Badge>
-                        <Text size="3" weight="bold">
-                          {title || "Bouquet frame"}
-                        </Text>
-                      </Flex>
-
-                      {subtitle ? (
-                        <Text size="2" color="gray" mt="1">
-                          {subtitle}
-                        </Text>
-                      ) : null}
-
-                      <Text size="2" mt="2">
-                        Price: <Text weight="bold">{currency(frame.price)}</Text>
-                      </Text>
-
-                      {extras.length ? (
-                        <Box mt="2">
-                          <Text size="2" color="gray">
-                            Extras
-                          </Text>
-                          <Flex direction="column" gap="1" mt="1">
-                            {extras.map((e) => (
-                              <Flex key={e.id} justify="between" gap="3">
-                                <Text size="2" color="gray">
-                                  {e.description}
-                                </Text>
-                                <Text size="2" color="gray">
-                                  {currency(e.total)}
-                                </Text>
-                              </Flex>
-                            ))}
+                return (
+                  <Fragment key={item.id}>
+                    <Table.Row>
+                      <Table.Cell>{`Item ${index + 1}`}</Table.Cell>
+                      <Table.Cell>{item.description}</Table.Cell>
+                      <Table.Cell>{item.qty}</Table.Cell>
+                      <Table.Cell>{formatCurrency(item.unitPrice)}</Table.Cell>
+                      <Table.Cell>{formatCurrency(item.total)}</Table.Cell>
+                      <Table.Cell>
+                        {item.kind === "frame" && item.frame ? (
+                          <Flex direction="column" gap="2" align="start">
+                            <Button
+                              size="1"
+                              variant="soft"
+                              onClick={() =>
+                                openEditModal(
+                                  "bouquet_data",
+                                  item.frame?.frameId,
+                                )
+                              }
+                            >
+                              Frame options
+                            </Button>
+                            <InlineToggle
+                              label="Artwork complete"
+                              checked={Boolean(item.frame.artworkComplete)}
+                              onChange={(next) =>
+                                handleToggleArtworkComplete(item.frame!, next)
+                              }
+                              disabled={
+                                !item.frame.frameId || isSavingCompletion
+                              }
+                            />
+                            <InlineToggle
+                              label="Framing complete"
+                              checked={Boolean(item.frame.framingComplete)}
+                              onChange={(next) =>
+                                handleToggleFramingComplete(item.frame!, next)
+                              }
+                              disabled={
+                                !item.frame.frameId || isSavingCompletion
+                              }
+                            />
+                            {item.frame.preservationDate ? (
+                              <Badge variant="soft" color="blue">
+                                Preservation{" "}
+                                {formatDate(item.frame.preservationDate)}
+                              </Badge>
+                            ) : null}
                           </Flex>
-                        </Box>
-                      ) : null}
-                    </Box>
-
-                    <Flex direction="column" align="end" gap="3">
-                      <Flex align="center" gap="3" wrap="wrap">
-                        <InlineToggle
-                          label="Artwork complete"
-                          checked={Boolean(frame.artworkComplete)}
-                          onChange={(next) =>
-                            handleToggleArtworkComplete(frame, next)
-                          }
-                          disabled={!frame.frameId || isSavingCompletion}
-                        />
-                        <InlineToggle
-                          label="Framing complete"
-                          checked={Boolean(frame.framingComplete)}
-                          onChange={(next) =>
-                            handleToggleFramingComplete(frame, next)
-                          }
-                          disabled={!frame.frameId || isSavingCompletion}
-                        />
-                      </Flex>
-
-                      <Box>
-                        <FrameExtrasDialog
-                          frame={frame}
-                          onUpdated={(patch) =>
-                            handleFrameUpdated(frame.frameId, patch)
-                          }
-                        />
-                      </Box>
-                    </Flex>
-                  </Flex>
-                </Card>
-              );
-            })}
-          </Flex>
+                        ) : item.kind === "paperweight" ? (
+                          <Flex direction="column" gap="2" align="start">
+                            <Button
+                              size="1"
+                              variant="soft"
+                              onClick={() => openEditModal("paperweight_data")}
+                            >
+                              Paperweight options
+                            </Button>
+                            <InlineToggle
+                              label="Received"
+                              checked={paperweightReceived}
+                              onChange={handleTogglePaperweightReceived}
+                              disabled={
+                                !paperweight?.paperWeightId || isSavingPw
+                              }
+                            />
+                          </Flex>
+                        ) : null}
+                      </Table.Cell>
+                    </Table.Row>
+                    {extras.map((extra) => (
+                      <Table.Row key={`${item.id}-${extra.id}`}>
+                        <Table.Cell />
+                        <Table.Cell>
+                          <Text size="2" color="gray">
+                            {extra.description}
+                          </Text>
+                        </Table.Cell>
+                        <Table.Cell />
+                        <Table.Cell />
+                        <Table.Cell>{formatCurrency(extra.total)}</Table.Cell>
+                        <Table.Cell />
+                      </Table.Row>
+                    ))}
+                  </Fragment>
+                );
+              })}
+            </Table.Body>
+          </Table.Root>
         )}
       </Box>
+
+      <Box mt="4">
+        <Accordion.Root
+          className={accordionStyles.root}
+          type="single"
+          collapsible
+          value={orderExtrasOpen ? "order-extras" : ""}
+          onValueChange={(value) => setOrderExtrasOpen(value === "order-extras")}
+        >
+          <Accordion.Item className={accordionStyles.item} value="order-extras">
+            <Accordion.Header className={accordionStyles.header}>
+              <Accordion.Trigger className={accordionStyles.trigger}>
+                <Flex
+                  direction="column"
+                  gap="1"
+                  align="start"
+                  className={accordionStyles.triggerContent}
+                >
+                  <Heading size="3">Order extras</Heading>
+                  {orderExtrasSummary.length > 0 ? (
+                    <Flex gap="2" wrap="wrap">
+                      {orderExtrasSummary.map((summary) => (
+                        <Badge key={summary} variant="soft" color="gray">
+                          {summary}
+                        </Badge>
+                      ))}
+                    </Flex>
+                  ) : (
+                    <Text size="1" color="gray">
+                      No extras added yet
+                    </Text>
+                  )}
+                </Flex>
+                <Flex
+                  align="center"
+                  gap="2"
+                  className={accordionStyles.triggerMeta}
+                >
+                  <Text size="1" color="gray">
+                    {orderExtrasOpen ? "Hide details" : "Add details"}
+                  </Text>
+                  <ChevronDownIcon
+                    className={accordionStyles.chevron}
+                    aria-hidden
+                  />
+                </Flex>
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content className={accordionStyles.content}>
+              <Box className={accordionStyles.contentInner}>
+                <Flex direction="column" gap="3">
+                  <Table.Root variant="surface">
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.ColumnHeaderCell>
+                          Description
+                        </Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell>Y / N</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {orderExtrasRows.map((row) => {
+                        const isEnabled = row.toggleKey
+                          ? orderExtras[row.toggleKey]
+                          : true;
+                        return (
+                          <Table.Row key={row.id}>
+                            <Table.Cell>{row.label}</Table.Cell>
+                            <Table.Cell>
+                              {row.toggleKey ? (
+                                <Checkbox
+                                  checked={orderExtras[row.toggleKey]}
+                                  onCheckedChange={(checked) =>
+                                    updateExtrasField(
+                                      // @ts-expect-error - could be undefined
+                                      row.toggleKey,
+                                      Boolean(checked),
+                                    )
+                                  }
+                                />
+                              ) : null}
+                            </Table.Cell>
+                            <Table.Cell>
+                              {row.qtyKey ? (
+                                <TextField.Root
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={
+                                    orderExtras[row.qtyKey] == null
+                                      ? ""
+                                      : (orderExtras[row.qtyKey] as keyof OrderExtrasState)
+                                  }
+                                  onChange={(event) =>
+                                    updateExtrasField(
+                                      // @ts-expect-error - could be undefined
+                                      row.qtyKey,
+                                      parseNumberInput(
+                                        event.target.value,
+                                      ) as unknown,
+                                    )
+                                  }
+                                  disabled={!isEnabled}
+                                />
+                              ) : null}
+                            </Table.Cell>
+                            <Table.Cell>
+                              {row.priceKey ? (
+                                <TextField.Root
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={
+                                    orderExtras[row.priceKey] == null
+                                      ? ""
+                                      : (orderExtras[row.priceKey] as keyof OrderExtrasState)
+                                  }
+                                  onChange={(event) =>
+                                    updateExtrasField(
+                                      // @ts-expect-error - could be undefined
+                                      row.priceKey,
+                                      parseNumberInput(
+                                        event.target.value,
+                                      ) as unknown,
+                                    )
+                                  }
+                                  disabled={!isEnabled}
+                                />
+                              ) : null}
+                            </Table.Cell>
+                          </Table.Row>
+                        );
+                      })}
+                      <Table.Row>
+                        <Table.Cell>Artist hours</Table.Cell>
+                        <Table.Cell />
+                        <Table.Cell>
+                          <TextField.Root
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={orderExtras.artistHours ?? ""}
+                            onChange={(event) =>
+                              updateExtrasField(
+                                "artistHours",
+                                parseNumberInput(event.target.value),
+                              )
+                            }
+                          />
+                        </Table.Cell>
+                        <Table.Cell />
+                      </Table.Row>
+                    </Table.Body>
+                  </Table.Root>
+
+                  <Box>
+                    <Text size="2" weight="medium" mb="1">
+                      Notes
+                    </Text>
+                    <TextArea
+                      value={orderExtras.notes}
+                      onChange={(event) =>
+                        updateExtrasField("notes", event.target.value)
+                      }
+                      placeholder="Add notes for this order..."
+                      resize="vertical"
+                    />
+                  </Box>
+
+                  <Flex justify="end">
+                    <Button
+                      size="2"
+                      onClick={handleSaveExtras}
+                      disabled={!order?.orderId || isSavingExtras}
+                    >
+                      {isSavingExtras ? "Saving..." : "Save details"}
+                    </Button>
+                  </Flex>
+                </Flex>
+              </Box>
+            </Accordion.Content>
+          </Accordion.Item>
+        </Accordion.Root>
+      </Box>
+
+      <CreateNewOrderModal
+        modalMode={modalMode}
+        isModalOpen={isEditModalOpen}
+        onCancel={() => {
+          setIsEditModalOpen(false);
+          setSelectedBouquetId(null);
+        }}
+        setCurrentFormStage={setCurrentFormStage}
+        currentFormStage={currentFormStage}
+        currentCustomerForm={currentCustomerForm}
+        selectedBouquetId={selectedBouquetId}
+      />
     </Box>
   );
 };
 
 export default Order;
 
-/* ---------- Frame extras dialog ---------- */
-
-type FrameExtrasDialogProps = {
-  frame: OrderFrame;
-  onUpdated: (patch: Partial<OrderFrame>) => void;
-};
-
-const FrameExtrasDialog: FC<FrameExtrasDialogProps> = ({
-  frame,
-  onUpdated,
-}) => {
-  const queryClient = useQueryClient();
-
-  const rawExtras = (frame.extras || {}) as {
-    glassPrice?: number;
-    glassEngravingPrice?: number;
-    mountPrice?: number;
-  };
-
-  const [glassEngraving, setGlassEngraving] = useState(
-    frame.glassEngraving ?? "",
-  );
-  const [glassEngravingPrice, setGlassEngravingPrice] = useState<number>(
-    typeof rawExtras.glassEngravingPrice === "number"
-      ? rawExtras.glassEngravingPrice
-      : 0,
-  );
-
-  const [inclusions, setInclusions] =
-    useState<OrderFrameItemsInclusionsOptions>(
-      (frame.inclusions as OrderFrameItemsInclusionsOptions) ?? "No",
-    );
-  const [glassType, setGlassType] = useState<OrderFrameItemsGlassTypeOptions>(
-    (frame.glassType as OrderFrameItemsGlassTypeOptions) ??
-      "Clearview uv glass",
-  );
-  const [glassPrice, setGlassPrice] = useState<number>(
-    typeof rawExtras.glassPrice === "number" ? rawExtras.glassPrice : 0,
-  );
-
-  const { mutateAsync, isPending } = useMutation({
-    mutationFn: () =>
-      updateBouquet({
-        frameId: frame.frameId,
-        glassEngraving: glassEngraving || undefined,
-        inclusions,
-        glassType,
-        extras: {
-          ...(frame.extras || {}),
-          glassPrice,
-          glassEngravingPrice,
-        },
-      }),
-    onSuccess: () => {
-      onUpdated({
-        glassEngraving: glassEngraving || undefined,
-        inclusions,
-        glassType,
-        extras: {
-          ...(frame.extras || {}),
-          glassPrice,
-          glassEngravingPrice,
-        },
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-    },
-  });
-
-  const handleSave = async () => {
-    if (!frame.frameId) return;
-    await mutateAsync();
-  };
-
-  return (
-    <Dialog.Root>
-      <Dialog.Trigger>
-        <Button size="1" variant="soft">
-          Options
-        </Button>
-      </Dialog.Trigger>
-      <Dialog.Content maxWidth="560px">
-        <Dialog.Title>Frame options</Dialog.Title>
-        <Dialog.Description size="2" mb="3">
-          Glass engraving, buttonhole and glass type for this frame.
-        </Dialog.Description>
-
-        <Flex direction="column" gap="3">
-          <Box>
-            <Text size="2" weight="bold">
-              Glass engraving
-            </Text>
-            <TextField.Root
-              mt="1"
-              value={glassEngraving}
-              onChange={(e) => setGlassEngraving(e.target.value)}
-              placeholder='e.g. "Lauren & Simon 18th March 2020"'
-            />
-            <Text size="1" color="gray" mt="1">
-              Engraving price
-            </Text>
-            <TextField.Root
-              type="number"
-              mt="1"
-              value={glassEngravingPrice.toString()}
-              onChange={(e) =>
-                setGlassEngravingPrice(
-                  e.target.value ? Number(e.target.value) : 0,
-                )
-              }
-              min="0"
-            />
-          </Box>
-
-          <Flex gap="3" wrap="wrap">
-            <Box flexGrow="1" minWidth="220px">
-              <Text size="2" weight="bold">
-                Inclusions
-              </Text>
-              <Select.Root
-                value={inclusions}
-                onValueChange={(value) =>
-                  setInclusions(value as OrderFrameItemsInclusionsOptions)
-                }
-              >
-                <Select.Trigger mt="1" />
-                <Select.Content>
-                  {INCLUSION_OPTIONS.map((opt) => (
-                    <Select.Item key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-            </Box>
-
-            <Box flexGrow="1" minWidth="220px">
-              <Text size="2" weight="bold">
-                Glass type
-              </Text>
-              <Select.Root
-                value={glassType}
-                onValueChange={(value) =>
-                  setGlassType(value as OrderFrameItemsGlassTypeOptions)
-                }
-              >
-                <Select.Trigger mt="1" />
-                <Select.Content>
-                  {GLASS_TYPE_OPTIONS.map((opt) => (
-                    <Select.Item key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Root>
-
-              <Text size="1" color="gray" mt="1">
-                Glass price
-              </Text>
-              <TextField.Root
-                type="number"
-                mt="1"
-                value={glassPrice.toString()}
-                onChange={(e) =>
-                  setGlassPrice(e.target.value ? Number(e.target.value) : 0)
-                }
-                min="0"
-              />
-            </Box>
-          </Flex>
-        </Flex>
-
-        <Flex justify="end" gap="2" mt="4">
-          <Dialog.Close>
-            <Button type="button" variant="soft">
-              Cancel
-            </Button>
-          </Dialog.Close>
-          <Dialog.Close>
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={isPending || !frame.frameId}
-            >
-              {isPending ? "Saving..." : "Save changes"}
-            </Button>
-          </Dialog.Close>
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
-  );
-};
-
 /* ---------- Small helper components ---------- */
-
-type MetaProps = {
-  label: string;
-  value?: string | null;
-  colour?: string;
-};
-
-const Meta: FC<MetaProps> = ({ label, value, colour = "gray" }) => {
-  if (!value) return null;
-
-  return (
-    <Text size="1" color={colour as TextProps["color"]}>
-      {label}: <Badge variant="soft">{formatSnakeCase(value)}</Badge>
-    </Text>
-  );
-};
-
 const InlineToggle: FC<{
   label: string;
   checked: boolean;
@@ -1051,9 +1296,13 @@ const InlineToggle: FC<{
   disabled?: boolean;
 }> = ({ label, checked, onChange, disabled }) => (
   <Flex align="center" gap="2">
+    <Checkbox
+      checked={checked}
+      onCheckedChange={(value) => onChange(!!value)}
+      disabled={disabled}
+    />
     <Text size="2" color="gray">
       {label}
     </Text>
-    <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
   </Flex>
 );

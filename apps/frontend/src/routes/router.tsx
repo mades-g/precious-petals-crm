@@ -7,6 +7,7 @@ import Login from "../pages/login/login";
 import Home from "../pages/home/home";
 import App from "../app";
 import Order from "@/pages/order/order";
+import InvoicePreview from "@/pages/invoice-preview/invoice-preview";
 
 export const router = createBrowserRouter([
   {
@@ -31,7 +32,8 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           { index: true, element: <Home /> },
-          { path: "/order", element: <Order /> },
+          { path: "/order/:orderId", element: <Order /> },
+          { path: "/invoice-preview", element: <InvoicePreview /> },
         ],
       },
       { path: "*", element: <h1>Not found</h1> },

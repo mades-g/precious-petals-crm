@@ -2,12 +2,10 @@ import type { CustomersResponse } from "@/services/pb/types";
 
 import type { ExpandedOrdersResponse } from "../get-customers";
 
-const normaliseFrameOrder = (
+export const normaliseFrameOrder = (
   expandedRecord: ExpandedOrdersResponse["orderId"]["expand"],
 ) => {
   if (!expandedRecord.frameOrderId) return [];
-
-  console.log("expandedRecord", expandedRecord.frameOrderId[0])
 
   return expandedRecord.frameOrderId.map(
     ({
@@ -18,7 +16,6 @@ const normaliseFrameOrder = (
       sizeY,
       framingComplete,
       frameType,
-      artistHours,
       artworkComplete,
       preservationDate,
       preservationType,
@@ -33,7 +30,6 @@ const normaliseFrameOrder = (
       id: frameId,
     }) => ({
       size: `${sizeX}x${sizeY} inches`,
-      artistsHours: artistHours,
       frameType,
       artworkComplete,
       preservationDate,
@@ -55,7 +51,7 @@ const normaliseFrameOrder = (
   );
 };
 
-const normalisePaperWeightOrder = (
+export const normalisePaperWeightOrder = (
   expandedRecord: ExpandedOrdersResponse["orderId"]["expand"],
 ) => {
   if (!expandedRecord.paperweightOrderId) return null;
@@ -83,21 +79,34 @@ const normalisePaperWeightOrder = (
   };
 };
 
-const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
+export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
   if (!expandedRecord.orderId) return null;
 
   const {
-    orderId: {
-      id: orderId,
-      occasionDate,
-      orderNo,
-      orderStatus,
-      payment_status: paymentStatus,
-      billingAddressLine1,
-      billingAddressLine2,
-      billingTown,
-      billingCounty,
-      billingPostcode,
+      orderId: {
+        id: orderId,
+        occasionDate,
+        orderNo,
+        orderStatus,
+        payment_status: paymentStatus,
+        notes,
+        replacementFlowers,
+        replacementFlowersQty,
+        replacementFlowersPrice,
+        collectionQty,
+        collectionPrice,
+        deliveryQty,
+        deliveryPrice,
+        recreateButtonholeQty,
+        recreateButtonholePrice,
+        returnUnusedFlowers,
+        returnUnusedFlowersPrice,
+        artistHours,
+        billingAddressLine1,
+        billingAddressLine2,
+        billingTown,
+        billingCounty,
+        billingPostcode,
       deliverySameAsBilling,
       deliveryAddressLine1,
       deliveryAddressLine2,
@@ -121,6 +130,19 @@ const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
     orderStatus,
     paymentStatus,
     occasionDate,
+    notes,
+    replacementFlowers,
+    replacementFlowersQty,
+    replacementFlowersPrice,
+    collectionQty,
+    collectionPrice,
+    deliveryQty,
+    deliveryPrice,
+    recreateButtonholeQty,
+    recreateButtonholePrice,
+    returnUnusedFlowers,
+    returnUnusedFlowersPrice,
+    artistHours,
     updated,
     created,
     paperWeightOrder,

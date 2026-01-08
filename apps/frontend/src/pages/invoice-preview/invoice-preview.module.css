@@ -1,0 +1,40 @@
+.wrapper {
+  padding: 16px 24px 32px;
+  background: #f3f3f3;
+  min-height: 100vh;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.toolbar button {
+  padding: 8px 12px;
+  border: 1px solid #222;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.previewFrame {
+  width: 100%;
+  min-height: 85vh;
+  border: none;
+  background: #fff;
+}
+
+.state {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.error {
+  margin-top: 8px;
+  color: #a00;
+  font-size: 12px;
+}

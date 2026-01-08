@@ -17,8 +17,8 @@ import {
   CUSTOMERS_HOW_RECOMMENDED_OPTIONS,
   CUSTOMERS_TITLE_OPTIONS,
 } from "@/services/pb/constants";
-
 import { formatDate } from "@/utils";
+
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
 import formStyles from "../../form.module.css";
 
@@ -478,7 +478,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
           </>
         )}
       </Flex>
-      {/* Dates: Occasion + Preservation using DayPicker */}
+      {/* Occasion date using DayPicker */}
       <Flex gap="3" mt="2">
         {/* Occasion date (required) */}
         <Box>
@@ -528,56 +528,6 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
             {errors.occasionDate && (
               <Text size="1" color="red">
                 {errors.occasionDate.message as string}
-              </Text>
-            )}
-          </FormField>
-        </Box>
-        {/* Preservation date (optional) */}
-        <Box>
-          <FormField name="preservationDate" className={formStyles.field}>
-            <FormLabel className={formStyles.label} asChild>
-              <Text>Preservation date</Text>
-            </FormLabel>
-            <FormControl asChild>
-              <Controller
-                name="preservationDate"
-                control={control}
-                render={({ field }) => (
-                  <Popover.Root>
-                    <Popover.Trigger>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="2"
-                        style={{ width: "100%" }}
-                      >
-                        {field.value
-                          ? formatDate(field.value)
-                          : "Pick date (optional)"}
-                      </Button>
-                    </Popover.Trigger>
-                    <Popover.Content>
-                      <DayPicker
-                        mode="single"
-                        selected={
-                          field.value ? new Date(field.value) : undefined
-                        }
-                        onSelect={(date) => {
-                          const iso = date
-                            ? date.toISOString().slice(0, 10)
-                            : "";
-                          field.onChange(iso || undefined);
-                        }}
-                      />
-                    </Popover.Content>
-                    <input type="hidden" {...field} />
-                  </Popover.Root>
-                )}
-              />
-            </FormControl>
-            {errors.preservationDate && (
-              <Text size="1" color="red">
-                {errors.preservationDate.message as string}
               </Text>
             )}
           </FormField>

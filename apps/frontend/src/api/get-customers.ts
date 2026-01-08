@@ -7,18 +7,23 @@ import type {
   OrdersResponse,
 } from "@/services/pb/types";
 
-import { normalisedCustomer } from "./normalisers/customer.normaliser";
+import { normalisedCustomer, normaliseFrameOrder, normaliseOrder, normalisePaperWeightOrder } from "./normalisers/customer.normaliser";
+import type { FrameExtras } from "./types";
 
 // for now let's keep this here
 export type ExpandedOrdersResponse = {
   orderId: OrdersResponse<{
-    frameOrderId: OrderFrameItemsResponse[];
+    frameOrderId: OrderFrameItemsResponse<FrameExtras>[];
     paperweightOrderId: OrderPaperweightItemsResponse;
   }>;
 };
 
 // for now let's keep this here
 export type NormalisedCustomer = ReturnType<typeof normalisedCustomer>;
+export type NormalisedCustomerOrderDetails = ReturnType<typeof normaliseOrder>;
+export type NormalisedCustomerOrderDetailsFrames = ReturnType<typeof normaliseFrameOrder>;
+export type NormalisedCustomerOrderDetailsPaperweight = ReturnType<typeof normalisePaperWeightOrder>;
+
 export type GetCustomersParams = {
   occasionDate?: string;
   email?: string;
@@ -68,4 +73,17 @@ export async function getCustomers({
       sort: "-orderId.orderNo",
     })).map(normalisedCustomer);
 
+}
+
+export async function getCustomerByOrderId(orderId: string) {
+  const record = await pb
+    .collection(COLLECTIONS.CUSTOMERS)
+    .getFirstListItem<CustomersResponse<ExpandedOrdersResponse>>(
+      `orderId.id = "${orderId}"`,
+      {
+        expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
+      },
+    );
+
+  return normalisedCustomer(record);
 }

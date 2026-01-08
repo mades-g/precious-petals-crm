@@ -6,7 +6,7 @@ import {
   Flex,
   Text,
   TextField,
-  RadioGroup,
+  Checkbox,
 } from "@radix-ui/themes";
 import { useFormContext, useWatch } from "react-hook-form";
 
@@ -133,19 +133,19 @@ const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {
               <Text>Paperweight received?</Text>
             </Form.Label>
             <Form.Control asChild>
-              <RadioGroup.Root
-                value={paperweightReceived ? "yes" : "no"}
-                onValueChange={(value) =>
-                  setValue("paperweightReceived", value === "yes", {
-                    shouldValidate: true,
-                  })
-                }
-              >
-                <Flex gap="3">
-                  <RadioGroup.Item value="yes">Yes</RadioGroup.Item>
-                  <RadioGroup.Item value="no">No</RadioGroup.Item>
-                </Flex>
-              </RadioGroup.Root>
+              <Flex align="center" gap="2">
+                <Checkbox
+                  checked={!!paperweightReceived}
+                  onCheckedChange={(checked) =>
+                    setValue("paperweightReceived", !!checked, {
+                      shouldValidate: true,
+                    })
+                  }
+                />
+                <Text size="2" color="gray">
+                  Received
+                </Text>
+              </Flex>
             </Form.Control>
           </Form.Field>
         </Flex>

@@ -1,14 +1,5 @@
 import { formatCurrency } from "@/utils";
 
-type ExtrasRecord = Record<string, unknown>;
-
-export const toExtrasRecord = (extras: unknown): ExtrasRecord =>
-  extras && typeof extras === "object" ? (extras as ExtrasRecord) : {};
-
-export const getNumber = (obj: ExtrasRecord, key: string): number | null => {
-  const v = obj[key];
-  return typeof v === "number" ? v : null;
-};
 
 const hasInchesAlready = (value: string) => /\binch(es)?\b/i.test(value);
 

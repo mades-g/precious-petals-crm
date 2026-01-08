@@ -18,13 +18,13 @@ import {
   formatSnakeCase,
   howRecommendedColour,
   getOrderStatusColor,
+  getPaymentStatusColor,
 } from "@/utils";
 import type { NormalisedCustomer } from "@/api/get-customers";
 
 import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
 
 import FrameDetailsCell, {
-  type FrameOrderItemForDisplay,
 } from "./frame-details-cell";
 import PaperweightDetailsCell from "./paperweight-details-cell";
 
@@ -35,9 +35,6 @@ type CustomerRowProps = {
 
 const CELL_PAD_STYLE = { paddingTop: "8px", paddingBottom: "8px" };
 
-type OrderDetails = NonNullable<NormalisedCustomer["orderDetails"]>;
-type FrameOrderItem = NonNullable<OrderDetails["frameOrder"]>[number];
-
 const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
   const { displayName, email, phoneNumber, howRecommended, orderDetails } =
     customer;
@@ -46,12 +43,12 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
 
   const deliveryLines = orderDetails
     ? formatAddressLines({
-        line1: orderDetails.deliveryAddressLine1,
-        line2: orderDetails.deliveryAddressLine2,
-        town: orderDetails.deliveryTown,
-        county: orderDetails.deliveryCounty,
-        postcode: orderDetails.deliveryPostcode,
-      })
+      line1: orderDetails.deliveryAddressLine1,
+      line2: orderDetails.deliveryAddressLine2,
+      town: orderDetails.deliveryTown,
+      county: orderDetails.deliveryCounty,
+      postcode: orderDetails.deliveryPostcode,
+    })
     : [];
 
   const hasOrder = Boolean(orderDetails);
@@ -66,7 +63,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Code variant="outline" size="1">
             {hasOrder ? orderDetails!.orderNo : "No order"}
           </Code>
-
           {hasOrder && orderDetails!.orderStatus ? (
             <Badge
               color={getOrderStatusColor(orderDetails!.orderStatus)}
@@ -89,7 +85,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
           <Text align="center" weight="medium" size="2">
             {displayName}
           </Text>
-
           <Flex gap="2" align="center" wrap="wrap" justify="start">
             <Text size="1">{email}</Text>
             <Text size="1">{phoneNumber}</Text>
@@ -122,7 +117,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
                 No delivery address set
               </Text>
             )}
-
             <Box mt="1">
               {orderDetails!.deliverySameAsBilling ? (
                 <Badge color="green" variant="soft" radius="full" size="1">
@@ -150,7 +144,7 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
       {/* Payment status */}
       <Table.Cell style={CELL_PAD_STYLE}>
         {hasOrder && paymentStatus ? (
-          <Badge color="orange" variant="soft" radius="full" size="1">
+          <Badge color={getPaymentStatusColor(paymentStatus)} variant="soft" radius="full" size="1">
             {formatSnakeCase(paymentStatus)}
           </Badge>
         ) : (
@@ -161,21 +155,10 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
       <Table.Cell style={CELL_PAD_STYLE}>
         {orderDetails?.frameOrder?.length ? (
           <Flex direction="column" gap="2">
-            {orderDetails.frameOrder.map((frame: FrameOrderItem, index: number) => {
-              /**
-               * We keep this minimal adapter so the cell can accept both historical
-               * keys without `any`. If your normaliser already guarantees one key,
-               * this stays no-op.
-               */
-              const displayFrame: FrameOrderItemForDisplay = frame;
-
-              return (
-                <FrameDetailsCell
-                  key={(displayFrame as unknown as { frameId?: string | null }).frameId ?? `${index}`}
-                  frame={displayFrame}
-                />
-              );
-            })}
+            {orderDetails.frameOrder.map((frame) => <FrameDetailsCell
+              key={frame.colId}
+              frame={frame}
+            />)}
           </Flex>
         ) : (
           <Text size="1">-</Text>
@@ -200,11 +183,10 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
 
           <DropdownMenu.Content>
             <DropdownMenu.Item
-              onClick={() =>
-                navigate("/order", {
-                  state: { customer },
-                })
-              }
+              onClick={() => {
+                if (!orderDetails?.orderId) return;
+                navigate(`/order/${orderDetails.orderId}`);
+              }}
             >
               View order
             </DropdownMenu.Item>
