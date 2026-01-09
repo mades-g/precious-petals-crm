@@ -27,8 +27,7 @@ EXPOSE 8080
 
 ENV INVOICE_PDF_BIN=wkhtmltopdf
 
-# ✅ IMPORTANT: override the base image ENTRYPOINT (it defaults to wkhtmltopdf)
+# Resets entry point
 ENTRYPOINT []
 
-# (optional but recommended) make PB always use the mounted volume:
 CMD ["/pb/precious-petals-crm", "serve", "--http=0.0.0.0:8080", "--dir=/pb/pb_data"]

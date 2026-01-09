@@ -23,7 +23,7 @@ import "react-day-picker/dist/style.css";
 
 const DEBOUNCE_MS = 500;
 
-export type ModalMode = "create" | "edit"
+export type ModalMode = "create" | "edit";
 
 const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

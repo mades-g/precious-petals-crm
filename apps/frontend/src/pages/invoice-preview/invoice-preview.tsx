@@ -7,15 +7,19 @@ type LocationState = {
   payload?: unknown;
 };
 
-const A4_WIDTH_PX = 794;  // ~ 210mm at 96dpi
+const A4_WIDTH_PX = 794; // ~ 210mm at 96dpi
 const A4_HEIGHT_PX = 1123; // ~ 297mm at 96dpi
 
 const InvoicePreview: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state as LocationState | null) ?? null;
+  const previewKey = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("previewKey");
+  }, [location.search]);
 
-  const payload = state?.payload;
+  const [payload, setPayload] = useState<unknown>(state?.payload);
 
   const [html, setHtml] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -23,6 +27,22 @@ const InvoicePreview: FC = () => {
   // container used to compute scaling
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (!previewKey) return;
+    try {
+      const stored = sessionStorage.getItem(previewKey);
+      if (stored) setPayload(JSON.parse(stored));
+    } catch {
+      setPayload(undefined);
+    } finally {
+      try {
+        sessionStorage.removeItem(previewKey);
+      } catch {
+        // ignore
+      }
+    }
+  }, [previewKey]);
 
   const canPreview = useMemo(() => {
     return !!payload && !!pb.authStore.token && typeof pb.baseUrl === "string";
@@ -87,7 +107,8 @@ const InvoicePreview: FC = () => {
       const rect = el.getBoundingClientRect();
       // allow some padding inside viewport
       const availableWidth = Math.max(0, rect.width - 32);
-      const next = availableWidth > 0 ? Math.min(1, availableWidth / A4_WIDTH_PX) : 1;
+      const next =
+        availableWidth > 0 ? Math.min(1, availableWidth / A4_WIDTH_PX) : 1;
       setScale(next);
     };
 

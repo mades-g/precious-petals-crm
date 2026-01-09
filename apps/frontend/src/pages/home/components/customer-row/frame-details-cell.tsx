@@ -4,7 +4,12 @@ import { formatCurrency } from "@/utils";
 import type { NormalisedCustomerOrderDetailsFrames } from "@/api/get-customers";
 
 import OrderItemPill from "./order-item-pill";
-import { ensureInchesSuffix, formatAddon, normaliseDash, titleCase } from "./customer.row.utils";
+import {
+  ensureInchesSuffix,
+  formatAddon,
+  normaliseDash,
+  titleCase,
+} from "./customer.row.utils";
 
 export const FrameDetailsCell: FC<{
   frame: NormalisedCustomerOrderDetailsFrames[number];
@@ -34,7 +39,9 @@ export const FrameDetailsCell: FC<{
 
   const lines: string[] = [];
   const mountDetail =
-    mountColour && mountColour.trim().length > 0 ? normaliseDash(mountColour) : null;
+    mountColour && mountColour.trim().length > 0
+      ? normaliseDash(mountColour)
+      : null;
 
   const mountPrice = extras?.mountPrice ?? null;
   const glassPrice = extras?.glassPrice ?? null;
@@ -71,7 +78,9 @@ export const FrameDetailsCell: FC<{
     );
   }
 
-  return <OrderItemPill title={title} meta={meta} lines={lines} tone="neutral" />;
+  return (
+    <OrderItemPill title={title} meta={meta} lines={lines} tone="neutral" />
+  );
 };
 
 export default FrameDetailsCell;

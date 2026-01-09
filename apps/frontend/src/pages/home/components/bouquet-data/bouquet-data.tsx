@@ -174,10 +174,10 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                     </Flex>
                     {(bouquetErrors?.measuredWidthIn ||
                       bouquetErrors?.measuredHeightIn) && (
-                        <Text size="1" color="red">
-                          Both dimensions are required
-                        </Text>
-                      )}
+                      <Text size="1" color="red">
+                        Both dimensions are required
+                      </Text>
+                    )}
                   </Form.Field>
                 </Box>
                 <Box minWidth="250px">
@@ -255,10 +255,10 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                     </Flex>
                     {(bouquetErrors?.recommendedSizeWidthIn ||
                       bouquetErrors?.recommendedSizeHeightIn) && (
-                        <Text size="1" color="red">
-                          Both dimensions are required
-                        </Text>
-                      )}
+                      <Text size="1" color="red">
+                        Both dimensions are required
+                      </Text>
+                    )}
                   </Form.Field>
                 </Box>
                 <Box minWidth="250px">
@@ -330,7 +330,9 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                               <DayPicker
                                 mode="single"
                                 selected={
-                                  field.value ? new Date(field.value) : undefined
+                                  field.value
+                                    ? new Date(field.value)
+                                    : undefined
                                 }
                                 onSelect={(date) => {
                                   const iso = date
@@ -487,7 +489,7 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                   </Form.Field>
                 </Box>
               </Flex>
-              {mode === 'edit' && (
+              {mode === "edit" && (
                 <>
                   <Separator orientation="horizontal" size="4" />
                   <Flex gap="3" justify="between" direction="row" wrap="wrap">
@@ -528,7 +530,10 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                         </Form.Control>
                         {bouquetErrors?.glassEngravingPrice && (
                           <Text size="1" color="red">
-                            {bouquetErrors.glassEngravingPrice.message as string}
+                            {
+                              bouquetErrors.glassEngravingPrice
+                                .message as string
+                            }
                           </Text>
                         )}
                       </Form.Field>
@@ -613,7 +618,9 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                             disabled={!glassPriceRequired}
                             {...register(`${prefix}.glassPrice`, {
                               valueAsNumber: true,
-                              required: glassPriceRequired ? "Required" : undefined,
+                              required: glassPriceRequired
+                                ? "Required"
+                                : undefined,
                             })}
                           />
                         </Form.Control>

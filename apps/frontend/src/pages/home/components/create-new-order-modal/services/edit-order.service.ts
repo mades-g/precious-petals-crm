@@ -43,15 +43,19 @@ const editCustomerStage = async ({
     email: values.email,
     telephone: values.telephone,
     title: values.title as CustomersTitleOptions | "",
-    howRecommended: values.howRecommended as CustomersHowRecommendedOptions | "",
+    howRecommended: values.howRecommended as
+      | CustomersHowRecommendedOptions
+      | "",
   });
 
   if (currentCustomerForm.orderId) {
-    await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
-      orderNo: values.orderNo,
-      occasionDate: values.occasionDate,
-      ...mapOrderAddressesToPayload(values),
-    });
+    await pb
+      .collection(COLLECTIONS.ORDERS)
+      .update(currentCustomerForm.orderId, {
+        orderNo: values.orderNo,
+        occasionDate: values.occasionDate,
+        ...mapOrderAddressesToPayload(values),
+      });
   }
 
   return ok();
@@ -84,9 +88,11 @@ const editBouquetStage = async ({
         ),
     );
 
-    await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
-      frameOrderId: [],
-    });
+    await pb
+      .collection(COLLECTIONS.ORDERS)
+      .update(currentCustomerForm.orderId, {
+        frameOrderId: [],
+      });
 
     return ok();
   }
@@ -115,7 +121,9 @@ const editBouquetStage = async ({
     // 3b) If user added MORE bouquets than existed → CREATE the extras
     if (newBouquets.length > existingBouquets.length) {
       if (!currentCustomerForm?.orderId) {
-        console.error("Missing orderId when creating extra bouquets in edit mode");
+        console.error(
+          "Missing orderId when creating extra bouquets in edit mode",
+        );
         return ok();
       }
 
@@ -135,9 +143,11 @@ const editBouquetStage = async ({
         .filter(Boolean) as string[];
       const newIds = createdFrameItems.map((fi) => fi.id);
 
-      await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
-        frameOrderId: [...existingIds, ...newIds],
-      });
+      await pb
+        .collection(COLLECTIONS.ORDERS)
+        .update(currentCustomerForm.orderId, {
+          frameOrderId: [...existingIds, ...newIds],
+        });
     }
 
     return ok();
@@ -159,9 +169,11 @@ const editBouquetStage = async ({
       }),
     );
 
-    await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
-      frameOrderId: createdFrameItems.map((fi) => fi.id),
-    });
+    await pb
+      .collection(COLLECTIONS.ORDERS)
+      .update(currentCustomerForm.orderId, {
+        frameOrderId: createdFrameItems.map((fi) => fi.id),
+      });
 
     return ok();
   }
@@ -184,22 +196,32 @@ const editPaperweightStage = async ({
   }
 
   // 🧽 CASE 2: had paperweight before, user removed it now → delete
-  if (hadPaperweight && !hasNewPaperweight && currentCustomerForm?.paperweightId) {
+  if (
+    hadPaperweight &&
+    !hasNewPaperweight &&
+    currentCustomerForm?.paperweightId
+  ) {
     await pb
       .collection(COLLECTIONS.ORDER_PAPERWEIGHT_ITEMS)
       .delete(currentCustomerForm.paperweightId);
 
     if (currentCustomerForm.orderId) {
-      await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
-        paperweightOrderId: null,
-      });
+      await pb
+        .collection(COLLECTIONS.ORDERS)
+        .update(currentCustomerForm.orderId, {
+          paperweightOrderId: null,
+        });
     }
 
     return ok();
   }
 
   // 🔁 CASE 3: had paperweight & still has one → UPDATE
-  if (hadPaperweight && hasNewPaperweight && currentCustomerForm?.paperweightId) {
+  if (
+    hadPaperweight &&
+    hasNewPaperweight &&
+    currentCustomerForm?.paperweightId
+  ) {
     await updatePaperweight({
       id: currentCustomerForm.paperweightId,
       quantity: values.paperweightQuantity as number,
@@ -225,9 +247,11 @@ const editPaperweightStage = async ({
         paperweightReceived: values.paperweightReceived ?? false,
       });
 
-    await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
-      paperweightOrderId: newPaperweight.id,
-    });
+    await pb
+      .collection(COLLECTIONS.ORDERS)
+      .update(currentCustomerForm.orderId, {
+        paperweightOrderId: newPaperweight.id,
+      });
 
     return ok();
   }

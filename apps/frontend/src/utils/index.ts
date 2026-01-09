@@ -10,7 +10,9 @@ export const formatCurrency = (
   locale = "en-GB",
 ) => {
   if (typeof value !== "number" || Number.isNaN(value)) return undefined;
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(
+    value,
+  );
 };
 
 export const formatDate = (date: string) => {

@@ -1,13 +1,6 @@
 import * as Form from "@radix-ui/react-form";
 import { type FC } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Text,
-  TextField,
-  Checkbox,
-} from "@radix-ui/themes";
+import { Box, Button, Flex, Text, TextField, Checkbox } from "@radix-ui/themes";
 import { useFormContext, useWatch } from "react-hook-form";
 
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";

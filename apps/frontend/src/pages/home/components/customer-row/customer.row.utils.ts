@@ -1,6 +1,5 @@
 import { formatCurrency } from "@/utils";
 
-
 const hasInchesAlready = (value: string) => /\binch(es)?\b/i.test(value);
 
 export const ensureInchesSuffix = (value: string) =>
@@ -13,9 +12,7 @@ export const normaliseDash = (value: string) =>
     .replace(/\s*–\s*/g, " – ");
 
 export const titleCase = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  value.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 
 export const formatAddon = (
   label: string,

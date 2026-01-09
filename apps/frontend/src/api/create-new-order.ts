@@ -66,7 +66,10 @@ export const createNewOrder = async (
   }
 
   const orderPayload = {
-    orderNo: typeof values.orderNo === "number" ? values.orderNo : Number(values.orderNo),
+    orderNo:
+      typeof values.orderNo === "number"
+        ? values.orderNo
+        : Number(values.orderNo),
     occasionDate: values.occasionDate,
     ...mapOrderAddressesToPayload(values),
     notes: "", // hook this up when you add notes to the form

@@ -17,9 +17,12 @@ export type UpdateCustomerInput = {
   howRecommended?: CustomersHowRecommendedOptions | "";
 };
 
-export const updateCustomer = async (
-  {id, title, howRecommended, ...rest}: UpdateCustomerInput,
-): Promise<CustomersResponse> => {
+export const updateCustomer = async ({
+  id,
+  title,
+  howRecommended,
+  ...rest
+}: UpdateCustomerInput): Promise<CustomersResponse> => {
   const data: Update<"customers"> = {
     ...rest,
     title: title || undefined,

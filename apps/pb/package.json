@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "./precious-petals-crm serve --http=0.0.0.0:8090",
+    "dev": "go run . serve",
     "build": "go build -o precious-petals-crm ."
   },
   "keywords": [],

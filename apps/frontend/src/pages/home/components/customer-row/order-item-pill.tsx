@@ -33,19 +33,13 @@ export const OrderItemPill: FC<{
     {lines.length > 0 ? (
       <Box mt="1">
         {lines.map((line, i) => (
-          <Text
-            key={i}
-            as="div"
-            size="1"
-            color="gray"
-            weight="medium"
-          >
+          <Text key={i} as="div" size="1" color="gray" weight="medium">
             {line}
           </Text>
         ))}
       </Box>
     ) : null}
   </Box>
-)
+);
 
 export default OrderItemPill;

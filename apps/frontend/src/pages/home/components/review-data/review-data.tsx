@@ -21,9 +21,7 @@ const ReviewData: FC<ReviewDataProps> = ({
   const { getValues } = useFormContext<CreateOrderFormValues>();
   const values = getValues();
 
-  const isBouquetComplete = (
-    bq: CreateOrderFormValues["bouquets"][number],
-  ) =>
+  const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) =>
     bq.measuredWidthIn !== null &&
     bq.measuredHeightIn !== null &&
     bq.layout &&

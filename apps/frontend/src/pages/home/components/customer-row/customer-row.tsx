@@ -24,8 +24,7 @@ import type { NormalisedCustomer } from "@/api/get-customers";
 
 import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
 
-import FrameDetailsCell, {
-} from "./frame-details-cell";
+import FrameDetailsCell from "./frame-details-cell";
 import PaperweightDetailsCell from "./paperweight-details-cell";
 
 type CustomerRowProps = {
@@ -43,12 +42,12 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
 
   const deliveryLines = orderDetails
     ? formatAddressLines({
-      line1: orderDetails.deliveryAddressLine1,
-      line2: orderDetails.deliveryAddressLine2,
-      town: orderDetails.deliveryTown,
-      county: orderDetails.deliveryCounty,
-      postcode: orderDetails.deliveryPostcode,
-    })
+        line1: orderDetails.deliveryAddressLine1,
+        line2: orderDetails.deliveryAddressLine2,
+        town: orderDetails.deliveryTown,
+        county: orderDetails.deliveryCounty,
+        postcode: orderDetails.deliveryPostcode,
+      })
     : [];
 
   const hasOrder = Boolean(orderDetails);
@@ -139,7 +138,12 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
       </Table.Cell>
       <Table.Cell style={CELL_PAD_STYLE}>
         {hasOrder && paymentStatus ? (
-          <Badge color={getPaymentStatusColor(paymentStatus)} variant="soft" radius="full" size="1">
+          <Badge
+            color={getPaymentStatusColor(paymentStatus)}
+            variant="soft"
+            radius="full"
+            size="1"
+          >
             {formatSnakeCase(paymentStatus)}
           </Badge>
         ) : (
@@ -149,10 +153,9 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
       <Table.Cell style={CELL_PAD_STYLE}>
         {orderDetails?.frameOrder?.length ? (
           <Flex direction="column" gap="2">
-            {orderDetails.frameOrder.map((frame) => <FrameDetailsCell
-              key={frame.colId}
-              frame={frame}
-            />)}
+            {orderDetails.frameOrder.map((frame) => (
+              <FrameDetailsCell key={frame.colId} frame={frame} />
+            ))}
           </Flex>
         ) : (
           <Text size="1">-</Text>

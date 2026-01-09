@@ -18,9 +18,12 @@ export type UpdatePaperweightResult = OrderPaperweightItemsResponse;
  * Updates an existing paperweight item.
  * Only touches quantity, price and paperweightReceived.
  */
-export const updatePaperweight = async (
-  { id, quantity, price, paperweightReceived }: UpdatePaperweightInput,
-): Promise<UpdatePaperweightResult> => {
+export const updatePaperweight = async ({
+  id,
+  quantity,
+  price,
+  paperweightReceived,
+}: UpdatePaperweightInput): Promise<UpdatePaperweightResult> => {
   const payload: Update<"order_paperweight_items"> = {
     quantity,
     price,

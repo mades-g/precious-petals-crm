@@ -7,7 +7,12 @@ import type {
   OrdersResponse,
 } from "@/services/pb/types";
 
-import { normalisedCustomer, normaliseFrameOrder, normaliseOrder, normalisePaperWeightOrder } from "./normalisers/customer.normaliser";
+import {
+  normalisedCustomer,
+  normaliseFrameOrder,
+  normaliseOrder,
+  normalisePaperWeightOrder,
+} from "./normalisers/customer.normaliser";
 import type { FrameExtras } from "./types";
 
 // for now let's keep this here
@@ -21,8 +26,12 @@ export type ExpandedOrdersResponse = {
 // for now let's keep this here
 export type NormalisedCustomer = ReturnType<typeof normalisedCustomer>;
 export type NormalisedCustomerOrderDetails = ReturnType<typeof normaliseOrder>;
-export type NormalisedCustomerOrderDetailsFrames = ReturnType<typeof normaliseFrameOrder>;
-export type NormalisedCustomerOrderDetailsPaperweight = ReturnType<typeof normalisePaperWeightOrder>;
+export type NormalisedCustomerOrderDetailsFrames = ReturnType<
+  typeof normaliseFrameOrder
+>;
+export type NormalisedCustomerOrderDetailsPaperweight = ReturnType<
+  typeof normalisePaperWeightOrder
+>;
 
 export type GetCustomersParams = {
   occasionDate?: string;
@@ -64,26 +73,28 @@ export async function getCustomers({
 
   const filter = filters.join(" && ");
 
-  return (await pb
-    .collection(COLLECTIONS.CUSTOMERS)
-    // TODO: switch to paginated API instead of getFullList
-    .getFullList<CustomersResponse<ExpandedOrdersResponse>>({
-      expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
-      ...(filter ? { filter } : {}),
-      sort: "-orderId.orderNo",
-    })).map(normalisedCustomer);
-
+  return (
+    (
+      await pb
+        .collection(COLLECTIONS.CUSTOMERS)
+        // TODO: switch to paginated API instead of getFullList
+        .getFullList<CustomersResponse<ExpandedOrdersResponse>>({
+          expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
+          ...(filter ? { filter } : {}),
+          sort: "-orderId.orderNo",
+        })
+    ).map(normalisedCustomer)
+  );
 }
 
 export async function getCustomerByOrderId(orderId: string) {
   const record = await pb
     .collection(COLLECTIONS.CUSTOMERS)
-    .getFirstListItem<CustomersResponse<ExpandedOrdersResponse>>(
-      `orderId.id = "${orderId}"`,
-      {
-        expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
-      },
-    );
+    .getFirstListItem<
+      CustomersResponse<ExpandedOrdersResponse>
+    >(`orderId.id = "${orderId}"`, {
+      expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
+    });
 
   return normalisedCustomer(record);
 }
