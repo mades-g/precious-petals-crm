@@ -6,7 +6,7 @@ RUN apk add --no-cache git ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY main.go ./
+COPY main.go utils.go ./
 RUN go build -o /precious-petals-crm .
 
 FROM surnet/alpine-wkhtmltopdf:3.20.3-0.12.6-full
