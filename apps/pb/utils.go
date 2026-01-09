@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -729,7 +730,7 @@ func createEmailLog(app *pocketbase.PocketBase, e *core.RequestEvent, toEmail, t
 		rec.Set("meta", map[string]any{})
 	}
 
-	if err := app.Dao().SaveRecord(rec); err != nil {
+	if err := app.Save(rec); err != nil {
 		return nil, err
 	}
 	return rec, nil
@@ -762,5 +763,5 @@ func updateEmailLog(app *pocketbase.PocketBase, rec *core.Record, status string,
 		rec.Set("meta", existing)
 	}
 
-	_ = app.Dao().SaveRecord(rec)
+	_ = app.Save(rec)
 }

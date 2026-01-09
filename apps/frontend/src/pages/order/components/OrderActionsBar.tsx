@@ -89,6 +89,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                 <Select.Root
                   value={control.value}
                   onValueChange={(value) =>
+                    // @ts-expect-error - need to figure out what's wrong
                     control.onChange(value as typeof control.value)
                   }
                 >

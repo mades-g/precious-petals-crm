@@ -264,15 +264,9 @@ const OrderPage = () => {
       totals,
     });
 
-    const key = `invoicePreview:${order.orderId}:${Date.now()}`;
-    try {
-      sessionStorage.setItem(key, JSON.stringify(payload));
-    } catch {
-      return;
-    }
-
-    const url = `/invoice-preview?previewKey=${encodeURIComponent(key)}`;
-    window.open(url, "_blank", "noopener");
+    navigate("/invoice-preview", {
+      state: { payload },
+    });
   };
 
   const orderLabel = order?.orderNo ?? order?.orderId ?? "";
@@ -314,12 +308,11 @@ const OrderPage = () => {
     <Box p="4" style={{ margin: "0 auto", maxWidth: 1100 }} width="100%">
       <OrderHeader
         orderLabel={`${orderLabel}`}
-        onBack={() => navigate("/")}
+        onBack={() => navigate(-1)}
         onPreviewInvoice={handlePreviewInvoice}
         onOpenEmailActions={() => setIsEmailDrawerOpen(true)}
         previewDisabled={!order?.orderId}
       />
-
       <OrderActionsBar
         created={order?.created}
         occasionDate={order?.occasionDate}
@@ -329,7 +322,6 @@ const OrderPage = () => {
         onSaveMeta={handleSaveMeta}
         isSavingMeta={isSavingMeta}
       />
-
       <Box mt="4">
         <OrderItemsTable
           lineItems={lineItems}
@@ -344,7 +336,6 @@ const OrderPage = () => {
           isSavingPaperweight={isSavingPaperweight}
         />
       </Box>
-
       <Box mt="4">
         <OrderExtrasAccordion
           orderExtras={orderExtrasDraft}
@@ -358,7 +349,6 @@ const OrderPage = () => {
           isSaving={isSavingExtras}
         />
       </Box>
-
       <CreateNewOrderModal
         modalMode={modalMode}
         isModalOpen={isEditModalOpen}
@@ -371,7 +361,6 @@ const OrderPage = () => {
         currentCustomerForm={currentCustomerForm}
         selectedBouquetId={selectedBouquetId}
       />
-
       <EmailActionsDrawer
         open={isEmailDrawerOpen}
         onOpenChange={setIsEmailDrawerOpen}
