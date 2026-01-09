@@ -69,6 +69,8 @@ export const useEmailActions = ({
         eventNote,
         orderId: order?.orderId,
         customerId: customer?.customerId,
+        frameItemId: frames.length === 1 ? frames[0]?.frameId : undefined,
+        paperweightItemId: paperweight?.paperWeightId ?? undefined,
       },
     });
 

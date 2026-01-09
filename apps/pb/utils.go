@@ -418,7 +418,8 @@ func buildInvoiceViewModel(payload invoicePayload) invoiceViewModel {
 		VatTotal:     formatMoney(payload.Totals.VatTotal),
 		GrandTotal:   formatMoney(payload.Totals.GrandTotal),
 		Credits:      formatMoney(payload.Totals.GrandTotal),
-		BalanceDue:   formatMoney(0),
+    // Need to sort out how to calculate balance due
+		BalanceDue:   formatMoney(payload.Totals.GrandTotal),
 	}
 }
 

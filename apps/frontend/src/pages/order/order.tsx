@@ -126,7 +126,10 @@ const OrderPage = () => {
     () => buildLineItems(frames, paperweight),
     [frames, paperweight],
   );
-  const totals = useMemo(() => buildTotals(lineItems), [lineItems]);
+  const totals = useMemo(
+    () => buildTotals(lineItems, orderExtrasDraft),
+    [lineItems, orderExtrasDraft],
+  );
   const orderExtrasSummary = useMemo(
     () => buildExtrasSummary(orderExtrasDraft),
     [orderExtrasDraft],
