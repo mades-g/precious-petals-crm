@@ -35,14 +35,12 @@ const ReviewData: FC<ReviewDataProps> = ({
 
   const completedBouquets = values.bouquets.filter(isBouquetComplete);
 
-  // --- Bouquets totals (frame + mount) ------------------------------------
   const bouquetTotal = completedBouquets.reduce((sum, bq) => {
     const frame = typeof bq.framePrice === "number" ? bq.framePrice : 0;
     const mount = typeof bq.mountPrice === "number" ? bq.mountPrice : 0;
     return sum + frame + mount;
   }, 0);
 
-  // --- Paperweight totals --------------------------------------------------
   const hasPaperweight = Boolean(
     values.paperweightPrice || values.paperweightQuantity,
   );
@@ -54,7 +52,6 @@ const ReviewData: FC<ReviewDataProps> = ({
 
   const grandTotal = bouquetTotal + paperweightTotal;
 
-  // --- Addresses -----------------------------------------------------------
   const billingAddress = formatAddress({
     line1: values.billingAddressLine1,
     line2: values.billingAddressLine2,

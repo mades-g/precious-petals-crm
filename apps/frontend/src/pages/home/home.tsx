@@ -15,9 +15,11 @@ import { useQuery } from "@tanstack/react-query";
 import { DayPicker } from "react-day-picker";
 
 import { getCustomers, type GetCustomersParams } from "@/api/get-customers";
+import { useAuth } from "@/auth/hooks/use-auth";
 import { formatDate } from "@/utils";
 
 import CustomerTable from "./components/customer-table/costumer-table";
+import ExportOrdersModal from "./components/export-orders-modal/export-orders-modal";
 
 import "react-day-picker/dist/style.css";
 
@@ -28,6 +30,9 @@ export type ModalMode = "create" | "edit";
 const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [isExportOpen, setIsExportOpen] = useState(false);
+
+  const { isAuthed, loading: isAuthLoading } = useAuth();
 
   const [filters, setFilters] = useState({
     email: "",
@@ -278,6 +283,13 @@ const Home = () => {
                 >
                   Create new order
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsExportOpen(true)}
+                  disabled={!isAuthed || isAuthLoading}
+                >
+                  Export XLSX
+                </Button>
               </Flex>
             </Flex>
             {isLoading && (
@@ -303,6 +315,11 @@ const Home = () => {
           </Flex>
         </Card>
       </Box>
+      <ExportOrdersModal
+        open={isExportOpen}
+        onOpenChange={setIsExportOpen}
+        canExport={isAuthed}
+      />
     </Flex>
   );
 };

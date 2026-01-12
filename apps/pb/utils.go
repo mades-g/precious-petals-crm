@@ -110,7 +110,7 @@ func (d *StringDate) UnmarshalJSON(b []byte) error {
 //
 
 type invoicePayload struct {
-  EmailContext *emailContextPayload `json:"emailContext"`
+	EmailContext *emailContextPayload `json:"emailContext"`
 
 	Customer struct {
 		Title       string `json:"title"`
@@ -418,8 +418,8 @@ func buildInvoiceViewModel(payload invoicePayload) invoiceViewModel {
 		VatTotal:     formatMoney(payload.Totals.VatTotal),
 		GrandTotal:   formatMoney(payload.Totals.GrandTotal),
 		Credits:      formatMoney(payload.Totals.GrandTotal),
-    // Need to sort out how to calculate balance due
-		BalanceDue:   formatMoney(payload.Totals.GrandTotal),
+		// Need to sort out how to calculate balance due
+		BalanceDue: formatMoney(payload.Totals.GrandTotal),
 	}
 }
 
@@ -573,11 +573,6 @@ func firstNonEmpty(value string, fallback string) string {
 	}
 	return value
 }
-
-
-// -----------------------------
-// email_logs helpers
-// -----------------------------
 
 type emailLogContext struct {
 	EmailType   string

@@ -2,7 +2,10 @@ module precious-petals/pb-crm
 
 go 1.25.5
 
-require github.com/pocketbase/pocketbase v0.34.0
+require (
+	github.com/pocketbase/pocketbase v0.34.0
+	github.com/xuri/excelize/v2 v2.9.1
+)
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -28,10 +31,15 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/pocketbase/dbx v1.11.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/richardlehane/mscfb v1.0.4 // indirect
+	github.com/richardlehane/msoleps v1.0.4 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	github.com/tiendc/go-deepcopy v1.6.0 // indirect
+	github.com/xuri/efp v0.0.1 // indirect
+	github.com/xuri/nfp v0.0.1 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 // indirect
 	golang.org/x/image v0.33.0 // indirect
