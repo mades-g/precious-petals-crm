@@ -22,6 +22,7 @@ WORKDIR /pb
 COPY --from=builder /precious-petals-crm /pb/precious-petals-crm
 COPY ./pb_hooks /pb/pb_hooks
 COPY ./pb_public /pb/pb_public
+COPY ./pb_migrations /pb/pb_migrations
 
 EXPOSE 8080
 

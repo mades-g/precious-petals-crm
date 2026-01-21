@@ -72,7 +72,7 @@ export const createNewOrder = async (
         : Number(values.orderNo),
     occasionDate: values.occasionDate,
     ...mapOrderAddressesToPayload(values),
-    notes: "", // hook this up when you add notes to the form
+    notes: "",
     payment_status: "waiting_first_deposit",
     orderStatus: "draft" as const,
     frameOrderId: frameItems.map((fi) => fi.id),

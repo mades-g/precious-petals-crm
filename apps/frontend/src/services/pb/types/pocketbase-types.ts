@@ -13,6 +13,7 @@ export type Collections =
   | "customers"
   | "order_frame_items"
   | "order_paperweight_items"
+  | "order_payments"
   | "orders"
   | "users";
 
@@ -205,6 +206,22 @@ export type OrderPaperweightItemsRecord = {
   updated: IsoAutoDateString;
 };
 
+export type OrderPaymentsPaymentTypeOptions =
+  | "first_deposit"
+  | "second_deposit"
+  | "final_balance"
+  | "other";
+
+export type OrderPaymentsRecord = {
+  amount: number;
+  created: IsoAutoDateString;
+  id: string;
+  orderId: RecordIdString;
+  paidAt?: IsoDateString;
+  paymentType: OrderPaymentsPaymentTypeOptions;
+  updated: IsoAutoDateString;
+};
+
 export type OrdersPaymentStatusOptions =
   | "waiting_first_deposit"
   | "waiting_second_deposit"
@@ -295,6 +312,8 @@ export type OrderFrameItemsResponse<
 > = Required<OrderFrameItemsRecord<Textras>> & BaseSystemFields<Texpand>;
 export type OrderPaperweightItemsResponse<Texpand = unknown> =
   Required<OrderPaperweightItemsRecord> & BaseSystemFields<Texpand>;
+export type OrderPaymentsResponse<Texpand = unknown> =
+  Required<OrderPaymentsRecord> & BaseSystemFields<Texpand>;
 export type OrdersResponse<Texpand = unknown> = Required<OrdersRecord> &
   BaseSystemFields<Texpand>;
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> &
@@ -313,6 +332,7 @@ export type CollectionRecords = {
   customers: CustomersRecord;
   order_frame_items: OrderFrameItemsRecord;
   order_paperweight_items: OrderPaperweightItemsRecord;
+  order_payments: OrderPaymentsRecord;
   orders: OrdersRecord;
   users: UsersRecord;
 };
@@ -326,6 +346,7 @@ export type CollectionResponses = {
   customers: CustomersResponse;
   order_frame_items: OrderFrameItemsResponse;
   order_paperweight_items: OrderPaperweightItemsResponse;
+  order_payments: OrderPaymentsResponse;
   orders: OrdersResponse;
   users: UsersResponse;
 };

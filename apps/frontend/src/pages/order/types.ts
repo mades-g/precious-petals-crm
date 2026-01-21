@@ -46,6 +46,8 @@ export type Totals = {
   vatRate: number;
   vatTotal: number;
   grandTotal: number;
+  paidTotal?: number;
+  balanceDue?: number;
 };
 
 export type EmailActionEndpoint = "invoice" | "recommendation";

@@ -178,6 +178,8 @@ type invoicePayload struct {
 		VatRate    float64 `json:"vatRate"`
 		VatTotal   float64 `json:"vatTotal"`
 		GrandTotal float64 `json:"grandTotal"`
+		PaidTotal  float64 `json:"paidTotal"`
+		BalanceDue float64 `json:"balanceDue"`
 	} `json:"totals"`
 }
 
@@ -378,6 +380,15 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 }
 
 func buildInvoiceViewModel(payload invoicePayload) invoiceViewModel {
+	paidTotal := payload.Totals.PaidTotal
+	if paidTotal < 0 {
+		paidTotal = 0
+	}
+	balanceDue := payload.Totals.GrandTotal - paidTotal
+	if balanceDue < 0 {
+		balanceDue = 0
+	}
+
 	displayName := payload.Customer.DisplayName
 	if displayName == "" {
 		displayName = strings.TrimSpace(strings.Join([]string{
@@ -417,9 +428,8 @@ func buildInvoiceViewModel(payload invoicePayload) invoiceViewModel {
 		SubTotal:     formatMoney(payload.Totals.SubTotal),
 		VatTotal:     formatMoney(payload.Totals.VatTotal),
 		GrandTotal:   formatMoney(payload.Totals.GrandTotal),
-		Credits:      formatMoney(payload.Totals.GrandTotal),
-		// Need to sort out how to calculate balance due
-		BalanceDue: formatMoney(payload.Totals.GrandTotal),
+		Credits:      formatMoney(paidTotal),
+		BalanceDue:   formatMoney(balanceDue),
 	}
 }
 

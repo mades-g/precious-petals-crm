@@ -16,11 +16,13 @@ export const COLLECTIONS: Record<
   | "USERS"
   | "CUSTOMERS"
   | "ORDERS"
+  | "ORDER_PAYMENTS"
   | "ORDER_PAPERWEIGHT_ITEMS"
   | "ORDER_FRAME_ITEMS",
   Extract<
     Collections,
     | "customers"
+    | "order_payments"
     | "orders"
     | "users"
     | "order_frame_items"
@@ -30,6 +32,7 @@ export const COLLECTIONS: Record<
   USERS: "users",
   CUSTOMERS: "customers",
   ORDERS: "orders",
+  ORDER_PAYMENTS: "order_payments",
   ORDER_FRAME_ITEMS: "order_frame_items",
   ORDER_PAPERWEIGHT_ITEMS: "order_paperweight_items",
 };

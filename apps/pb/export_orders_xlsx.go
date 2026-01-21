@@ -264,10 +264,7 @@ func fetchRecordsByField(app *pocketbase.PocketBase, collection, field string, i
 
 	result := []*core.Record{}
 	for start := 0; start < len(ids); start += filterChunkSize {
-		end := start + filterChunkSize
-		if end > len(ids) {
-			end = len(ids)
-		}
+		end := min(start+filterChunkSize, len(ids))
 
 		filter := buildOrFilter(field, ids[start:end])
 		if filter == "" {
@@ -308,32 +305,27 @@ func escapeFilterValue(value string) string {
 
 func writeOrdersSheet(file *excelize.File, orders []*core.Record, customerByOrderId map[string]orderExportCustomer) {
 	headers := []string{
-		"orderId",
-		"orderNo",
-		"created",
-		"updated",
-		"occasionDate",
-		"customerId",
-		"customerName",
-		"customerEmail",
-		"billingAddressLine1",
-		"billingAddressLine2",
-		"billingTown",
-		"billingCounty",
-		"billingPostcode",
-		"orderStatus",
-		"payment_status",
-		"replacementFlowers",
-		"replacementFlowersQty",
-		"replacementFlowersPrice",
-		"collectionQty",
-		"collectionPrice",
-		"deliveryQty",
-		"deliveryPrice",
-		"returnUnusedFlowers",
-		"returnUnusedFlowersPrice",
-		"artistHours",
-		"notes",
+		"Order ID",
+		"Order No",
+		"Created",
+		"Updated",
+		"Occasion Date",
+		"Customer ID",
+		"Customer Name",
+		"Customer Email",
+		"Order Status",
+		"Payment Status",
+		"Replacement Flowers",
+		"Replacement Flowers Qty",
+		"Replacement Flowers Price",
+		"Collection Qty",
+		"Collection Price",
+		"Delivery Qty",
+		"Delivery Price",
+		"Return Unused Flowers",
+		"Return Unused Flowers Price",
+		"Artist Hours",
+		"Notes",
 	}
 
 	writeHeaderRow(file, "Orders", headers)
@@ -350,11 +342,6 @@ func writeOrdersSheet(file *excelize.File, orders []*core.Record, customerByOrde
 			customer.id,
 			customer.name,
 			customer.email,
-			order.GetString("billingAddressLine1"),
-			order.GetString("billingAddressLine2"),
-			order.GetString("billingTown"),
-			order.GetString("billingCounty"),
-			order.GetString("billingPostcode"),
 			order.GetString("orderStatus"),
 			order.GetString("payment_status"),
 			order.GetBool("replacementFlowers"),

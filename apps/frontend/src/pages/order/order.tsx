@@ -21,12 +21,14 @@ import OrderHeader from "./components/OrderHeader";
 import OrderActionsBar from "./components/OrderActionsBar";
 import OrderItemsTable from "./components/OrderItemsTable";
 import OrderExtrasAccordion from "./components/OrderExtrasAccordion";
+import OrderPaymentsCard from "./components/OrderPaymentsCard";
 import EmailActionsDrawer from "./components/EmailActionsDrawer";
 import { useOrderQuery } from "./hooks/useOrderQuery";
 import { useOrderMetaMutations } from "./hooks/useOrderMetaMutations";
 import { useOrderExtrasMutations } from "./hooks/useOrderExtrasMutations";
 import { useFrameMutations } from "./hooks/useFrameMutations";
 import { usePaperweightMutations } from "./hooks/usePaperweightMutations";
+import { useOrderPayments, useOrderPaymentsMutations } from "./hooks/useOrderPayments";
 import { useEmailActions } from "./hooks/useEmailActions";
 import { useEmailLogsQuery } from "./hooks/useEmailLogsQuery";
 import { buildLineItems } from "./utils/buildLineItems";
@@ -163,6 +165,34 @@ const OrderPage = () => {
   const { updatePaperweight, isSavingPaperweight } = usePaperweightMutations(
     order?.orderId,
   );
+  const {
+    data: payments,
+    isLoading: isLoadingPayments,
+    isError: isPaymentsError,
+  } = useOrderPayments(order?.orderId);
+  const {
+    addPayment,
+    updatePayment,
+    isSavingPayment,
+    isUpdatingPayment,
+  } = useOrderPaymentsMutations(order?.orderId);
+
+  const totalPaid = useMemo(
+    () => (payments ?? []).reduce((sum, payment) => sum + payment.amount, 0),
+    [payments],
+  );
+  const outstandingBalance = useMemo(
+    () => Math.max(0, totals.grandTotal - totalPaid),
+    [totals.grandTotal, totalPaid],
+  );
+  const invoiceTotals = useMemo(
+    () => ({
+      ...totals,
+      paidTotal: totalPaid,
+      balanceDue: outstandingBalance,
+    }),
+    [totals, totalPaid, outstandingBalance],
+  );
 
   const { canSendEmails, sendEmail, emailStatus } = useEmailActions({
     customer,
@@ -170,7 +200,7 @@ const OrderPage = () => {
     frames,
     paperweight,
     extras: orderExtrasDraft,
-    totals,
+    totals: invoiceTotals,
   });
 
   const {
@@ -178,6 +208,7 @@ const OrderPage = () => {
     isLoading: isLoadingLogs,
     isError: isLogsError,
   } = useEmailLogsQuery(order?.orderId);
+
 
   const handleSaveMeta = async () => {
     if (!order?.orderId) return;
@@ -264,7 +295,7 @@ const OrderPage = () => {
       frames,
       paperweight,
       extras: orderExtrasDraft,
-      totals,
+      totals: invoiceTotals,
     });
 
     navigate("/invoice-preview", {
@@ -325,6 +356,17 @@ const OrderPage = () => {
         onSaveMeta={handleSaveMeta}
         isSavingMeta={isSavingMeta}
       />
+      <Box mt="4">
+        <OrderPaymentsCard
+          payments={payments ?? []}
+          isLoading={isLoadingPayments}
+          isError={Boolean(isPaymentsError)}
+          isSaving={isSavingPayment || isUpdatingPayment}
+          outstanding={outstandingBalance}
+          onCreate={addPayment}
+          onUpdate={updatePayment}
+        />
+      </Box>
       <Box mt="4">
         <OrderItemsTable
           lineItems={lineItems}
