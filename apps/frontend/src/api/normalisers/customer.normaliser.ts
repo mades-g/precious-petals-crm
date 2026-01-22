@@ -29,7 +29,12 @@ export const normaliseFrameOrder = (
       frameMountColour: mountColour,
       id: frameId,
     }) => ({
-      size: `${sizeX}x${sizeY} inches`,
+      measuredSize: `${sizeX}x${sizeY} inches`,
+      recommendedSize:
+        extras?.recommendedSizeWidthIn != null &&
+        extras?.recommendedSizeHeightIn != null
+          ? `${extras.recommendedSizeWidthIn}x${extras.recommendedSizeHeightIn} inches`
+          : null,
       frameType,
       artworkComplete,
       preservationDate,

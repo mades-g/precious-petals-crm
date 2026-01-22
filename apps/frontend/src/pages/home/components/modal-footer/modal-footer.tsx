@@ -59,7 +59,6 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
       >
         Cancel
       </Button>
-
       {mode === "create" && (
         <>
           {currentFormStage === "costumer_data" && (
@@ -82,7 +81,6 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
               </Button>
             </Flex>
           )}
-
           {currentFormStage === "bouquet_data" && (
             <Flex justify="end" gap="2">
               <Button
@@ -112,7 +110,6 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
               </Button>
             </Flex>
           )}
-
           {currentFormStage === "paperweight_data" && (
             <Flex justify="end" gap="2">
               <Button
@@ -134,7 +131,6 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
               </Button>
             </Flex>
           )}
-
           {currentFormStage === "review_data" && (
             <Flex justify="end" gap="2">
               <Button
@@ -158,7 +154,6 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
           )}
         </>
       )}
-
       {mode === "edit" && (
         <Flex justify="end" gap="2">
           <Button type="submit" form={formId} disabled={isSubmitting}>

@@ -93,7 +93,9 @@ export const postEmailInvoice = (payload: unknown) =>
 export const postEmailRecommendation = (payload: unknown) =>
   sendCustomRoute("/api/email/recommendation", payload);
 
-export const getExportOrdersXlsx = (query: Record<string, string | undefined>) =>
+export const getExportOrdersXlsx = (
+  query: Record<string, string | undefined>,
+) =>
   sendCustomRouteWithBlob(
     "/api/export/orders.xlsx",
     query,

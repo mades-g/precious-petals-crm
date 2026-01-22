@@ -1,5 +1,5 @@
 import { useState, type FC } from "react";
-import { Dialog, Flex } from "@radix-ui/themes";
+import { Box, Dialog, Flex } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { createNewOrder } from "@/api/create-new-order";
@@ -144,65 +144,93 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
     <Dialog.Root open={isModalOpen}>
       <Dialog.Content
         maxWidth="900px"
-        style={{ maxHeight: "80vh", overflowY: "auto" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "80vh",
+        }}
       >
-        <Flex direction="column" align="start" mb="3">
-          <Dialog.Title>
-            {getModalTitle(modalMode, currentFormStage, currentCustomerForm)}
-          </Dialog.Title>
-          {modalMode === "create" && (
-            <Dialog.Description>
-              Create new customer, frame and/or paperweight order
-            </Dialog.Description>
-          )}
-        </Flex>
-        <CreateNewCustomerForm
-          formId={FORM_ID}
-          onValidSubmit={handleValidSubmit}
-          defaultValues={
-            modalMode === "create"
-              ? { orderNo: nextOrderNo }
-              : { ...currentCustomerForm }
-          }
+        {/* SCROLL AREA */}
+        <Box
+          style={{
+            flex: "1 1 auto",
+            minHeight: 0, // critical
+            overflowY: "auto",
+            paddingRight: 8, // optional: avoids scrollbar overlaying content
+          }}
         >
-          {currentFormStage === "costumer_data" && (
-            <CustomerData nextOrderNo={nextOrderNo} />
-          )}
-          {currentFormStage === "bouquet_data" && (
-            <BouquetData
-              mode={modalMode}
-              selectedBouquetId={selectedBouquetId}
-            />
-          )}
-          {currentFormStage === "paperweight_data" && (
-            <PaperWeightData mode={modalMode} />
-          )}
-          {modalMode === "create" && currentFormStage === "review_data" && (
-            <ReviewData
-              onEditCustomer={() => setCurrentFormStage("costumer_data")}
-              onEditBouquets={() => setCurrentFormStage("bouquet_data")}
-              onEditPaperweight={() => setCurrentFormStage("paperweight_data")}
-              submitError={submitError}
-            />
-          )}
-        </CreateNewCustomerForm>
-        <ModalFooter
-          mode={modalMode}
-          currentFormStage={currentFormStage}
-          formId={FORM_ID}
-          onCancel={handleCancel}
-          onGoBack={(stage) => {
-            setCurrentFormStage(stage);
-            setNextStageAfterSubmit(null);
-            setSubmitError(null);
+          <Flex direction="column" align="start" mb="3">
+            <Dialog.Title>
+              {getModalTitle(modalMode, currentFormStage, currentCustomerForm)}
+            </Dialog.Title>
+            {modalMode === "create" && (
+              <Dialog.Description>
+                Create new customer, frame and/or paperweight order
+              </Dialog.Description>
+            )}
+          </Flex>
+
+          <CreateNewCustomerForm
+            formId={FORM_ID}
+            onValidSubmit={handleValidSubmit}
+            defaultValues={
+              modalMode === "create"
+                ? { orderNo: nextOrderNo }
+                : { ...currentCustomerForm }
+            }
+          >
+            {currentFormStage === "costumer_data" && (
+              <CustomerData nextOrderNo={nextOrderNo} />
+            )}
+            {currentFormStage === "bouquet_data" && (
+              <BouquetData
+                mode={modalMode}
+                selectedBouquetId={selectedBouquetId}
+              />
+            )}
+            {currentFormStage === "paperweight_data" && (
+              <PaperWeightData mode={modalMode} />
+            )}
+            {modalMode === "create" && currentFormStage === "review_data" && (
+              <ReviewData
+                onEditCustomer={() => setCurrentFormStage("costumer_data")}
+                onEditBouquets={() => setCurrentFormStage("bouquet_data")}
+                onEditPaperweight={() =>
+                  setCurrentFormStage("paperweight_data")
+                }
+                submitError={submitError}
+              />
+            )}
+          </CreateNewCustomerForm>
+        </Box>
+
+        {/* FIXED FOOTER */}
+        <Box
+          style={{
+            flex: "0 0 auto",
+            borderTop: "1px solid var(--gray-a6)",
+            background: "var(--color-panel)",
+            paddingTop: 12,
           }}
-          onSubmitAndGo={(stage) => {
-            setNextStageAfterSubmit(stage);
-            setSubmitError(null);
-          }}
-          isSubmitting={isPending}
-          currentCustomerForm={currentCustomerForm}
-        />
+        >
+          <ModalFooter
+            mode={modalMode}
+            currentFormStage={currentFormStage}
+            formId={FORM_ID}
+            onCancel={handleCancel}
+            onGoBack={(stage) => {
+              setCurrentFormStage(stage);
+              setNextStageAfterSubmit(null);
+              setSubmitError(null);
+            }}
+            onSubmitAndGo={(stage) => {
+              setNextStageAfterSubmit(stage);
+              setSubmitError(null);
+            }}
+            isSubmitting={isPending}
+            currentCustomerForm={currentCustomerForm}
+          />
+        </Box>
       </Dialog.Content>
     </Dialog.Root>
   );

@@ -8,6 +8,7 @@ import {
   Select,
   Table,
   Text,
+  TextArea,
   TextField,
 } from "@radix-ui/themes";
 
@@ -34,7 +35,11 @@ type OrderPaymentsCardProps = {
   isSaving: boolean;
   outstanding?: number;
   onCreate: (payload: CreateOrderPaymentDraft) => Promise<unknown>;
-  onUpdate: (payload: { id: string; data: CreateOrderPaymentDraft }) => Promise<unknown>;
+  onUpdate: (payload: {
+    id: string;
+    data: CreateOrderPaymentDraft;
+  }) => Promise<unknown>;
+  disabled?: boolean;
 };
 
 const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
@@ -45,11 +50,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   outstanding,
   onCreate,
   onUpdate,
+  disabled,
 }) => {
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] =
     useState<OrderPaymentsPaymentTypeOptions>("first_deposit");
   const [paidAt, setPaidAt] = useState(defaultPaidAt());
+  const [notes, setNotes] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasOutstanding =
     typeof outstanding === "number" && Number.isFinite(outstanding);
@@ -58,8 +65,10 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const [editPaymentType, setEditPaymentType] =
     useState<OrderPaymentsPaymentTypeOptions>("first_deposit");
   const [editPaidAt, setEditPaidAt] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   const hasPayments = payments.length > 0;
+  const inputsDisabled = Boolean(disabled) || isSaving;
   const outstandingLabel = useMemo(() => {
     if (typeof outstanding !== "number") return null;
     return formatCurrency(outstanding) ?? undefined;
@@ -82,6 +91,14 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     );
   };
 
+  const requiresNotes = (type: OrderPaymentsPaymentTypeOptions) =>
+    type === "other";
+
+  const isFinalBalance = (type: OrderPaymentsPaymentTypeOptions) =>
+    type === "final_balance";
+
+  const isZeroRemaining = (remaining: number) => Math.abs(remaining) < 0.01;
+
   const handleSubmit = async () => {
     const parsedAmount = Number(amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -96,6 +113,18 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       setSubmitError("That payment type is already recorded.");
       return;
     }
+    if (
+      isFinalBalance(paymentType) &&
+      maxAllowedForNew != null &&
+      !isZeroRemaining(maxAllowedForNew - parsedAmount)
+    ) {
+      setSubmitError("Final balance must clear the remaining total.");
+      return;
+    }
+    if (requiresNotes(paymentType) && notes.trim() === "") {
+      setSubmitError("Notes are required for Other payments.");
+      return;
+    }
 
     setSubmitError(null);
     try {
@@ -103,13 +132,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
         amount: parsedAmount,
         paymentType,
         ...(paidAt ? { paidAt } : {}),
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
       });
       setAmount("");
+      setNotes("");
     } catch (error) {
       setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to save payment.",
+        error instanceof Error ? error.message : "Failed to save payment.",
       );
     }
   };
@@ -119,6 +148,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditAmount(String(payment.amount));
     setEditPaymentType(payment.paymentType);
     setEditPaidAt(payment.paidAt ?? "");
+    setEditNotes(payment.notes ?? "");
     setSubmitError(null);
   };
 
@@ -127,6 +157,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditAmount("");
     setEditPaymentType("first_deposit");
     setEditPaidAt("");
+    setEditNotes("");
     setSubmitError(null);
   };
 
@@ -145,6 +176,18 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       setSubmitError("That payment type is already recorded.");
       return;
     }
+    if (
+      isFinalBalance(editPaymentType) &&
+      maxAllowed != null &&
+      !isZeroRemaining(maxAllowed - parsedAmount)
+    ) {
+      setSubmitError("Final balance must clear the remaining total.");
+      return;
+    }
+    if (requiresNotes(editPaymentType) && editNotes.trim() === "") {
+      setSubmitError("Notes are required for Other payments.");
+      return;
+    }
 
     setSubmitError(null);
     try {
@@ -154,14 +197,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           amount: parsedAmount,
           paymentType: editPaymentType,
           ...(editPaidAt ? { paidAt: editPaidAt } : {}),
+          ...(editNotes.trim() ? { notes: editNotes.trim() } : {}),
         },
       });
       cancelEdit();
     } catch (error) {
       setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Failed to update payment.",
+        error instanceof Error ? error.message : "Failed to update payment.",
       );
     }
   };
@@ -178,7 +220,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           ) : null}
         </Flex>
 
-        <Flex gap="3" wrap="wrap" align="end">
+        <Flex gap="3" align="end">
           <Box style={{ minWidth: 160 }}>
             <Text size="1" color="gray">
               Amount paid
@@ -190,7 +232,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
               step="0.01"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              disabled={isSaving}
+              disabled={inputsDisabled}
             />
           </Box>
           <Box style={{ minWidth: 200 }}>
@@ -203,7 +245,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 setPaymentType(value as OrderPaymentsPaymentTypeOptions)
               }
             >
-              <Select.Trigger disabled={isSaving} />
+              <Select.Trigger disabled={inputsDisabled} />
               <Select.Content>
                 {PAYMENT_TYPE_OPTIONS.map((option) => (
                   <Select.Item key={option} value={option}>
@@ -219,15 +261,32 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
             </Text>
             <TextField.Root
               type="date"
+              lang="en-GB"
               value={paidAt}
               onChange={(event) => setPaidAt(event.target.value)}
-              disabled={isSaving}
+              disabled={inputsDisabled}
             />
           </Box>
-          <Button onClick={handleSubmit} disabled={isSaving}>
+          <Box style={{ minWidth: 220, flexGrow: 1 }}>
+            <Text size="1" color="gray">
+              Notes
+            </Text>
+            <TextArea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              disabled={inputsDisabled}
+              rows={2}
+            />
+          </Box>
+          <Button onClick={handleSubmit} disabled={inputsDisabled}>
             {isSaving ? "Saving..." : "Add payment"}
           </Button>
         </Flex>
+        {disabled ? (
+          <Text size="1" color="gray">
+            Payments are disabled for cancelled orders.
+          </Text>
+        ) : null}
 
         {submitError ? (
           <Text size="2" color="red">
@@ -254,13 +313,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Type</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Amount</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Notes</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell />
               </Table.Row>
             </Table.Header>
             <Table.Body>
               {payments.map((payment) => {
-                const displayDate =
-                  payment.paidAt || payment.created || "";
+                const displayDate = payment.paidAt || payment.created || "";
                 const isEditing = editingId === payment.id;
                 return (
                   <Table.Row key={payment.id}>
@@ -268,9 +327,12 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       {isEditing ? (
                         <TextField.Root
                           type="date"
+                          lang="en-GB"
                           value={editPaidAt}
-                          onChange={(event) => setEditPaidAt(event.target.value)}
-                          disabled={isSaving}
+                          onChange={(event) =>
+                            setEditPaidAt(event.target.value)
+                          }
+                          disabled={inputsDisabled}
                         />
                       ) : displayDate ? (
                         formatDate(displayDate)
@@ -288,7 +350,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             )
                           }
                         >
-                          <Select.Trigger disabled={isSaving} />
+                          <Select.Trigger disabled={inputsDisabled} />
                           <Select.Content>
                             {PAYMENT_TYPE_OPTIONS.map((option) => (
                               <Select.Item key={option} value={option}>
@@ -309,11 +371,25 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                           min="0"
                           step="0.01"
                           value={editAmount}
-                          onChange={(event) => setEditAmount(event.target.value)}
-                          disabled={isSaving}
+                          onChange={(event) =>
+                            setEditAmount(event.target.value)
+                          }
+                          disabled={inputsDisabled}
                         />
                       ) : (
-                        formatCurrency(payment.amount) ?? payment.amount
+                        (formatCurrency(payment.amount) ?? payment.amount)
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {isEditing ? (
+                        <TextArea
+                          value={editNotes}
+                          onChange={(event) => setEditNotes(event.target.value)}
+                          disabled={inputsDisabled}
+                          rows={2}
+                        />
+                      ) : (
+                        (payment.notes ?? "")
                       )}
                     </Table.Cell>
                     <Table.Cell>
@@ -322,7 +398,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                           <Button
                             size="1"
                             onClick={() => handleUpdate(payment)}
-                            disabled={isSaving}
+                            disabled={inputsDisabled}
                           >
                             Save
                           </Button>
@@ -330,7 +406,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             size="1"
                             variant="soft"
                             onClick={cancelEdit}
-                            disabled={isSaving}
+                            disabled={inputsDisabled}
                           >
                             Cancel
                           </Button>
@@ -340,7 +416,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                           size="1"
                           variant="soft"
                           onClick={() => startEdit(payment)}
-                          disabled={isSaving}
+                          disabled={inputsDisabled}
                         >
                           Edit
                         </Button>

@@ -71,7 +71,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
       </Card>
 
       <Card>
-        <Flex justify="between" align="start" gap="4" wrap="wrap">
+        <Flex justify="between" align="start" gap="4">
           <div>
             <Heading size="3" mb="1">
               Actions
@@ -80,7 +80,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
               Update status/payment, and manage items below.
             </Text>
           </div>
-          <Flex gap="3" align="end" wrap="wrap">
+          <Flex gap="3" align="end">
             {statusControls.map((control) => (
               <Flex key={control.label} direction="column" gap="1">
                 <Text size="1" color="gray">
@@ -93,15 +93,25 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                     control.onChange(value as typeof control.value)
                   }
                 >
-                  <Select.Trigger />
+                  <Select.Trigger disabled={control.disabled} />
                   <Select.Content>
                     {control.options.map((status) => (
-                      <Select.Item key={status} value={status}>
+                      <Select.Item
+                        key={status}
+                        value={status}
+                        // @ts-expect-error - tweak it later
+                        disabled={Boolean(control.isOptionDisabled?.(status))}
+                      >
                         {formatSnakeCase(status)}
                       </Select.Item>
                     ))}
                   </Select.Content>
                 </Select.Root>
+                {control.helperText ? (
+                  <Text size="1" color="gray">
+                    {control.helperText}
+                  </Text>
+                ) : null}
               </Flex>
             ))}
             <Button size="2" onClick={onSaveMeta} disabled={isSavingMeta}>

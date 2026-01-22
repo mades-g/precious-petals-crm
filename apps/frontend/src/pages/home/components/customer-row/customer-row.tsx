@@ -52,6 +52,9 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
 
   const hasOrder = Boolean(orderDetails);
   const paymentStatus = orderDetails?.paymentStatus;
+  const isEditDisabled =
+    orderDetails?.orderStatus === "ready" &&
+    paymentStatus === "final_balance_paid";
   const hasHowRecommended = Boolean(howRecommended);
 
   return (
@@ -175,7 +178,6 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
               <DotsHorizontalIcon width="16" height="16" />
             </IconButton>
           </DropdownMenu.Trigger>
-
           <DropdownMenu.Content>
             <DropdownMenu.Item
               onClick={() => {
@@ -185,16 +187,22 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
             >
               View order
             </DropdownMenu.Item>
-
-            <DropdownMenu.Item onClick={() => onClick("costumer_data")}>
+            <DropdownMenu.Item
+              onClick={() => onClick("costumer_data")}
+              disabled={isEditDisabled}
+            >
               Edit customer data
             </DropdownMenu.Item>
-
-            <DropdownMenu.Item onClick={() => onClick("bouquet_data")}>
+            <DropdownMenu.Item
+              onClick={() => onClick("bouquet_data")}
+              disabled={isEditDisabled}
+            >
               Edit bouquet data
             </DropdownMenu.Item>
-
-            <DropdownMenu.Item onClick={() => onClick("paperweight_data")}>
+            <DropdownMenu.Item
+              onClick={() => onClick("paperweight_data")}
+              disabled={isEditDisabled}
+            >
               Edit paperweight data
             </DropdownMenu.Item>
           </DropdownMenu.Content>

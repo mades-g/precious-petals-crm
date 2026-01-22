@@ -28,7 +28,10 @@ import { useOrderMetaMutations } from "./hooks/useOrderMetaMutations";
 import { useOrderExtrasMutations } from "./hooks/useOrderExtrasMutations";
 import { useFrameMutations } from "./hooks/useFrameMutations";
 import { usePaperweightMutations } from "./hooks/usePaperweightMutations";
-import { useOrderPayments, useOrderPaymentsMutations } from "./hooks/useOrderPayments";
+import {
+  useOrderPayments,
+  useOrderPaymentsMutations,
+} from "./hooks/useOrderPayments";
 import { useEmailActions } from "./hooks/useEmailActions";
 import { useEmailLogsQuery } from "./hooks/useEmailLogsQuery";
 import { buildLineItems } from "./utils/buildLineItems";
@@ -55,6 +58,15 @@ const defaultExtrasDraft: OrderExtrasDraft = {
   artistHours: null,
   notes: "",
 };
+
+const PAYMENT_STATUS_SEQUENCE: OrdersPaymentStatusOptions[] = [
+  "waiting_first_deposit",
+  "first_deposit_paid",
+  "waiting_second_deposit",
+  "second_deposit_paid",
+  "waiting_final_balance",
+  "final_balance_paid",
+];
 
 const normalizeLoadedNumber = (value?: number | null) =>
   value == null || value === 0 ? null : value;
@@ -137,24 +149,6 @@ const OrderPage = () => {
     [orderExtrasDraft],
   );
 
-  const statusControls: [
-    StatusControl<OrdersOrderStatusOptions>,
-    StatusControl<OrdersPaymentStatusOptions>,
-  ] = [
-    {
-      label: "Order status",
-      value: orderStatusDraft,
-      onChange: setOrderStatusDraft,
-      options: ORDER_STATUS_OPTIONS,
-    },
-    {
-      label: "Payment status",
-      value: paymentStatusDraft,
-      onChange: setPaymentStatusDraft,
-      options: ORDER_PAYMENT_STATUS_OPTIONS,
-    },
-  ];
-
   const { saveMeta, isSavingMeta } = useOrderMetaMutations(order?.orderId);
   const { saveExtras, isSavingExtras } = useOrderExtrasMutations(
     order?.orderId,
@@ -170,12 +164,8 @@ const OrderPage = () => {
     isLoading: isLoadingPayments,
     isError: isPaymentsError,
   } = useOrderPayments(order?.orderId);
-  const {
-    addPayment,
-    updatePayment,
-    isSavingPayment,
-    isUpdatingPayment,
-  } = useOrderPaymentsMutations(order?.orderId);
+  const { addPayment, updatePayment, isSavingPayment, isUpdatingPayment } =
+    useOrderPaymentsMutations(order?.orderId);
 
   const totalPaid = useMemo(
     () => (payments ?? []).reduce((sum, payment) => sum + payment.amount, 0),
@@ -193,6 +183,113 @@ const OrderPage = () => {
     }),
     [totals, totalPaid, outstandingBalance],
   );
+  const isDraftOrCancelled =
+    orderStatusDraft === "draft" || orderStatusDraft === "cancelled";
+
+  const hasPaperweight = Boolean(paperweight?.paperWeightId);
+  const framesComplete = useMemo(
+    () =>
+      frames.length === 0 ||
+      frames.every(
+        (frame) =>
+          Boolean(frame.artworkComplete) && Boolean(frame.framingComplete),
+      ),
+    [frames],
+  );
+  const paperweightComplete = useMemo(
+    () => !hasPaperweight || paperweightReceivedDraft,
+    [hasPaperweight, paperweightReceivedDraft],
+  );
+  const readyEligible = framesComplete && paperweightComplete;
+  const deliveredEligible =
+    readyEligible &&
+    paymentStatusDraft === "final_balance_paid" &&
+    outstandingBalance === 0;
+
+  const paymentIndex = PAYMENT_STATUS_SEQUENCE.indexOf(paymentStatusDraft);
+  const firstPaidIndex = PAYMENT_STATUS_SEQUENCE.indexOf("first_deposit_paid");
+  const hasFirstPayment = paymentIndex >= firstPaidIndex;
+  const allowedPaymentStatuses =
+    paymentIndex >= 0
+      ? PAYMENT_STATUS_SEQUENCE.slice(0, paymentIndex + 2)
+      : PAYMENT_STATUS_SEQUENCE;
+  const isPaymentStatusDisabled = (status: OrdersPaymentStatusOptions) => {
+    if (!allowedPaymentStatuses.includes(status)) return true;
+    if (status === "final_balance_paid" && outstandingBalance !== 0)
+      return true;
+    return false;
+  };
+
+  const allowedOrderStatuses: Record<
+    OrdersOrderStatusOptions,
+    OrdersOrderStatusOptions[]
+  > = {
+    draft: ["draft", "in_progress", "cancelled"],
+    in_progress: ["in_progress", "draft", "cancelled", "ready"],
+    cancelled: ["cancelled", "draft"],
+    ready: ["ready", "in_progress", "cancelled", "delivered", "collected"],
+    delivered: ["delivered"],
+    collected: ["collected"],
+  };
+
+  const isOrderStatusDisabled = (status: OrdersOrderStatusOptions) => {
+    if (!allowedOrderStatuses[orderStatusDraft].includes(status)) return true;
+    if (status === "in_progress") return !hasFirstPayment;
+    if (status === "ready") return !readyEligible;
+    if (status === "delivered" || status === "collected") {
+      return !deliveredEligible;
+    }
+    return false;
+  };
+
+  const orderStatusHelp = (() => {
+    const parts: string[] = [];
+    if (!hasFirstPayment) {
+      parts.push("In progress requires first deposit paid.");
+    }
+    if (!readyEligible) {
+      parts.push("Ready requires all items complete/received.");
+    }
+    if (!deliveredEligible) {
+      parts.push(
+        "Delivered/collected requires final balance paid and zero balance.",
+      );
+    }
+    return parts.length ? parts.join(" ") : undefined;
+  })();
+
+  const paymentStatusHelp = (() => {
+    const parts: string[] = [];
+    if (allowedPaymentStatuses.length < PAYMENT_STATUS_SEQUENCE.length) {
+      parts.push("Payment status follows deposit sequence.");
+    }
+    if (outstandingBalance !== 0) {
+      parts.push("Final balance requires zero balance.");
+    }
+    return parts.length ? parts.join(" ") : undefined;
+  })();
+
+  const statusControls: [
+    StatusControl<OrdersOrderStatusOptions>,
+    StatusControl<OrdersPaymentStatusOptions>,
+  ] = [
+    {
+      label: "Order status",
+      value: orderStatusDraft,
+      onChange: setOrderStatusDraft,
+      options: ORDER_STATUS_OPTIONS,
+      isOptionDisabled: isOrderStatusDisabled,
+      helperText: orderStatusHelp,
+    },
+    {
+      label: "Payment status",
+      value: paymentStatusDraft,
+      onChange: setPaymentStatusDraft,
+      options: ORDER_PAYMENT_STATUS_OPTIONS,
+      isOptionDisabled: isPaymentStatusDisabled,
+      helperText: paymentStatusHelp,
+    },
+  ];
 
   const { canSendEmails, sendEmail, emailStatus } = useEmailActions({
     customer,
@@ -202,13 +299,13 @@ const OrderPage = () => {
     extras: orderExtrasDraft,
     totals: invoiceTotals,
   });
+  const canSendOrderEmails = canSendEmails && !isDraftOrCancelled;
 
   const {
     data: emailLogs,
     isLoading: isLoadingLogs,
     isError: isLogsError,
   } = useEmailLogsQuery(order?.orderId);
-
 
   const handleSaveMeta = async () => {
     if (!order?.orderId) return;
@@ -287,7 +384,7 @@ const OrderPage = () => {
   };
 
   const handlePreviewInvoice = () => {
-    if (!order?.orderId) return;
+    if (!order?.orderId || isDraftOrCancelled) return;
 
     const payload = buildEmailPayload({
       customer,
@@ -345,7 +442,13 @@ const OrderPage = () => {
         onBack={() => navigate(-1)}
         onPreviewInvoice={handlePreviewInvoice}
         onOpenEmailActions={() => setIsEmailDrawerOpen(true)}
-        previewDisabled={!order?.orderId}
+        previewDisabled={!order?.orderId || isDraftOrCancelled}
+        emailDisabled={isDraftOrCancelled}
+        actionsHelperText={
+          isDraftOrCancelled
+            ? "Invoice preview and emails are disabled for draft/cancelled orders."
+            : undefined
+        }
       />
       <OrderActionsBar
         created={order?.created}
@@ -365,6 +468,7 @@ const OrderPage = () => {
           outstanding={outstandingBalance}
           onCreate={addPayment}
           onUpdate={updatePayment}
+          disabled={orderStatusDraft === "cancelled"}
         />
       </Box>
       <Box mt="4">
@@ -412,7 +516,12 @@ const OrderPage = () => {
         actions={EMAIL_ACTIONS}
         onSend={sendEmail}
         emailStatus={emailStatus}
-        canSendEmails={canSendEmails}
+        canSendEmails={canSendOrderEmails}
+        disabledMessage={
+          isDraftOrCancelled
+            ? "Emails are disabled for draft or cancelled orders."
+            : undefined
+        }
         logs={emailLogs ?? []}
         isLoadingLogs={isLoadingLogs}
         isLogsError={Boolean(isLogsError)}

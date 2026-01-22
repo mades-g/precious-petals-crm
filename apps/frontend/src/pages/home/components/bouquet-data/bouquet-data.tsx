@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useEffect, type FC } from "react";
 import * as Form from "@radix-ui/react-form";
 import {
   Box,
@@ -43,6 +43,7 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
   const {
     control,
     register,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateOrderFormValues>();
 
@@ -52,6 +53,20 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
   });
 
   const bouquetValues = useWatch({ control, name: "bouquets" });
+
+  useEffect(() => {
+    bouquetValues?.forEach((bouquet, index) => {
+      if (
+        bouquet?.mountColour === "No Second Mount" &&
+        bouquet.mountPrice !== null
+      ) {
+        setValue(`bouquets.${index}.mountPrice`, null, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+    });
+  }, [bouquetValues, setValue]);
 
   const canAdd = fields.length < MAX_BOUQUETS;
   const isSingleBouquetView = Boolean(selectedBouquetId);
@@ -108,6 +123,8 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
         const field = fields[index];
         const prefix = `bouquets.${index}` as const;
         const bouquetErrors = errors.bouquets?.[index] ?? {};
+        const mountColour = bouquetValues?.[index]?.mountColour ?? "";
+        const isNoSecondMount = mountColour === "No Second Mount";
         const glassEngravingValue =
           bouquetValues?.[index]?.glassEngraving ?? "";
         const glassTypeValue = bouquetValues?.[index]?.glassType ?? "";
@@ -467,7 +484,8 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                   <Form.Field name={`${prefix}.mountPrice`}>
                     <Form.Label className={formStyles.label} asChild>
                       <Text>
-                        <Text color="red">*</Text> Mount price (£)
+                        {!isNoSecondMount && <Text color="red">*</Text>} Mount
+                        price (£)
                       </Text>
                     </Form.Label>
                     <Form.Control asChild>
@@ -475,9 +493,10 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                         type="number"
                         min="0"
                         step="0.01"
+                        disabled={isNoSecondMount}
                         {...register(`${prefix}.mountPrice`, {
                           valueAsNumber: true,
-                          required: "Required",
+                          required: isNoSecondMount ? false : "Required",
                         })}
                       />
                     </Form.Control>

@@ -10,7 +10,7 @@ export const buildLineItems = (
     const mountColour = frame.mountColour ?? null;
 
     const descParts = [
-      frame.size,
+      frame.recommendedSize,
       frame.frameType,
       frame.glassType,
       frame.preservationType,

@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { Button, Flex, Heading } from "@radix-ui/themes";
+import { Button, Flex, Heading, Text } from "@radix-ui/themes";
 
 export type OrderHeaderProps = {
   orderLabel: string;
@@ -7,6 +7,8 @@ export type OrderHeaderProps = {
   onPreviewInvoice: () => void;
   onOpenEmailActions: () => void;
   previewDisabled?: boolean;
+  emailDisabled?: boolean;
+  actionsHelperText?: string;
 };
 
 const OrderHeader: FC<OrderHeaderProps> = ({
@@ -15,6 +17,8 @@ const OrderHeader: FC<OrderHeaderProps> = ({
   onPreviewInvoice,
   onOpenEmailActions,
   previewDisabled,
+  emailDisabled,
+  actionsHelperText,
 }) => {
   return (
     <Flex justify="between" align="center" mb="3" gap="3" wrap="wrap">
@@ -29,17 +33,28 @@ const OrderHeader: FC<OrderHeaderProps> = ({
         </Button>
         <Heading size="4">Order {orderLabel}</Heading>
       </Flex>
-      <Flex gap="2" align="center" wrap="wrap" justify="end">
-        <Button
-          variant="soft"
-          onClick={onPreviewInvoice}
-          disabled={previewDisabled}
-        >
-          Preview invoice
-        </Button>
-        <Button variant="soft" onClick={onOpenEmailActions}>
-          Email actions
-        </Button>
+      <Flex direction="column" gap="1" align="end">
+        <Flex gap="2" align="center" wrap="wrap" justify="end">
+          <Button
+            variant="soft"
+            onClick={onPreviewInvoice}
+            disabled={previewDisabled}
+          >
+            Preview invoice
+          </Button>
+          <Button
+            variant="soft"
+            onClick={onOpenEmailActions}
+            disabled={emailDisabled}
+          >
+            Email actions
+          </Button>
+        </Flex>
+        {actionsHelperText ? (
+          <Text size="1" color="gray">
+            {actionsHelperText}
+          </Text>
+        ) : null}
       </Flex>
     </Flex>
   );

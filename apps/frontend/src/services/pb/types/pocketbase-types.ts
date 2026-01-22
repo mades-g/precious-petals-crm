@@ -125,6 +125,7 @@ export type CustomersRecord = {
 };
 
 export type OrderFrameItemsFrameMountColourOptions =
+  | "No Second Mount"
   | "Cream - 8674"
   | "Red - 8020"
   | "Burgundy - 8151"
@@ -216,6 +217,7 @@ export type OrderPaymentsRecord = {
   amount: number;
   created: IsoAutoDateString;
   id: string;
+  notes?: string;
   orderId: RecordIdString;
   paidAt?: IsoDateString;
   paymentType: OrderPaymentsPaymentTypeOptions;
@@ -234,6 +236,7 @@ export type OrdersOrderStatusOptions =
   | "in_progress"
   | "ready"
   | "delivered"
+  | "collected"
   | "cancelled"
   | "draft";
 

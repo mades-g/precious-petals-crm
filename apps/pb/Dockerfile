@@ -7,6 +7,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY main.go utils.go export_orders_xlsx.go export_routes.go email_routes.go invoice_routes.go ./
+COPY ./pb_migrations /src/pb_migrations
 RUN go build -o /precious-petals-crm .
 
 FROM surnet/alpine-wkhtmltopdf:3.20.3-0.12.6-full
@@ -21,8 +22,8 @@ WORKDIR /pb
 
 COPY --from=builder /precious-petals-crm /pb/precious-petals-crm
 COPY ./pb_hooks /pb/pb_hooks
-COPY ./pb_public /pb/pb_public
 COPY ./pb_migrations /pb/pb_migrations
+COPY ./pb_public /pb/pb_public
 
 EXPOSE 8080
 

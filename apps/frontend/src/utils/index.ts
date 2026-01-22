@@ -73,6 +73,7 @@ export const ORDER_STATUS_COLOR_MAP: Record<
   in_progress: "blue",
   ready: "yellow",
   delivered: "green",
+  collected: "green",
   cancelled: "red",
 };
 

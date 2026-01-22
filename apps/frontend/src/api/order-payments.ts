@@ -11,6 +11,7 @@ export type CreateOrderPaymentInput = {
   amount: number;
   paymentType: OrderPaymentsPaymentTypeOptions;
   paidAt?: string;
+  notes?: string;
 };
 
 export type CreateOrderPaymentDraft = Omit<CreateOrderPaymentInput, "orderId">;
@@ -18,10 +19,12 @@ export type CreateOrderPaymentDraft = Omit<CreateOrderPaymentInput, "orderId">;
 export const getOrderPayments = async (orderId: string) => {
   if (!orderId) return [];
 
-  return pb.collection(COLLECTIONS.ORDER_PAYMENTS).getFullList<OrderPaymentsResponse>({
-    filter: `orderId = "${orderId}"`,
-    sort: "-paidAt",
-  });
+  return pb
+    .collection(COLLECTIONS.ORDER_PAYMENTS)
+    .getFullList<OrderPaymentsResponse>({
+      filter: `orderId = "${orderId}"`,
+      sort: "-paidAt",
+    });
 };
 
 export const createOrderPayment = async ({
@@ -29,12 +32,14 @@ export const createOrderPayment = async ({
   amount,
   paymentType,
   paidAt,
+  notes,
 }: CreateOrderPaymentInput) => {
   const payload: Create<"order_payments"> = {
     orderId,
     amount,
     paymentType,
     ...(paidAt ? { paidAt } : {}),
+    ...(notes ? { notes } : {}),
   };
 
   return pb

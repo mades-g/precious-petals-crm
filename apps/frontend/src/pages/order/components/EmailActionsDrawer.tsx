@@ -24,6 +24,7 @@ export type EmailActionsDrawerProps = {
   onSend: (action: EmailActionConfig, note?: string) => Promise<void> | void;
   emailStatus: EmailActionStatus | null;
   canSendEmails: boolean;
+  disabledMessage?: string;
   logs: EmailLogEntry[];
   isLoadingLogs: boolean;
   isLogsError: boolean;
@@ -43,6 +44,7 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
   onSend,
   emailStatus,
   canSendEmails,
+  disabledMessage,
   logs,
   isLoadingLogs,
   isLogsError,
@@ -77,7 +79,7 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
 
           {!canSendEmails ? (
             <Text size="2" color="red">
-              You must be logged in to send emails.
+              {disabledMessage || "You must be logged in to send emails."}
             </Text>
           ) : null}
 

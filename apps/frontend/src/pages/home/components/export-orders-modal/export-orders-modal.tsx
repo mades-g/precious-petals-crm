@@ -29,9 +29,10 @@ const PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
 const ORDER_STATUS_OPTIONS: OrdersOrderStatusOptions[] = [
   "draft",
   "in_progress",
+  "cancelled",
   "ready",
   "delivered",
-  "cancelled",
+  "collected",
 ];
 
 const buildFallbackFilename = () => {
@@ -98,9 +99,7 @@ const ExportOrdersModal: FC<ExportOrdersModalProps> = ({
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to export orders.",
-      );
+      setError(err instanceof Error ? err.message : "Failed to export orders.");
     } finally {
       setIsDownloading(false);
     }
@@ -178,9 +177,7 @@ const ExportOrdersModal: FC<ExportOrdersModalProps> = ({
               <Select.Root
                 value={paymentStatus}
                 onValueChange={(value) =>
-                  setPaymentStatus(
-                    value as OrdersPaymentStatusOptions | "any",
-                  )
+                  setPaymentStatus(value as OrdersPaymentStatusOptions | "any")
                 }
               >
                 <Select.Trigger disabled={inputsDisabled} />

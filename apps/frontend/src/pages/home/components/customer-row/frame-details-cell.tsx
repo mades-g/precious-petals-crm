@@ -15,7 +15,7 @@ export const FrameDetailsCell: FC<{
   frame: NormalisedCustomerOrderDetailsFrames[number];
 }> = ({ frame }) => {
   const {
-    size,
+    recommendedSize,
     frameType,
     layout,
     preservationType,
@@ -27,7 +27,11 @@ export const FrameDetailsCell: FC<{
     mountColour,
   } = frame;
 
-  const title = size ? ensureInchesSuffix(size) : frameType || "Frame";
+  console.log(frame, "frame");
+
+  const title = recommendedSize
+    ? ensureInchesSuffix(recommendedSize)
+    : frameType || "Frame";
 
   const meta = [
     price != null ? formatCurrency(price) : null,

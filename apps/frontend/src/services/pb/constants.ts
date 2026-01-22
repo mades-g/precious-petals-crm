@@ -48,6 +48,7 @@ export const CUSTOMERS_HOW_RECOMMENDED_OPTIONS: CustomersHowRecommendedOptions[]
 
 export const FRAME_MOUNT_COLOUR_OPTIONS: OrderFrameItemsFrameMountColourOptions[] =
   [
+    "No Second Mount",
     "Cream - 8674",
     "Red - 8020",
     "Burgundy - 8151",
@@ -118,9 +119,10 @@ export const ORDER_PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
 ];
 
 export const ORDER_STATUS_OPTIONS: OrdersOrderStatusOptions[] = [
+  "draft",
   "in_progress",
+  "cancelled",
   "ready",
   "delivered",
-  "cancelled",
-  "draft",
+  "collected",
 ];

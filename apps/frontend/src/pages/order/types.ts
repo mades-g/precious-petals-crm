@@ -27,6 +27,9 @@ export type StatusControl<T extends string> = {
   value: T;
   onChange: (value: T) => void;
   options: readonly T[];
+  disabled?: boolean;
+  isOptionDisabled?: (option: T) => boolean;
+  helperText?: string;
 };
 
 export type LineItemKind = "frame" | "paperweight" | "extra";
