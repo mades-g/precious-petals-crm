@@ -178,7 +178,7 @@ func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error 
 }
 
 func buildOrdersFilter(orderId, fromParam, toParam, paymentStatus, orderStatus string) (string, error) {
-	filters := []string{}
+	filters := []string{`isDeleted = false`}
 
 	if orderId != "" {
 		filters = append(filters, fmt.Sprintf(`id = "%s"`, escapeFilterValue(orderId)))

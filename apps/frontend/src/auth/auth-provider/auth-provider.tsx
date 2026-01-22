@@ -27,8 +27,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  // We might be able to use `isSuperUser` from authStore
+  const isAdmin = (user as { role?: string } | null)?.role === "admin";
+
   return (
-    <AuthContext.Provider value={{ isAuthed, user, loading, logout }}>
+    <AuthContext.Provider value={{ isAuthed, isAdmin, user, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,10 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Text } from "@radix-ui/themes";
 import { useNavigate, useParams } from "react-router";
 
-import {
-  ORDER_PAYMENT_STATUS_OPTIONS,
-  ORDER_STATUS_OPTIONS,
-} from "@/services/pb/constants";
+import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
+import { useAuth } from "@/auth/hooks/use-auth";
 import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
@@ -28,6 +26,7 @@ import { useOrderMetaMutations } from "./hooks/useOrderMetaMutations";
 import { useOrderExtrasMutations } from "./hooks/useOrderExtrasMutations";
 import { useFrameMutations } from "./hooks/useFrameMutations";
 import { usePaperweightMutations } from "./hooks/usePaperweightMutations";
+import { useOrderDeleteMutation } from "./hooks/useOrderDeleteMutation";
 import {
   useOrderPayments,
   useOrderPaymentsMutations,
@@ -74,6 +73,7 @@ const normalizeLoadedNumber = (value?: number | null) =>
 const OrderPage = () => {
   const navigate = useNavigate();
   const { orderId } = useParams<{ orderId: string }>();
+  const { isAdmin } = useAuth();
 
   const {
     data: customer,
@@ -150,6 +150,7 @@ const OrderPage = () => {
   );
 
   const { saveMeta, isSavingMeta } = useOrderMetaMutations(order?.orderId);
+  const { deleteOrder, isDeleting } = useOrderDeleteMutation(order?.orderId);
   const { saveExtras, isSavingExtras } = useOrderExtrasMutations(
     order?.orderId,
   );
@@ -185,6 +186,7 @@ const OrderPage = () => {
   );
   const isDraftOrCancelled =
     orderStatusDraft === "draft" || orderStatusDraft === "cancelled";
+  const canDeleteOrder = isAdmin && orderStatusDraft === "cancelled";
 
   const hasPaperweight = Boolean(paperweight?.paperWeightId);
   const framesComplete = useMemo(
@@ -209,16 +211,6 @@ const OrderPage = () => {
   const paymentIndex = PAYMENT_STATUS_SEQUENCE.indexOf(paymentStatusDraft);
   const firstPaidIndex = PAYMENT_STATUS_SEQUENCE.indexOf("first_deposit_paid");
   const hasFirstPayment = paymentIndex >= firstPaidIndex;
-  const allowedPaymentStatuses =
-    paymentIndex >= 0
-      ? PAYMENT_STATUS_SEQUENCE.slice(0, paymentIndex + 2)
-      : PAYMENT_STATUS_SEQUENCE;
-  const isPaymentStatusDisabled = (status: OrdersPaymentStatusOptions) => {
-    if (!allowedPaymentStatuses.includes(status)) return true;
-    if (status === "final_balance_paid" && outstandingBalance !== 0)
-      return true;
-    return false;
-  };
 
   const allowedOrderStatuses: Record<
     OrdersOrderStatusOptions,
@@ -258,21 +250,7 @@ const OrderPage = () => {
     return parts.length ? parts.join(" ") : undefined;
   })();
 
-  const paymentStatusHelp = (() => {
-    const parts: string[] = [];
-    if (allowedPaymentStatuses.length < PAYMENT_STATUS_SEQUENCE.length) {
-      parts.push("Payment status follows deposit sequence.");
-    }
-    if (outstandingBalance !== 0) {
-      parts.push("Final balance requires zero balance.");
-    }
-    return parts.length ? parts.join(" ") : undefined;
-  })();
-
-  const statusControls: [
-    StatusControl<OrdersOrderStatusOptions>,
-    StatusControl<OrdersPaymentStatusOptions>,
-  ] = [
+  const statusControls: StatusControl<OrdersOrderStatusOptions>[] = [
     {
       label: "Order status",
       value: orderStatusDraft,
@@ -280,14 +258,6 @@ const OrderPage = () => {
       options: ORDER_STATUS_OPTIONS,
       isOptionDisabled: isOrderStatusDisabled,
       helperText: orderStatusHelp,
-    },
-    {
-      label: "Payment status",
-      value: paymentStatusDraft,
-      onChange: setPaymentStatusDraft,
-      options: ORDER_PAYMENT_STATUS_OPTIONS,
-      isOptionDisabled: isPaymentStatusDisabled,
-      helperText: paymentStatusHelp,
     },
   ];
 
@@ -311,7 +281,6 @@ const OrderPage = () => {
     if (!order?.orderId) return;
     await saveMeta({
       orderStatus: orderStatusDraft,
-      paymentStatus: paymentStatusDraft,
     });
   };
 
@@ -400,6 +369,17 @@ const OrderPage = () => {
     });
   };
 
+  const handleDeleteOrder = async () => {
+    if (!order?.orderId) return;
+
+    const label = order.orderNo ?? order.orderId;
+    const confirmed = window.confirm(`Delete order ${label}?`);
+    if (!confirmed) return;
+
+    await deleteOrder();
+    navigate("/");
+  };
+
   const orderLabel = order?.orderNo ?? order?.orderId ?? "";
 
   if (!orderId) {
@@ -458,6 +438,9 @@ const OrderPage = () => {
         statusControls={statusControls}
         onSaveMeta={handleSaveMeta}
         isSavingMeta={isSavingMeta}
+        onDelete={handleDeleteOrder}
+        isDeleting={isDeleting}
+        showDelete={canDeleteOrder}
       />
       <Box mt="4">
         <OrderPaymentsCard

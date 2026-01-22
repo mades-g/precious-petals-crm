@@ -60,6 +60,8 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasOutstanding =
     typeof outstanding === "number" && Number.isFinite(outstanding);
+  const roundCurrency = (value: number) =>
+    Math.round((value + Number.EPSILON) * 100) / 100;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editPaymentType, setEditPaymentType] =
@@ -74,11 +76,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     return formatCurrency(outstanding) ?? undefined;
   }, [outstanding]);
 
-  const maxAllowedForNew = hasOutstanding ? (outstanding ?? 0) : null;
+  const maxAllowedForNew = hasOutstanding
+    ? roundCurrency(outstanding ?? 0)
+    : null;
 
   const maxAllowedForEdit = (payment: OrderPaymentsResponse) => {
     if (!hasOutstanding) return null;
-    return (outstanding ?? 0) + payment.amount;
+    return roundCurrency((outstanding ?? 0) + payment.amount);
   };
 
   const hasDuplicateType = (

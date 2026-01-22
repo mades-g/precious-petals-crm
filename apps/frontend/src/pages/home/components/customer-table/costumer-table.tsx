@@ -13,6 +13,7 @@ import type { ModalMode } from "../../home";
 
 type CustomerTableProps = {
   customers: NormalisedCustomer[] | undefined;
+  isAdmin: boolean;
   nextOrderNo?: number;
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -22,6 +23,7 @@ type CustomerTableProps = {
 
 const CustomerTable: FC<CustomerTableProps> = ({
   customers,
+  isAdmin,
   nextOrderNo,
   isModalOpen,
   setIsModalOpen,
@@ -52,6 +54,7 @@ const CustomerTable: FC<CustomerTableProps> = ({
           {customers?.map((customer) => (
             <CustomerRow
               customer={customer}
+              isAdmin={isAdmin}
               key={customer.customerId}
               onClick={(formStage) => {
                 setIsModalOpen(true);

@@ -48,7 +48,7 @@ export async function getCustomers({
   surname = "",
   orderNo = "",
 }: GetCustomersParams) {
-  const filters: string[] = [];
+  const filters: string[] = ["orderId.isDeleted = false"];
 
   if (orderNo) {
     filters.push(`orderId.orderNo ~ "${orderNo}"`);
@@ -92,7 +92,7 @@ export async function getCustomerByOrderId(orderId: string) {
     .collection(COLLECTIONS.CUSTOMERS)
     .getFirstListItem<
       CustomersResponse<ExpandedOrdersResponse>
-    >(`orderId.id = "${orderId}"`, {
+    >(`orderId.id = "${orderId}" && orderId.isDeleted = false`, {
       expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
     });
 

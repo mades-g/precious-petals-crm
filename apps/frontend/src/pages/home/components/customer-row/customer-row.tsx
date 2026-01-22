@@ -21,6 +21,7 @@ import {
   getPaymentStatusColor,
 } from "@/utils";
 import type { NormalisedCustomer } from "@/api/get-customers";
+import { useOrderDeleteMutation } from "@/pages/order/hooks/useOrderDeleteMutation";
 
 import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
 
@@ -29,16 +30,20 @@ import PaperweightDetailsCell from "./paperweight-details-cell";
 
 type CustomerRowProps = {
   customer: NormalisedCustomer;
+  isAdmin: boolean;
   onClick: (formStage: FormStage) => void;
 };
 
 const CELL_PAD_STYLE = { paddingTop: "8px", paddingBottom: "8px" };
 
-const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
+const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const { displayName, email, phoneNumber, howRecommended, orderDetails } =
     customer;
 
   const navigate = useNavigate();
+  const { deleteOrder, isDeleting } = useOrderDeleteMutation(
+    orderDetails?.orderId,
+  );
 
   const deliveryLines = orderDetails
     ? formatAddressLines({
@@ -56,6 +61,20 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
     orderDetails?.orderStatus === "ready" &&
     paymentStatus === "final_balance_paid";
   const hasHowRecommended = Boolean(howRecommended);
+  const canDeleteOrder =
+    Boolean(orderDetails?.orderId) &&
+    orderDetails?.orderStatus === "cancelled" &&
+    isAdmin;
+
+  const handleDeleteOrder = async () => {
+    if (!orderDetails?.orderId) return;
+
+    const label = orderDetails.orderNo ?? orderDetails.orderId;
+    const confirmed = window.confirm(`Delete order ${label}?`);
+    if (!confirmed) return;
+
+    await deleteOrder();
+  };
 
   return (
     <Table.Row>
@@ -205,6 +224,15 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, onClick }) => {
             >
               Edit paperweight data
             </DropdownMenu.Item>
+            {canDeleteOrder ? (
+              <DropdownMenu.Item
+                color="red"
+                onClick={handleDeleteOrder}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting order..." : "Delete order"}
+              </DropdownMenu.Item>
+            ) : null}
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </Table.Cell>

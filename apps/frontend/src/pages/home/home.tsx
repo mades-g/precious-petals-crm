@@ -32,7 +32,7 @@ const Home = () => {
   const [modalMode, setModalMode] = useState<ModalMode>("create");
   const [isExportOpen, setIsExportOpen] = useState(false);
 
-  const { isAuthed, loading: isAuthLoading } = useAuth();
+  const { isAuthed, loading: isAuthLoading, isAdmin } = useAuth();
 
   const [filters, setFilters] = useState({
     email: "",
@@ -305,6 +305,7 @@ const Home = () => {
             {!isLoading && !isError && (
               <CustomerTable
                 customers={customers}
+                isAdmin={isAdmin}
                 nextOrderNo={nextOrderNo}
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}

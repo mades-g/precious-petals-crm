@@ -4,6 +4,7 @@ import type { AuthRecord } from "pocketbase";
 
 export type AuthContext = {
   isAuthed: boolean;
+  isAdmin: boolean;
   user: AuthRecord | null;
   loading: boolean;
   logout: () => Promise<void>;

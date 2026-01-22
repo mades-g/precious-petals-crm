@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { pb } from "@/services/pb/client";
 import { COLLECTIONS } from "@/services/pb/constants";
-import type { OrdersOrderStatusOptions, Update } from "@/services/pb/types";
+import type { Update } from "@/services/pb/types";
 
 const invalidateOrderQueries = (
   queryClient: ReturnType<typeof useQueryClient>,
@@ -14,17 +14,17 @@ const invalidateOrderQueries = (
   }
 };
 
-export const useOrderMetaMutations = (orderId?: string) => {
+export const useOrderDeleteMutation = (orderId?: string) => {
   const queryClient = useQueryClient();
 
   const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: { orderStatus: OrdersOrderStatusOptions }) => {
+    mutationFn: () => {
       if (!orderId) {
         throw new Error("Missing order ID");
       }
 
       const data: Update<"orders"> = {
-        orderStatus: payload.orderStatus,
+        isDeleted: true,
       };
 
       return pb.collection(COLLECTIONS.ORDERS).update(orderId, data);
@@ -33,7 +33,7 @@ export const useOrderMetaMutations = (orderId?: string) => {
   });
 
   return {
-    saveMeta: mutateAsync,
-    isSavingMeta: isPending,
+    deleteOrder: mutateAsync,
+    isDeleting: isPending,
   };
 };

@@ -244,6 +244,7 @@ export type OrdersRecord = {
   created: IsoAutoDateString;
   frameOrderId?: RecordIdString[];
   id: string;
+  isDeleted?: boolean;
   notes?: string;
   occasionDate: IsoDateString;
   orderNo: number;
@@ -288,10 +289,13 @@ export type UsersRecord = {
   id: string;
   name?: string;
   password: string;
+  role?: UsersRoleOptions;
   tokenKey: string;
   updated: IsoAutoDateString;
   verified?: boolean;
 };
+
+export type UsersRoleOptions = "member" | "admin";
 
 /* -----------------------------------------------------------------------------
  * Response types include system fields and match PB API responses

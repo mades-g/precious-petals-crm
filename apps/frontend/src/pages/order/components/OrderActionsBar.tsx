@@ -26,12 +26,12 @@ export type OrderActionsBarProps = {
   occasionDate?: string | null;
   orderStatus: OrdersOrderStatusOptions;
   paymentStatus: OrdersPaymentStatusOptions;
-  statusControls: [
-    StatusControl<OrdersOrderStatusOptions>,
-    StatusControl<OrdersPaymentStatusOptions>,
-  ];
+  statusControls: StatusControl<OrdersOrderStatusOptions>[];
   onSaveMeta: () => void;
   isSavingMeta: boolean;
+  onDelete: () => void;
+  isDeleting: boolean;
+  showDelete: boolean;
 };
 
 const OrderActionsBar: FC<OrderActionsBarProps> = ({
@@ -42,6 +42,9 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   statusControls,
   onSaveMeta,
   isSavingMeta,
+  onDelete,
+  isDeleting,
+  showDelete,
 }) => {
   return (
     <>
@@ -77,7 +80,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
               Actions
             </Heading>
             <Text size="2" color="gray">
-              Update status/payment, and manage items below.
+              Update order status, and manage items below.
             </Text>
           </div>
           <Flex gap="3" align="end">
@@ -89,7 +92,6 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                 <Select.Root
                   value={control.value}
                   onValueChange={(value) =>
-                    // @ts-expect-error - need to figure out what's wrong
                     control.onChange(value as typeof control.value)
                   }
                 >
@@ -99,7 +101,6 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                       <Select.Item
                         key={status}
                         value={status}
-                        // @ts-expect-error - tweak it later
                         disabled={Boolean(control.isOptionDisabled?.(status))}
                       >
                         {formatSnakeCase(status)}
@@ -117,6 +118,17 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
             <Button size="2" onClick={onSaveMeta} disabled={isSavingMeta}>
               {isSavingMeta ? "Saving..." : "Update"}
             </Button>
+            {showDelete ? (
+              <Button
+                size="2"
+                color="red"
+                variant="soft"
+                onClick={onDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            ) : null}
           </Flex>
         </Flex>
       </Card>

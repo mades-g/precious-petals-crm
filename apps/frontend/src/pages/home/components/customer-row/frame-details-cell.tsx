@@ -27,8 +27,6 @@ export const FrameDetailsCell: FC<{
     mountColour,
   } = frame;
 
-  console.log(frame, "frame");
-
   const title = recommendedSize
     ? ensureInchesSuffix(recommendedSize)
     : frameType || "Frame";
