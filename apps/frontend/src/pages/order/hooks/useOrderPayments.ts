@@ -42,16 +42,29 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
   };
 
   const { mutateAsync: addPayment, isPending: isSavingPayment } = useMutation({
-    mutationFn: async (payload: CreateOrderPaymentDraft) => {
+    mutationFn: async (
+      payload: CreateOrderPaymentDraft & { requiredBy?: string },
+    ) => {
       if (!orderId) {
         throw new Error("Missing order ID");
       }
 
-      const payment = await createOrderPayment({ ...payload, orderId });
+      const { requiredBy, ...paymentPayload } = payload;
+      const payment = await createOrderPayment({ ...paymentPayload, orderId });
       const nextStatus = PAYMENT_STATUS_BY_TYPE[payload.paymentType];
       if (nextStatus) {
         const updatePayload: Update<"orders"> = {
           payment_status: nextStatus,
+        };
+        await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
+      }
+      if (
+        payload.paymentType === "second_deposit" &&
+        requiredBy &&
+        requiredBy.trim() !== ""
+      ) {
+        const updatePayload: Update<"orders"> = {
+          requiredBy: requiredBy.trim(),
         };
         await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
       }
@@ -65,12 +78,26 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
     useMutation({
       mutationFn: async (payload: {
         id: string;
-        data: CreateOrderPaymentDraft;
+        data: CreateOrderPaymentDraft & { requiredBy?: string };
       }) => {
         if (!orderId) {
           throw new Error("Missing order ID");
         }
-        return updateOrderPayment(payload.id, payload.data);
+        const { requiredBy, ...paymentData } = payload.data;
+        const updated = await updateOrderPayment(payload.id, paymentData);
+        if (
+          payload.data.paymentType === "second_deposit" &&
+          requiredBy &&
+          requiredBy.trim() !== ""
+        ) {
+          const updatePayload: Update<"orders"> = {
+            requiredBy: requiredBy.trim(),
+          };
+          await pb
+            .collection(COLLECTIONS.ORDERS)
+            .update(orderId, updatePayload);
+        }
+        return updated;
       },
       onSuccess: invalidate,
     });

@@ -52,6 +52,7 @@ const Home = () => {
   });
 
   const [appliedOccasionDate, setAppliedOccasionDate] = useState("");
+  const [sort, setSort] = useState("-orderId.orderNo");
 
   const searchParams: GetCustomersParams = {
     email: debouncedTextFilters.email,
@@ -59,6 +60,7 @@ const Home = () => {
     telephone: debouncedTextFilters.telephone,
     orderNo: debouncedTextFilters.orderNo,
     occasionDate: appliedOccasionDate,
+    sort,
   };
 
   useEffect(() => {
@@ -306,6 +308,8 @@ const Home = () => {
               <CustomerTable
                 customers={customers}
                 isAdmin={isAdmin}
+                sort={sort}
+                onSortChange={setSort}
                 nextOrderNo={nextOrderNo}
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}

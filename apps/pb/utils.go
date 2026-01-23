@@ -154,12 +154,14 @@ type invoicePayload struct {
 	} `json:"orderExtras"`
 
 	Frames []struct {
-		Size           string `json:"size"`
-		FrameType      string `json:"frameType"`
-		GlassType      string `json:"glassType"`
-		Inclusions     string `json:"inclusions"`
-		MountColour    string `json:"mountColour"`
-		GlassEngraving string `json:"glassEngraving"`
+		Size            string `json:"size"`
+		MeasuredSize    string `json:"measuredSize"`
+		RecommendedSize string `json:"recommendedSize"`
+		FrameType       string `json:"frameType"`
+		GlassType       string `json:"glassType"`
+		Inclusions      string `json:"inclusions"`
+		MountColour     string `json:"mountColour"`
+		GlassEngraving  string `json:"glassEngraving"`
 
 		Price  Number `json:"price"`
 		Extras *struct {
@@ -255,8 +257,15 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 		}
 
 		descriptionParts := []string{"Picture"}
-		if frame.Size != "" {
-			descriptionParts = append(descriptionParts, frame.Size)
+		size := strings.TrimSpace(frame.RecommendedSize)
+		if size == "" {
+			size = strings.TrimSpace(frame.Size)
+		}
+		if size == "" {
+			size = strings.TrimSpace(frame.MeasuredSize)
+		}
+		if size != "" {
+			descriptionParts = append(descriptionParts, size)
 		}
 		if frame.FrameType != "" {
 			descriptionParts = append(descriptionParts, fmt.Sprintf("%s frame", frame.FrameType))
@@ -514,27 +523,112 @@ func renderInvoicePdf(html string) ([]byte, error) {
 
 	tempDir := os.TempDir()
 
+	// ---- Write main invoice HTML to temp file ----
 	htmlFile, err := os.CreateTemp(tempDir, "invoice-*.html")
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = htmlFile.Close() }()
 	defer os.Remove(htmlFile.Name())
 
 	if _, err := htmlFile.WriteString(html); err != nil {
+		_ = htmlFile.Close()
 		return nil, err
 	}
 	if err := htmlFile.Close(); err != nil {
 		return nil, err
 	}
 
+	// ---- Write footer HTML to temp file (wkhtmltopdf --footer-html) ----
+	footerHTML := `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10px;
+        color: #444;
+      }
+      .wrap {
+        width: 100%;
+        text-align: center;
+        line-height: 1.35;
+        position: relative;
+      }
+      .pager {
+        position: absolute;
+        right: 0;
+        top: 0;
+        white-space: nowrap;
+        text-align: right;
+        padding-right: 6.5mm;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="pager">Page <span class="page"></span> of <span class="topage"></span></div>
+
+      Precious Petals Limited, Unit 10 Cufaude Business Park, Cufaude Lane, Bramley, RG26 5DL.
+      Telephone 01256 882422.<br/>
+      Our studio opening times are Monday to Thursday 9:00am to 4:00pm, plus Friday and Saturday
+      9:30am to 12:30 (by advance appointment only).<br/>
+      Company Reg.no: 04705425. VAT Reg no: 742539622.
+    </div>
+
+    <script>
+      (function () {
+        var vars = {};
+        var qs = document.location.search.substring(1).split("&");
+        for (var i = 0; i < qs.length; i++) {
+          var kv = qs[i].split("=");
+          vars[kv[0]] = decodeURIComponent(kv[1] || "");
+        }
+        var pageEls = document.getElementsByClassName("page");
+        for (var j = 0; j < pageEls.length; j++) pageEls[j].textContent = vars.page || "";
+        var topEls = document.getElementsByClassName("topage");
+        for (var k = 0; k < topEls.length; k++) topEls[k].textContent = vars.topage || "";
+      })();
+    </script>
+  </body>
+</html>`
+
+	footerFile, err := os.CreateTemp(tempDir, "invoice-footer-*.html")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(footerFile.Name())
+
+	if _, err := footerFile.WriteString(footerHTML); err != nil {
+		_ = footerFile.Close()
+		return nil, err
+	}
+	if err := footerFile.Close(); err != nil {
+		return nil, err
+	}
+
+	// ---- Output PDF path ----
 	pdfPath := strings.TrimSuffix(htmlFile.Name(), ".html") + ".pdf"
 	defer os.Remove(pdfPath)
 
+	// ---- wkhtmltopdf command ----
 	cmd := exec.Command(
 		bin,
 		"--enable-local-file-access",
 		"--print-media-type",
+		"--page-size", "A4",
+
+		// margins: reserve space for footer
+		"--margin-top", "0",
+		"--margin-right", "0",
+		"--margin-left", "0",
+		"--margin-bottom", "22mm",
+
+		// footer
+		"--footer-html", footerFile.Name(),
+		"--footer-spacing", "2",
+
 		htmlFile.Name(),
 		pdfPath,
 	)

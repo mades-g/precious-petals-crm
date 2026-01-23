@@ -39,6 +39,7 @@ export type GetCustomersParams = {
   telephone?: string;
   surname?: string;
   orderNo?: string;
+  sort?: string;
 };
 
 export async function getCustomers({
@@ -47,6 +48,7 @@ export async function getCustomers({
   telephone = "",
   surname = "",
   orderNo = "",
+  sort,
 }: GetCustomersParams) {
   const filters: string[] = ["orderId.isDeleted = false"];
 
@@ -81,7 +83,7 @@ export async function getCustomers({
         .getFullList<CustomersResponse<ExpandedOrdersResponse>>({
           expand: "orderId,orderId.frameOrderId,orderId.paperweightOrderId",
           ...(filter ? { filter } : {}),
-          sort: "-orderId.orderNo",
+          sort: sort ?? "-orderId.orderNo",
         })
     ).map(normalisedCustomer)
   );

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Text } from "@radix-ui/themes";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
 
-import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
 import { useAuth } from "@/auth/hooks/use-auth";
+import { pb } from "@/services/pb/client";
+import { COLLECTIONS } from "@/services/pb/constants";
 import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
@@ -22,7 +24,6 @@ import OrderExtrasAccordion from "./components/OrderExtrasAccordion";
 import OrderPaymentsCard from "./components/OrderPaymentsCard";
 import EmailActionsDrawer from "./components/EmailActionsDrawer";
 import { useOrderQuery } from "./hooks/useOrderQuery";
-import { useOrderMetaMutations } from "./hooks/useOrderMetaMutations";
 import { useOrderExtrasMutations } from "./hooks/useOrderExtrasMutations";
 import { useFrameMutations } from "./hooks/useFrameMutations";
 import { usePaperweightMutations } from "./hooks/usePaperweightMutations";
@@ -37,12 +38,7 @@ import { buildLineItems } from "./utils/buildLineItems";
 import { buildTotals } from "./utils/buildTotals";
 import { buildExtrasSummary } from "./utils/buildExtrasSummary";
 import { buildEmailPayload } from "./utils/buildEmailPayload";
-import {
-  EMAIL_ACTIONS,
-  type OrderExtrasDraft,
-  type OrderFrame,
-  type StatusControl,
-} from "./types";
+import { EMAIL_ACTIONS, type OrderExtrasDraft, type OrderFrame } from "./types";
 
 const defaultExtrasDraft: OrderExtrasDraft = {
   replacementFlowers: false,
@@ -74,6 +70,7 @@ const OrderPage = () => {
   const navigate = useNavigate();
   const { orderId } = useParams<{ orderId: string }>();
   const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
 
   const {
     data: customer,
@@ -149,7 +146,6 @@ const OrderPage = () => {
     [orderExtrasDraft],
   );
 
-  const { saveMeta, isSavingMeta } = useOrderMetaMutations(order?.orderId);
   const { deleteOrder, isDeleting } = useOrderDeleteMutation(order?.orderId);
   const { saveExtras, isSavingExtras } = useOrderExtrasMutations(
     order?.orderId,
@@ -187,6 +183,27 @@ const OrderPage = () => {
   const isDraftOrCancelled =
     orderStatusDraft === "draft" || orderStatusDraft === "cancelled";
   const canDeleteOrder = isAdmin && orderStatusDraft === "cancelled";
+
+  const { mutateAsync: updateStatus, isPending: isUpdatingStatus } =
+    useMutation({
+      mutationFn: async (nextStatus: OrdersOrderStatusOptions) => {
+        if (!order?.orderId) {
+          throw new Error("Missing order ID");
+        }
+        const payload: Update<"orders"> = {
+          orderStatus: nextStatus,
+        };
+        return pb.collection(COLLECTIONS.ORDERS).update(order.orderId, payload);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (order?.orderId) {
+          queryClient.invalidateQueries({
+            queryKey: ["customer", order.orderId],
+          });
+        }
+      },
+    });
 
   const hasPaperweight = Boolean(paperweight?.paperWeightId);
   const framesComplete = useMemo(
@@ -234,33 +251,6 @@ const OrderPage = () => {
     return false;
   };
 
-  const orderStatusHelp = (() => {
-    const parts: string[] = [];
-    if (!hasFirstPayment) {
-      parts.push("In progress requires first deposit paid.");
-    }
-    if (!readyEligible) {
-      parts.push("Ready requires all items complete/received.");
-    }
-    if (!deliveredEligible) {
-      parts.push(
-        "Delivered/collected requires final balance paid and zero balance.",
-      );
-    }
-    return parts.length ? parts.join(" ") : undefined;
-  })();
-
-  const statusControls: StatusControl<OrdersOrderStatusOptions>[] = [
-    {
-      label: "Order status",
-      value: orderStatusDraft,
-      onChange: setOrderStatusDraft,
-      options: ORDER_STATUS_OPTIONS,
-      isOptionDisabled: isOrderStatusDisabled,
-      helperText: orderStatusHelp,
-    },
-  ];
-
   const { canSendEmails, sendEmail, emailStatus } = useEmailActions({
     customer,
     order,
@@ -276,13 +266,6 @@ const OrderPage = () => {
     isLoading: isLoadingLogs,
     isError: isLogsError,
   } = useEmailLogsQuery(order?.orderId);
-
-  const handleSaveMeta = async () => {
-    if (!order?.orderId) return;
-    await saveMeta({
-      orderStatus: orderStatusDraft,
-    });
-  };
 
   const handleSaveExtras = async () => {
     if (!order?.orderId) return;
@@ -420,10 +403,6 @@ const OrderPage = () => {
       <OrderHeader
         orderLabel={`${orderLabel}`}
         onBack={() => navigate(-1)}
-        onPreviewInvoice={handlePreviewInvoice}
-        onOpenEmailActions={() => setIsEmailDrawerOpen(true)}
-        previewDisabled={!order?.orderId || isDraftOrCancelled}
-        emailDisabled={isDraftOrCancelled}
         actionsHelperText={
           isDraftOrCancelled
             ? "Invoice preview and emails are disabled for draft/cancelled orders."
@@ -433,11 +412,16 @@ const OrderPage = () => {
       <OrderActionsBar
         created={order?.created}
         occasionDate={order?.occasionDate}
+        requiredBy={order?.requiredBy}
         orderStatus={orderStatusDraft}
         paymentStatus={paymentStatusDraft}
-        statusControls={statusControls}
-        onSaveMeta={handleSaveMeta}
-        isSavingMeta={isSavingMeta}
+        onPreviewInvoice={handlePreviewInvoice}
+        onOpenEmailActions={() => setIsEmailDrawerOpen(true)}
+        onUpdateStatus={updateStatus}
+        isUpdatingStatus={isUpdatingStatus}
+        isStatusDisabled={isOrderStatusDisabled}
+        previewDisabled={!order?.orderId || isDraftOrCancelled}
+        emailDisabled={isDraftOrCancelled}
         onDelete={handleDeleteOrder}
         isDeleting={isDeleting}
         showDelete={canDeleteOrder}
@@ -449,6 +433,7 @@ const OrderPage = () => {
           isError={Boolean(isPaymentsError)}
           isSaving={isSavingPayment || isUpdatingPayment}
           outstanding={outstandingBalance}
+          orderRequiredBy={order?.requiredBy}
           onCreate={addPayment}
           onUpdate={updatePayment}
           disabled={orderStatusDraft === "cancelled"}

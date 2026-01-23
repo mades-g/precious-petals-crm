@@ -2,15 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <title>Invoice {{.InvoiceNo}}</title>
-
     <style>
-      *,
-      *::before,
-      *::after {
+      * {
         box-sizing: border-box;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
       }
 
       html,
@@ -19,316 +19,276 @@
       }
 
       body {
-        font-family: "Times New Roman", serif;
-        color: #111;
         margin: 0;
-        background: #fff;
-
-        /* A4-ish: we keep your padding but handle footer pinning with flex */
         padding: 48px 64px 48px;
-        box-sizing: border-box;
 
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        /* helps in browser preview */
+        font-family: Arial, Helvetica, sans-serif;
+        color: #111;
+        background: #fff;
+        font-size: 13px;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
 
-      /* This wrapper grows to push footer down */
-      .page-content {
-        flex: 1 1 auto;
+      /* Keep layout stable in wkhtmltopdf */
+      .page {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
       }
 
+      /* --- Header (table layout) --- */
       .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 36px;
-        gap: 24px;
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 18px;
       }
 
-      .brand {
-        font-size: 28px;
-        font-weight: 600;
-        letter-spacing: 0.02em;
+      .header td {
+        vertical-align: top;
       }
 
-      .title {
-        font-size: 14px;
+      .logo {
+        font-size: 44px;
+        line-height: 1;
+        font-weight: 400;
+        margin: 0;
+        color: #4f6f5a;
+        letter-spacing: 0.01em;
+      }
+
+      .invoice-title {
+        text-align: right;
         font-weight: 700;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.12em;
+        font-size: 14px;
+        padding-top: 6px;
       }
 
       .address {
         white-space: pre-line;
+        line-height: 1.35;
+        margin-top: 24px;
         font-size: 14px;
-        line-height: 1.5;
       }
 
+      /* --- Meta row (3 cols) --- */
       .meta {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 24px;
-        margin: 24px 0 32px;
-        font-weight: 600;
+        width: 100%;
+        border-collapse: collapse;
+        margin: 18px 0 40px;
       }
 
-      .meta strong {
+      .meta td {
+        width: 33.33%;
         font-weight: 700;
+        font-size: 13px;
       }
 
-      table {
+      .meta-right {
+        text-align: right;
+      }
+
+      /* --- Items table --- */
+      .items {
         width: 100%;
         border-collapse: collapse;
         margin-top: 12px;
       }
 
-      thead th {
-        text-align: left;
-        padding: 10px 6px 8px;
-        border-bottom: 2px solid #222;
+      .items thead th {
         font-size: 14px;
+        font-weight: 700;
+        padding: 6px 6px 8px;
+        border-bottom: 1px solid #222;
       }
 
-      thead th:last-child,
-      tbody td:last-child {
+      .items thead th.amount {
+        text-align: right;
+      }
+
+      .items tbody td {
+        padding: 5px 6px;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .col-label {
+        width: 70px;
+        white-space: nowrap;
+      }
+
+      .col-desc {
+        width: auto;
+      }
+
+      .col-amt {
+        width: 120px;
         text-align: right;
         white-space: nowrap;
       }
 
-      tbody td {
-        padding: 8px 6px;
-        vertical-align: top;
-        font-size: 14px;
-      }
-
-      .item-col {
-        width: 90px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-
       .sub-item {
-        padding-left: 12px;
-        color: #333;
+        padding-left: 18px;
+        line-height: 1.3;
       }
 
-      /* 2-column section: left = bank details, right = totals + notes */
+      /* --- Summary area (2 columns) --- */
       .summary {
-        display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
-        gap: 32px;
-        margin-top: 40px;
-        align-items: start;
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 22px;
       }
 
-      .bank-title {
-        font-weight: 700;
-        margin-bottom: 12px;
+      .summary td {
+        vertical-align: top;
       }
 
-      .bank-details {
+      .left-block {
+        width: 60%;
         font-size: 14px;
-        line-height: 1.5;
+      }
+
+      .right-block {
+        width: 40%;
+        font-size: 14px;
+        padding-left: 24px;
+      }
+
+      .section-title {
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+
+      .bank-lines {
         white-space: pre-line;
+        line-height: 1.35;
       }
 
       .totals {
         width: 100%;
-        max-width: 320px;
-        margin-left: auto;
-        font-size: 14px;
+        border-collapse: collapse;
       }
 
-      .totals-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 6px 0;
-        font-weight: 600;
+      .totals td {
+        padding: 3px 0;
+        vertical-align: top;
       }
 
-      .totals-row strong {
+      .totals td:last-child {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .totals .strong {
         font-weight: 700;
       }
 
-      .balance {
-        margin-top: 12px;
-        font-size: 16px;
-      }
-
-      /* Notes now live in the RIGHT column under totals */
-      .notes {
-        margin-top: 20px;
-      }
-
-      .notes-label {
+      .notes-title {
         font-weight: 700;
-        font-size: 14px;
-        margin-bottom: 6px;
+        margin-top: 18px;
       }
 
       .notes-box {
-        width: 100%;
-        box-sizing: border-box;
-
+        margin-top: 6px;
         border: 1px solid #222;
         padding: 10px 12px;
-        min-height: 90px;
-
-        font-size: 14px;
-        line-height: 1.5;
+        min-height: 70px;
         white-space: pre-line;
-        text-align: left;
-      }
-
-      /* Footer pinned to bottom when content is short */
-      .footer {
-        flex: 0 0 auto;
-        margin-top: 28px;
-        padding-top: 12px;
-        text-align: center;
-        font-size: 12px;
-        color: #444;
-        line-height: 1.4;
-      }
-
-      /* Responsive preview for narrow screens */
-      @media screen and (max-width: 760px) {
-        body {
-          padding: 24px 18px 24px;
-        }
-
-        .header {
-          flex-direction: column;
-          align-items: flex-start;
-          margin-bottom: 24px;
-        }
-
-        .meta {
-          grid-template-columns: 1fr;
-          gap: 10px;
-          margin: 16px 0 20px;
-        }
-
-        .summary {
-          grid-template-columns: 1fr;
-          gap: 20px;
-        }
-
-        .totals {
-          max-width: none;
-          margin-left: 0;
-        }
-
-        .item-col {
-          width: 70px;
-        }
-      }
-
-      /* Keep PDF stable */
-      @media print {
-        @page {
-          size: A4;
-          margin: 0;
-        }
-
-        html,
-        body {
-          height: auto;
-        }
-
-        body {
-          min-height: 0;
-          padding: 48px 64px 48px;
-        }
-
-        .footer {
-          margin-top: 28px;
-        }
+        line-height: 1.35;
       }
     </style>
   </head>
 
   <body>
-    <div class="page-content">
-      <div class="header">
-        <div>
-          <div class="brand">Precious Petals</div>
-          <div class="address">{{.Address}}</div>
-        </div>
-        <div class="title">INVOICE</div>
-      </div>
+    <table class="page">
+      <tr>
+        <td>
+          <!-- Header -->
+          <table class="header">
+            <tr>
+              <td>
+                <div class="logo">Precious Petals</div>
+                <div class="address">{{.Address}}</div>
+              </td>
+              <td class="invoice-title">INVOICE</td>
+            </tr>
+          </table>
 
-      <div class="meta">
-        <div><strong>Occasion Date:</strong> {{.OccasionDate}}</div>
-        <div><strong>Invoice Date:</strong> {{.InvoiceDate}}</div>
-        <div><strong>Invoice No:</strong> {{.InvoiceNo}}</div>
-      </div>
+          <!-- Meta -->
+          <table class="meta">
+            <tr>
+              <td>Occasion Date: {{.OccasionDate}}</td>
+              <td>Invoice Date: {{.InvoiceDate}}</td>
+              <td class="meta-right">Invoice No: {{.InvoiceNo}}</td>
+            </tr>
+          </table>
 
-      <table>
-        <thead>
-          <tr>
-            <th class="item-col">Item</th>
-            <th>Item</th>
-            <th>Amount (Inc VAT)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{range .Rows}}
-          <tr>
-            <td class="item-col">{{.ItemLabel}}</td>
-            <td class="{{if .IsSubItem}}sub-item{{end}}">{{.Description}}</td>
-            <td>{{.Amount}}</td>
-          </tr>
-          {{end}}
-        </tbody>
-      </table>
-      <div class="summary">
-        <!-- LEFT COLUMN: bank details only -->
-        <div>
-          <div class="bank-title">Bank Account Details</div>
-          <div class="bank-details">
-            Sort Code: 30-18-45 Account Number: 00968386
-          </div>
-        </div>
-        <!-- RIGHT COLUMN: totals then notes -->
-        <div class="totals">
-          <div class="totals-row">
-            <span>Sub Total (Ex VAT)</span>
-            <span>{{.SubTotal}}</span>
-          </div>
-          <div class="totals-row">
-            <span>VAT Total</span>
-            <span>{{.VatTotal}}</span>
-          </div>
-          <div class="totals-row">
-            <strong>Total</strong>
-            <strong>{{.GrandTotal}}</strong>
-          </div>
-          <div class="totals-row">
-            <span>Credits</span>
-            <span>{{.Credits}}</span>
-          </div>
-          <div class="totals-row balance">
-            <strong>Balance Due</strong>
-            <strong>{{.BalanceDue}}</strong>
-          </div>
-        </div>
-        <div class="notes">
-          <div class="notes-label">Notes</div>
-          <div class="notes-box">{{.Notes}}</div>
-        </div>
-      </div>
-    </div>
-    <div class="footer">
-      Precious Petals Limited, Unit 10 Cufaude Business Park, Cufaude Lane,
-      Bramley, RG26 5DL. Telephone 01256 882422.
-      <br />
-      Our studio opening times are Monday to Thursday 9:00am to 4:00pm, plus
-      Friday and Saturday 9:30am to 12:30 (by advance appointment only).
-      <br />
-      Company Reg.no: 04705425. VAT Reg no: 742539622.
-    </div>
+          <!-- Items -->
+          <table class="items">
+            <thead>
+              <tr>
+                <th colspan="2">Item</th>
+                <th class="amount">
+                  Amount
+                  <span style="font-weight: 400; font-size: 10px"
+                    >(Inc VAT)</span
+                  >
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Rows}}
+              <tr>
+                <td class="col-label">{{.ItemLabel}}</td>
+                <td class="col-desc {{if .IsSubItem}}sub-item{{end}}">
+                  {{.Description}}
+                </td>
+                <td class="col-amt">{{.Amount}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+          <table class="summary">
+            <tr>
+              <td class="left-block">
+                <div class="section-title">Bank Account Details</div>
+                <div class="bank-lines">
+                  Sort Code: 30-18-45 Account Number: 00968386 Please quote your
+                  invoice number in reference.
+                </div>
+                <div class="notes-title">Notes</div>
+                <div class="notes-box">{{.Notes}}</div>
+              </td>
+              <td class="right-block">
+                <table class="totals">
+                  <tr>
+                    <td>Sub Total (Ex VAT)</td>
+                    <td>{{.SubTotal}}</td>
+                  </tr>
+                  <tr>
+                    <td>VAT Total</td>
+                    <td>{{.VatTotal}}</td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Total</td>
+                    <td class="strong">{{.GrandTotal}}</td>
+                  </tr>
+                  <tr>
+                    <td>Credits</td>
+                    <td>{{.Credits}}</td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Balance Due</td>
+                    <td class="strong">{{.BalanceDue}}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

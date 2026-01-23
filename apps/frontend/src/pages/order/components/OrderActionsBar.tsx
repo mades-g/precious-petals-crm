@@ -3,9 +3,8 @@ import {
   Badge,
   Button,
   Card,
+  DropdownMenu,
   Flex,
-  Heading,
-  Select,
   Text,
 } from "@radix-ui/themes";
 
@@ -19,16 +18,21 @@ import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
 } from "@/services/pb/types";
-import type { StatusControl } from "../types";
+import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
 
 export type OrderActionsBarProps = {
   created?: string | null;
   occasionDate?: string | null;
+  requiredBy?: string | null;
   orderStatus: OrdersOrderStatusOptions;
   paymentStatus: OrdersPaymentStatusOptions;
-  statusControls: StatusControl<OrdersOrderStatusOptions>[];
-  onSaveMeta: () => void;
-  isSavingMeta: boolean;
+  onPreviewInvoice: () => void;
+  onOpenEmailActions: () => void;
+  onUpdateStatus: (status: OrdersOrderStatusOptions) => void;
+  isUpdatingStatus: boolean;
+  isStatusDisabled: (status: OrdersOrderStatusOptions) => boolean;
+  previewDisabled?: boolean;
+  emailDisabled?: boolean;
   onDelete: () => void;
   isDeleting: boolean;
   showDelete: boolean;
@@ -37,102 +41,102 @@ export type OrderActionsBarProps = {
 const OrderActionsBar: FC<OrderActionsBarProps> = ({
   created,
   occasionDate,
+  requiredBy,
   orderStatus,
   paymentStatus,
-  statusControls,
-  onSaveMeta,
-  isSavingMeta,
+  onPreviewInvoice,
+  onOpenEmailActions,
+  onUpdateStatus,
+  isUpdatingStatus,
+  isStatusDisabled,
+  previewDisabled,
+  emailDisabled,
   onDelete,
   isDeleting,
   showDelete,
 }) => {
   return (
-    <>
-      <Card mb="3">
-        <Flex justify="between" align="center" wrap="wrap" gap="3">
-          <Flex gap="2" wrap="wrap">
-            {created ? (
-              <Badge variant="soft" color="gray">
-                Created {formatDate(created)}
-              </Badge>
-            ) : null}
-            {occasionDate ? (
-              <Badge variant="soft" color="gray">
-                Occasion {formatDate(occasionDate)}
-              </Badge>
-            ) : null}
-          </Flex>
-          <Flex gap="2" wrap="wrap">
-            <Badge variant="soft" color={getOrderStatusColor(orderStatus)}>
-              {formatSnakeCase(orderStatus)}
+    <Card mb="3">
+      <Flex justify="between" align="center" wrap="wrap" gap="3">
+        <Flex gap="2" wrap="wrap" align="center">
+          {created ? (
+            <Badge variant="soft" color="gray">
+              <Text weight="bold">Created:</Text> {formatDate(created)}
             </Badge>
-            <Badge variant="soft" color={getPaymentStatusColor(paymentStatus)}>
-              {formatSnakeCase(paymentStatus)}
+          ) : null}
+          {occasionDate ? (
+            <Badge variant="soft" color="gray">
+              <Text weight="bold">Occasion:</Text> {formatDate(occasionDate)}
             </Badge>
-          </Flex>
+          ) : null}
+          {requiredBy ? (
+            <Badge variant="soft" color="orange">
+              <Text weight="bold">Required by:</Text> {requiredBy}
+            </Badge>
+          ) : null}
         </Flex>
-      </Card>
-
-      <Card>
-        <Flex justify="between" align="start" gap="4">
-          <div>
-            <Heading size="3" mb="1">
-              Actions
-            </Heading>
-            <Text size="2" color="gray">
-              Update order status, and manage items below.
-            </Text>
-          </div>
-          <Flex gap="3" align="end">
-            {statusControls.map((control) => (
-              <Flex key={control.label} direction="column" gap="1">
-                <Text size="1" color="gray">
-                  {control.label}
-                </Text>
-                <Select.Root
-                  value={control.value}
-                  onValueChange={(value) =>
-                    control.onChange(value as typeof control.value)
-                  }
-                >
-                  <Select.Trigger disabled={control.disabled} />
-                  <Select.Content>
-                    {control.options.map((status) => (
-                      <Select.Item
-                        key={status}
-                        value={status}
-                        disabled={Boolean(control.isOptionDisabled?.(status))}
-                      >
-                        {formatSnakeCase(status)}
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Root>
-                {control.helperText ? (
-                  <Text size="1" color="gray">
-                    {control.helperText}
-                  </Text>
-                ) : null}
-              </Flex>
-            ))}
-            <Button size="2" onClick={onSaveMeta} disabled={isSavingMeta}>
-              {isSavingMeta ? "Saving..." : "Update"}
-            </Button>
-            {showDelete ? (
-              <Button
-                size="2"
-                color="red"
-                variant="soft"
-                onClick={onDelete}
-                disabled={isDeleting}
+        <Flex gap="2" align="center" wrap="wrap">
+          <Badge variant="soft" color={getOrderStatusColor(orderStatus)}>
+            <Text weight="bold">Order status:</Text>{" "}
+            {formatSnakeCase(orderStatus)}
+          </Badge>
+          <Badge variant="soft" color={getPaymentStatusColor(paymentStatus)}>
+            <Text weight="bold">Payment status:</Text>{" "}
+            {formatSnakeCase(paymentStatus)}
+          </Badge>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <Button variant="solid">Actions</Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Item
+                onClick={onPreviewInvoice}
+                disabled={Boolean(previewDisabled)}
               >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </Button>
-            ) : null}
-          </Flex>
+                Preview invoice
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={onOpenEmailActions}
+                disabled={Boolean(emailDisabled)}
+              >
+                Email actions
+              </DropdownMenu.Item>
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger disabled={isUpdatingStatus}>
+                  Update status
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent>
+                  {ORDER_STATUS_OPTIONS.map((status) => (
+                    <DropdownMenu.Item
+                      key={status}
+                      onClick={() => onUpdateStatus(status)}
+                      disabled={
+                        isUpdatingStatus ||
+                        status === orderStatus ||
+                        isStatusDisabled(status)
+                      }
+                    >
+                      {formatSnakeCase(status)}
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+          {showDelete ? (
+            <Button
+              size="1"
+              color="red"
+              variant="soft"
+              onClick={onDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          ) : null}
         </Flex>
-      </Card>
-    </>
+      </Flex>
+    </Card>
   );
 };
 

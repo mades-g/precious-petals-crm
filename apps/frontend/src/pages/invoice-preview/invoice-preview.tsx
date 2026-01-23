@@ -20,6 +20,7 @@ const InvoicePreview: FC = () => {
   }, [location.search]);
 
   const [payload, setPayload] = useState<unknown>(state?.payload);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const [html, setHtml] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -47,6 +48,56 @@ const InvoicePreview: FC = () => {
   const canPreview = useMemo(() => {
     return !!payload && !!pb.authStore.token && typeof pb.baseUrl === "string";
   }, [payload]);
+
+  const handleDownload = async () => {
+    if (!payload || !pb.authStore.token || typeof pb.baseUrl !== "string") {
+      setError("Missing payload or auth token.");
+      return;
+    }
+
+    setIsDownloading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`${pb.baseUrl}/api/invoice/pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: pb.authStore.token,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        try {
+          const j = JSON.parse(text) as any;
+          const msg =
+            j?.details ||
+            j?.error ||
+            j?.message ||
+            `Download failed (${res.status})`;
+          throw new Error(msg);
+        } catch {
+          throw new Error(text || `Download failed (${res.status})`);
+        }
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "invoice.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to download invoice");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -145,11 +196,22 @@ const InvoicePreview: FC = () => {
 
   return (
     <Box p="4" style={{ maxWidth: 1100, margin: "0 auto" }}>
-      <Flex justify="between" align="center" mb="3">
-        <Heading size="4">Invoice preview</Heading>
-        <Button variant="soft" onClick={() => navigate(-1)}>
-          ← Back
-        </Button>
+      <Flex justify="between" mb="3" direction="column">
+        <Flex gap="2" justify="between">
+          <Button variant="soft" onClick={() => navigate(-1)}>
+            ← Back
+          </Button>
+          <Button
+            variant="soft"
+            onClick={handleDownload}
+            disabled={!canPreview}
+          >
+            {isDownloading ? "Downloading..." : "Download PDF"}
+          </Button>
+        </Flex>
+        <Heading size="4" align="center">
+          Invoice preview
+        </Heading>
       </Flex>
 
       {error ? (

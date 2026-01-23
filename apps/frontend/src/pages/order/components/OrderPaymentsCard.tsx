@@ -8,7 +8,6 @@ import {
   Select,
   Table,
   Text,
-  TextArea,
   TextField,
 } from "@radix-ui/themes";
 
@@ -34,10 +33,13 @@ type OrderPaymentsCardProps = {
   isError: boolean;
   isSaving: boolean;
   outstanding?: number;
-  onCreate: (payload: CreateOrderPaymentDraft) => Promise<unknown>;
+  orderRequiredBy?: string | null;
+  onCreate: (
+    payload: CreateOrderPaymentDraft & { requiredBy?: string },
+  ) => Promise<unknown>;
   onUpdate: (payload: {
     id: string;
-    data: CreateOrderPaymentDraft;
+    data: CreateOrderPaymentDraft & { requiredBy?: string };
   }) => Promise<unknown>;
   disabled?: boolean;
 };
@@ -48,6 +50,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   isError,
   isSaving,
   outstanding,
+  orderRequiredBy,
   onCreate,
   onUpdate,
   disabled,
@@ -57,6 +60,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     useState<OrderPaymentsPaymentTypeOptions>("first_deposit");
   const [paidAt, setPaidAt] = useState(defaultPaidAt());
   const [notes, setNotes] = useState("");
+  const [requiredBy, setRequiredBy] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasOutstanding =
     typeof outstanding === "number" && Number.isFinite(outstanding);
@@ -68,6 +72,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     useState<OrderPaymentsPaymentTypeOptions>("first_deposit");
   const [editPaidAt, setEditPaidAt] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editRequiredBy, setEditRequiredBy] = useState("");
 
   const hasPayments = payments.length > 0;
   const inputsDisabled = Boolean(disabled) || isSaving;
@@ -98,10 +103,27 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const requiresNotes = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "other";
 
+  const requiresRequiredBy = (type: OrderPaymentsPaymentTypeOptions) =>
+    type === "second_deposit";
+
   const isFinalBalance = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "final_balance";
 
   const isZeroRemaining = (remaining: number) => Math.abs(remaining) < 0.01;
+
+  const toUkDate = (value: string) => {
+    if (!value || !value.includes("-")) return value;
+    const [year, month, day] = value.split("-");
+    if (!year || !month || !day) return value;
+    return `${day}/${month}/${year}`;
+  };
+  const toIsoDate = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || !trimmed.includes("/")) return "";
+    const [day, month, year] = trimmed.split("/");
+    if (!day || !month || !year) return "";
+    return `${year}-${month}-${day}`;
+  };
 
   const handleSubmit = async () => {
     const parsedAmount = Number(amount);
@@ -129,6 +151,10 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       setSubmitError("Notes are required for Other payments.");
       return;
     }
+    if (requiresRequiredBy(paymentType) && requiredBy.trim() === "") {
+      setSubmitError("Required by date is required for second deposits.");
+      return;
+    }
 
     setSubmitError(null);
     try {
@@ -137,9 +163,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
         paymentType,
         ...(paidAt ? { paidAt } : {}),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
+        ...(requiresRequiredBy(paymentType) && requiredBy.trim()
+          ? { requiredBy: toUkDate(requiredBy.trim()) }
+          : {}),
       });
       setAmount("");
       setNotes("");
+      setRequiredBy("");
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Failed to save payment.",
@@ -153,6 +183,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditPaymentType(payment.paymentType);
     setEditPaidAt(payment.paidAt ?? "");
     setEditNotes(payment.notes ?? "");
+    setEditRequiredBy(toIsoDate(orderRequiredBy ?? ""));
     setSubmitError(null);
   };
 
@@ -162,6 +193,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditPaymentType("first_deposit");
     setEditPaidAt("");
     setEditNotes("");
+    setEditRequiredBy("");
     setSubmitError(null);
   };
 
@@ -192,6 +224,10 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       setSubmitError("Notes are required for Other payments.");
       return;
     }
+    if (requiresRequiredBy(editPaymentType) && editRequiredBy.trim() === "") {
+      setSubmitError("Required by date is required for second deposits.");
+      return;
+    }
 
     setSubmitError(null);
     try {
@@ -202,6 +238,9 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           paymentType: editPaymentType,
           ...(editPaidAt ? { paidAt: editPaidAt } : {}),
           ...(editNotes.trim() ? { notes: editNotes.trim() } : {}),
+          ...(requiresRequiredBy(editPaymentType) && editRequiredBy.trim()
+            ? { requiredBy: toUkDate(editRequiredBy.trim()) }
+            : {}),
         },
       });
       cancelEdit();
@@ -224,64 +263,85 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           ) : null}
         </Flex>
 
-        <Flex gap="3" align="end">
-          <Box style={{ minWidth: 160 }}>
-            <Text size="1" color="gray">
-              Amount paid
-            </Text>
-            <TextField.Root
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              disabled={inputsDisabled}
-            />
-          </Box>
-          <Box style={{ minWidth: 200 }}>
-            <Text size="1" color="gray">
-              Payment type
-            </Text>
-            <Select.Root
-              value={paymentType}
-              onValueChange={(value) =>
-                setPaymentType(value as OrderPaymentsPaymentTypeOptions)
-              }
-            >
-              <Select.Trigger disabled={inputsDisabled} />
-              <Select.Content>
-                {PAYMENT_TYPE_OPTIONS.map((option) => (
-                  <Select.Item key={option} value={option}>
-                    {formatSnakeCase(option)}
-                  </Select.Item>
-                ))}
-              </Select.Content>
-            </Select.Root>
-          </Box>
-          <Box style={{ minWidth: 160 }}>
-            <Text size="1" color="gray">
-              Paid date
-            </Text>
-            <TextField.Root
-              type="date"
-              lang="en-GB"
-              value={paidAt}
-              onChange={(event) => setPaidAt(event.target.value)}
-              disabled={inputsDisabled}
-            />
-          </Box>
-          <Box style={{ minWidth: 220, flexGrow: 1 }}>
-            <Text size="1" color="gray">
-              Notes
-            </Text>
-            <TextArea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              disabled={inputsDisabled}
-              rows={2}
-            />
-          </Box>
+        <Flex justify="between" align="end" wrap="wrap" gap="3">
+          <Flex gap="3" align="end" wrap="wrap">
+            <Box style={{ minWidth: 150 }}>
+              <Text size="1" color="gray">
+                Amount paid
+              </Text>
+              <TextField.Root
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                disabled={inputsDisabled}
+              />
+            </Box>
+            <Box style={{ minWidth: 180 }}>
+              <Flex direction="column" gap="1" align="start">
+                <Text size="1" color="gray">
+                  Payment type
+                </Text>
+                <Select.Root
+                  value={paymentType}
+                  onValueChange={(value) => {
+                    const next = value as OrderPaymentsPaymentTypeOptions;
+                    setPaymentType(next);
+                    if (next !== "second_deposit") {
+                      setRequiredBy("");
+                    }
+                  }}
+                >
+                  <Select.Trigger disabled={inputsDisabled} />
+                  <Select.Content>
+                    {PAYMENT_TYPE_OPTIONS.map((option) => (
+                      <Select.Item key={option} value={option}>
+                        {formatSnakeCase(option)}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+              </Flex>
+            </Box>
+            <Box style={{ minWidth: 150 }}>
+              <Text size="1" color="gray">
+                Paid date
+              </Text>
+              <TextField.Root
+                type="date"
+                lang="en-GB"
+                value={paidAt}
+                onChange={(event) => setPaidAt(event.target.value)}
+                disabled={inputsDisabled}
+              />
+            </Box>
+            {requiresRequiredBy(paymentType) ? (
+              <Box style={{ minWidth: 170 }}>
+                <Text size="1" color="gray">
+                  Required by
+                </Text>
+                <TextField.Root
+                  type="date"
+                  lang="en-GB"
+                  value={requiredBy}
+                  onChange={(event) => setRequiredBy(event.target.value)}
+                  disabled={inputsDisabled}
+                />
+              </Box>
+            ) : null}
+            <Box style={{ minWidth: 200, maxWidth: 260 }}>
+              <Text size="1" color="gray">
+                Notes
+              </Text>
+              <TextField.Root
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                disabled={inputsDisabled}
+              />
+            </Box>
+          </Flex>
           <Button onClick={handleSubmit} disabled={inputsDisabled}>
             {isSaving ? "Saving..." : "Add payment"}
           </Button>
@@ -317,118 +377,157 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Type</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Amount</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Required by</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Notes</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell />
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {payments.map((payment) => {
-                const displayDate = payment.paidAt || payment.created || "";
-                const isEditing = editingId === payment.id;
-                return (
-                  <Table.Row key={payment.id}>
-                    <Table.Cell>
-                      {isEditing ? (
-                        <TextField.Root
-                          type="date"
-                          lang="en-GB"
-                          value={editPaidAt}
-                          onChange={(event) =>
-                            setEditPaidAt(event.target.value)
-                          }
-                          disabled={inputsDisabled}
-                        />
-                      ) : displayDate ? (
-                        formatDate(displayDate)
-                      ) : (
-                        ""
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {isEditing ? (
-                        <Select.Root
-                          value={editPaymentType}
-                          onValueChange={(value) =>
-                            setEditPaymentType(
-                              value as OrderPaymentsPaymentTypeOptions,
-                            )
-                          }
-                        >
-                          <Select.Trigger disabled={inputsDisabled} />
-                          <Select.Content>
-                            {PAYMENT_TYPE_OPTIONS.map((option) => (
-                              <Select.Item key={option} value={option}>
-                                {formatSnakeCase(option)}
-                              </Select.Item>
-                            ))}
-                          </Select.Content>
-                        </Select.Root>
-                      ) : (
-                        formatSnakeCase(payment.paymentType)
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {isEditing ? (
-                        <TextField.Root
-                          type="number"
-                          inputMode="decimal"
-                          min="0"
-                          step="0.01"
-                          value={editAmount}
-                          onChange={(event) =>
-                            setEditAmount(event.target.value)
-                          }
-                          disabled={inputsDisabled}
-                        />
-                      ) : (
-                        (formatCurrency(payment.amount) ?? payment.amount)
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {isEditing ? (
-                        <TextArea
-                          value={editNotes}
-                          onChange={(event) => setEditNotes(event.target.value)}
-                          disabled={inputsDisabled}
-                          rows={2}
-                        />
-                      ) : (
-                        (payment.notes ?? "")
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {isEditing ? (
-                        <Flex gap="2">
-                          <Button
-                            size="1"
-                            onClick={() => handleUpdate(payment)}
+              {payments
+                .slice()
+                .sort((a, b) => {
+                  const order: OrderPaymentsPaymentTypeOptions[] = [
+                    "first_deposit",
+                    "second_deposit",
+                    "other",
+                    "final_balance",
+                  ];
+                  const aIndex = order.indexOf(a.paymentType);
+                  const bIndex = order.indexOf(b.paymentType);
+                  if (aIndex === bIndex) return 0;
+                  if (aIndex === -1) return 1;
+                  if (bIndex === -1) return -1;
+                  return aIndex - bIndex;
+                })
+                .map((payment) => {
+                  const displayDate = payment.paidAt || payment.created || "";
+                  const isEditing = editingId === payment.id;
+                  return (
+                    <Table.Row key={payment.id}>
+                      <Table.Cell>
+                        {isEditing ? (
+                          <TextField.Root
+                            type="date"
+                            lang="en-GB"
+                            value={editPaidAt}
+                            onChange={(event) =>
+                              setEditPaidAt(event.target.value)
+                            }
                             disabled={inputsDisabled}
+                          />
+                        ) : displayDate ? (
+                          formatDate(displayDate)
+                        ) : (
+                          ""
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {isEditing ? (
+                          <Select.Root
+                            value={editPaymentType}
+                            onValueChange={(value) => {
+                              const next =
+                                value as OrderPaymentsPaymentTypeOptions;
+                              setEditPaymentType(next);
+                              if (next !== "second_deposit") {
+                                setEditRequiredBy("");
+                              }
+                            }}
                           >
-                            Save
-                          </Button>
+                            <Select.Trigger disabled={inputsDisabled} />
+                            <Select.Content>
+                              {PAYMENT_TYPE_OPTIONS.map((option) => (
+                                <Select.Item key={option} value={option}>
+                                  {formatSnakeCase(option)}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+                        ) : (
+                          formatSnakeCase(payment.paymentType)
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {isEditing ? (
+                          <TextField.Root
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            value={editAmount}
+                            onChange={(event) =>
+                              setEditAmount(event.target.value)
+                            }
+                            disabled={inputsDisabled}
+                          />
+                        ) : (
+                          (formatCurrency(payment.amount) ?? payment.amount)
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {isEditing && requiresRequiredBy(editPaymentType) ? (
+                          <TextField.Root
+                            type="date"
+                            lang="en-GB"
+                            value={editRequiredBy}
+                            onChange={(event) =>
+                              setEditRequiredBy(event.target.value)
+                            }
+                            disabled={inputsDisabled}
+                          />
+                        ) : payment.paymentType === "second_deposit" &&
+                          orderRequiredBy ? (
+                          orderRequiredBy
+                        ) : (
+                          ""
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {isEditing ? (
+                          <TextField.Root
+                            value={editNotes}
+                            onChange={(event) =>
+                              setEditNotes(event.target.value)
+                            }
+                            disabled={inputsDisabled}
+                          />
+                        ) : (
+                          (payment.notes ?? "")
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {isEditing ? (
+                          <Flex gap="2">
+                            <Button
+                              size="1"
+                              onClick={() => handleUpdate(payment)}
+                              disabled={inputsDisabled}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="1"
+                              variant="soft"
+                              onClick={cancelEdit}
+                              disabled={inputsDisabled}
+                            >
+                              Cancel
+                            </Button>
+                          </Flex>
+                        ) : (
                           <Button
                             size="1"
                             variant="soft"
-                            onClick={cancelEdit}
+                            onClick={() => startEdit(payment)}
                             disabled={inputsDisabled}
                           >
-                            Cancel
+                            Edit
                           </Button>
-                        </Flex>
-                      ) : (
-                        <Button
-                          size="1"
-                          variant="soft"
-                          onClick={() => startEdit(payment)}
-                          disabled={inputsDisabled}
-                        >
-                          Edit
-                        </Button>
-                      )}
-                    </Table.Cell>
-                  </Table.Row>
-                );
-              })}
+                        )}
+                      </Table.Cell>
+                    </Table.Row>
+                  );
+                })}
             </Table.Body>
           </Table.Root>
         )}

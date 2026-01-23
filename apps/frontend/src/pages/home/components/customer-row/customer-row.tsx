@@ -11,6 +11,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   formatAddressLines,
@@ -22,6 +23,9 @@ import {
 } from "@/utils";
 import type { NormalisedCustomer } from "@/api/get-customers";
 import { useOrderDeleteMutation } from "@/pages/order/hooks/useOrderDeleteMutation";
+import { pb } from "@/services/pb/client";
+import { COLLECTIONS, ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
+import type { OrdersOrderStatusOptions, Update } from "@/services/pb/types";
 
 import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
 
@@ -41,6 +45,7 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
     customer;
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { deleteOrder, isDeleting } = useOrderDeleteMutation(
     orderDetails?.orderId,
   );
@@ -61,10 +66,85 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
     orderDetails?.orderStatus === "ready" &&
     paymentStatus === "final_balance_paid";
   const hasHowRecommended = Boolean(howRecommended);
+  const requiredBy = orderDetails?.requiredBy;
   const canDeleteOrder =
     Boolean(orderDetails?.orderId) &&
     orderDetails?.orderStatus === "cancelled" &&
     isAdmin;
+
+  const paymentSequence: Array<NonNullable<typeof paymentStatus>> = [
+    "waiting_first_deposit",
+    "first_deposit_paid",
+    "waiting_second_deposit",
+    "second_deposit_paid",
+    "waiting_final_balance",
+    "final_balance_paid",
+  ];
+  const paymentIndex = paymentStatus
+    ? paymentSequence.indexOf(paymentStatus)
+    : -1;
+  const hasFirstPayment =
+    paymentIndex >= paymentSequence.indexOf("first_deposit_paid");
+
+  const framesComplete = orderDetails
+    ? orderDetails.frameOrder.length === 0 ||
+      orderDetails.frameOrder.every(
+        (frame) =>
+          Boolean(frame.artworkComplete) && Boolean(frame.framingComplete),
+      )
+    : false;
+  const paperweightComplete = orderDetails?.paperWeightOrder
+    ? Boolean(orderDetails.paperWeightOrder.paperweightReceived)
+    : true;
+  const readyEligible = framesComplete && paperweightComplete;
+  const deliveredEligible = paymentStatus === "final_balance_paid";
+
+  const allowedOrderStatuses: Record<
+    OrdersOrderStatusOptions,
+    OrdersOrderStatusOptions[]
+  > = {
+    draft: ["draft", "in_progress", "cancelled"],
+    in_progress: ["in_progress", "draft", "cancelled", "ready"],
+    cancelled: ["cancelled", "draft"],
+    ready: ["ready", "in_progress", "cancelled", "delivered", "collected"],
+    delivered: ["delivered"],
+    collected: ["collected"],
+  };
+
+  const isOrderStatusDisabled = (status: OrdersOrderStatusOptions) => {
+    if (!orderDetails?.orderStatus) return true;
+    if (!allowedOrderStatuses[orderDetails.orderStatus].includes(status))
+      return true;
+    if (status === "in_progress") return !hasFirstPayment;
+    if (status === "ready") return !readyEligible;
+    if (status === "delivered" || status === "collected") {
+      return !deliveredEligible;
+    }
+    return false;
+  };
+
+  const { mutateAsync: updateStatus, isPending: isUpdatingStatus } =
+    useMutation({
+      mutationFn: async (nextStatus: string) => {
+        if (!orderDetails?.orderId) {
+          throw new Error("Missing order ID");
+        }
+        const payload: Update<"orders"> = {
+          orderStatus: nextStatus as Update<"orders">["orderStatus"],
+        };
+        return pb
+          .collection(COLLECTIONS.ORDERS)
+          .update(orderDetails.orderId, payload);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (orderDetails?.orderId) {
+          queryClient.invalidateQueries({
+            queryKey: ["customer", orderDetails.orderId],
+          });
+        }
+      },
+    });
 
   const handleDeleteOrder = async () => {
     if (!orderDetails?.orderId) return;
@@ -97,6 +177,11 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
               No status
             </Badge>
           )}
+          {requiredBy ? (
+            <Badge color="orange" variant="soft" radius="full" size="1">
+              Required by {requiredBy}
+            </Badge>
+          ) : null}
         </Flex>
       </Table.RowHeaderCell>
       <Table.Cell align="left" style={{ ...CELL_PAD_STYLE, maxWidth: 250 }}>
@@ -176,7 +261,7 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
         {orderDetails?.frameOrder?.length ? (
           <Flex direction="column" gap="2">
             {orderDetails.frameOrder.map((frame) => (
-              <FrameDetailsCell key={frame.colId} frame={frame} />
+              <FrameDetailsCell key={frame.frameId} frame={frame} />
             ))}
           </Flex>
         ) : (
@@ -224,6 +309,30 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
             >
               Edit paperweight data
             </DropdownMenu.Item>
+            {orderDetails?.orderId ? (
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger
+                  disabled={isUpdatingStatus || !orderDetails?.orderStatus}
+                >
+                  Update order status
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent>
+                  {ORDER_STATUS_OPTIONS.map((status) => (
+                    <DropdownMenu.Item
+                      key={status}
+                      onClick={() => updateStatus(status)}
+                      disabled={
+                        isUpdatingStatus ||
+                        status === orderDetails?.orderStatus ||
+                        isOrderStatusDisabled(status)
+                      }
+                    >
+                      {formatSnakeCase(status)}
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            ) : null}
             {canDeleteOrder ? (
               <DropdownMenu.Item
                 color="red"

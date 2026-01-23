@@ -1,5 +1,5 @@
 import { useState, type FC } from "react";
-import { Table } from "@radix-ui/themes";
+import { Flex, Select, Table, Text } from "@radix-ui/themes";
 
 import type { NormalisedCustomer } from "@/api/get-customers";
 
@@ -14,6 +14,8 @@ import type { ModalMode } from "../../home";
 type CustomerTableProps = {
   customers: NormalisedCustomer[] | undefined;
   isAdmin: boolean;
+  sort: string;
+  onSortChange: (value: string) => void;
   nextOrderNo?: number;
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -24,6 +26,8 @@ type CustomerTableProps = {
 const CustomerTable: FC<CustomerTableProps> = ({
   customers,
   isAdmin,
+  sort,
+  onSortChange,
   nextOrderNo,
   isModalOpen,
   setIsModalOpen,
@@ -40,7 +44,28 @@ const CustomerTable: FC<CustomerTableProps> = ({
       <Table.Root variant="surface">
         <Table.Header>
           <Table.Row>
-            <Table.ColumnHeaderCell>Order</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>
+              <Flex direction="column" gap="2">
+                <Text>Order</Text>
+                <Select.Root value={sort} onValueChange={onSortChange}>
+                  <Select.Trigger />
+                  <Select.Content>
+                    <Select.Item value="-orderId.orderNo">
+                      Order no (desc)
+                    </Select.Item>
+                    <Select.Item value="orderId.orderNo">
+                      Order no (asc)
+                    </Select.Item>
+                    <Select.Item value="-orderId.requiredBy">
+                      Required by (desc)
+                    </Select.Item>
+                    <Select.Item value="orderId.requiredBy">
+                      Required by (asc)
+                    </Select.Item>
+                  </Select.Content>
+                </Select.Root>
+              </Flex>
+            </Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Customer</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Delivery address</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Occasion date</Table.ColumnHeaderCell>

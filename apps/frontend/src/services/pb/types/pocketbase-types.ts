@@ -251,6 +251,7 @@ export type OrdersRecord = {
   orderStatus?: OrdersOrderStatusOptions;
   paperweightOrderId?: RecordIdString;
   payment_status?: OrdersPaymentStatusOptions;
+  requiredBy?: string;
   updated: IsoAutoDateString;
   replacementFlowers?: boolean;
   replacementFlowersQty?: number;

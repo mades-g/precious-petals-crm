@@ -118,6 +118,7 @@ export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
       deliveryTown,
       deliveryCounty,
       deliveryPostcode,
+      requiredBy,
       updated,
       created,
       collectionId: colId,
@@ -163,6 +164,7 @@ export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
     deliveryTown,
     deliveryCounty,
     deliveryPostcode,
+    requiredBy,
   };
 };
 
