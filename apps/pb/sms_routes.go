@@ -26,9 +26,9 @@ type smsSendRequest struct {
 type txtlocalResponse struct {
 	Status   string `json:"status"`
 	Messages []struct {
-		ID        string `json:"id"`
-		Message   string `json:"message"`
-		Recipient string `json:"recipient"`
+		ID        string      `json:"id"`
+		Message   string      `json:"message"`
+		Recipient json.Number `json:"recipient"`
 	} `json:"messages"`
 	Errors []struct {
 		Message string `json:"message"`
