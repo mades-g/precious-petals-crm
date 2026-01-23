@@ -28,11 +28,14 @@ export type OrderActionsBarProps = {
   paymentStatus: OrdersPaymentStatusOptions;
   onPreviewInvoice: () => void;
   onOpenEmailActions: () => void;
+  onOpenSms: () => void;
+  onOpenSmsLogs: () => void;
   onUpdateStatus: (status: OrdersOrderStatusOptions) => void;
   isUpdatingStatus: boolean;
   isStatusDisabled: (status: OrdersOrderStatusOptions) => boolean;
   previewDisabled?: boolean;
   emailDisabled?: boolean;
+  smsDisabled?: boolean;
   onDelete: () => void;
   isDeleting: boolean;
   showDelete: boolean;
@@ -46,11 +49,14 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   paymentStatus,
   onPreviewInvoice,
   onOpenEmailActions,
+  onOpenSms,
+  onOpenSmsLogs,
   onUpdateStatus,
   isUpdatingStatus,
   isStatusDisabled,
   previewDisabled,
   emailDisabled,
+  smsDisabled,
   onDelete,
   isDeleting,
   showDelete,
@@ -100,6 +106,15 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                 disabled={Boolean(emailDisabled)}
               >
                 Email actions
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={onOpenSms}
+                disabled={Boolean(smsDisabled)}
+              >
+                Send SMS
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onClick={onOpenSmsLogs}>
+                SMS Logs
               </DropdownMenu.Item>
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger disabled={isUpdatingStatus}>

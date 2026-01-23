@@ -15,6 +15,7 @@ export type Collections =
   | "order_paperweight_items"
   | "order_payments"
   | "orders"
+  | "sms_logs"
   | "users";
 
 /* -----------------------------------------------------------------------------
@@ -252,6 +253,11 @@ export type OrdersRecord = {
   paperweightOrderId?: RecordIdString;
   payment_status?: OrdersPaymentStatusOptions;
   requiredBy?: string;
+  lastSmsSentAt?: IsoDateString;
+  lastSmsBody?: string;
+  lastSmsType?: SmsTypeOptions;
+  lastSmsStatus?: SmsStatusOptions;
+  lastSmsError?: string;
   updated: IsoAutoDateString;
   replacementFlowers?: boolean;
   replacementFlowersQty?: number;
@@ -298,6 +304,31 @@ export type UsersRecord = {
 
 export type UsersRoleOptions = "member" | "admin";
 
+export type SmsTypeOptions =
+  | "deposit_reminder"
+  | "paperweight_received"
+  | "framing_complete"
+  | "custom";
+
+export type SmsStatusOptions = "sent" | "failed";
+
+export type SmsLogsRecord = {
+  orderId: RecordIdString;
+  customerId?: RecordIdString;
+  toNumber: string;
+  sender: string;
+  type: SmsTypeOptions;
+  body: string;
+  provider: "txtlocal";
+  providerMessageId?: string;
+  status: SmsStatusOptions;
+  error?: string;
+  sentAt: IsoDateString;
+  created: IsoAutoDateString;
+  updated: IsoAutoDateString;
+  id: string;
+};
+
 /* -----------------------------------------------------------------------------
  * Response types include system fields and match PB API responses
  * -------------------------------------------------------------------------- */
@@ -324,6 +355,8 @@ export type OrderPaymentsResponse<Texpand = unknown> =
   Required<OrderPaymentsRecord> & BaseSystemFields<Texpand>;
 export type OrdersResponse<Texpand = unknown> = Required<OrdersRecord> &
   BaseSystemFields<Texpand>;
+export type SmsLogsResponse<Texpand = unknown> = Required<SmsLogsRecord> &
+  BaseSystemFields<Texpand>;
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> &
   AuthSystemFields<Texpand>;
 
@@ -342,6 +375,7 @@ export type CollectionRecords = {
   order_paperweight_items: OrderPaperweightItemsRecord;
   order_payments: OrderPaymentsRecord;
   orders: OrdersRecord;
+  sms_logs: SmsLogsRecord;
   users: UsersRecord;
 };
 
@@ -356,6 +390,7 @@ export type CollectionResponses = {
   order_paperweight_items: OrderPaperweightItemsResponse;
   order_payments: OrderPaymentsResponse;
   orders: OrdersResponse;
+  sms_logs: SmsLogsResponse;
   users: UsersResponse;
 };
 

@@ -18,12 +18,14 @@ export const COLLECTIONS: Record<
   | "ORDERS"
   | "ORDER_PAYMENTS"
   | "ORDER_PAPERWEIGHT_ITEMS"
-  | "ORDER_FRAME_ITEMS",
+  | "ORDER_FRAME_ITEMS"
+  | "SMS_LOGS",
   Extract<
     Collections,
     | "customers"
     | "order_payments"
     | "orders"
+    | "sms_logs"
     | "users"
     | "order_frame_items"
     | "order_paperweight_items"
@@ -35,6 +37,7 @@ export const COLLECTIONS: Record<
   ORDER_PAYMENTS: "order_payments",
   ORDER_FRAME_ITEMS: "order_frame_items",
   ORDER_PAPERWEIGHT_ITEMS: "order_paperweight_items",
+  SMS_LOGS: "sms_logs",
 };
 
 export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [

@@ -29,6 +29,7 @@ func main() {
 		registerInvoiceRoutes(se, app, previewTemplatePath)
 		registerEmailRoutes(se, app, previewTemplatePath)
 		registerExportRoutes(se, app)
+		registerSmsRoutes(se, app)
 
 		// serving SPA app
 		publicDir := resolvePathFromExecutable("pb_public")

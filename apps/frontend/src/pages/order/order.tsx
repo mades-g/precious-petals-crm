@@ -23,6 +23,8 @@ import OrderItemsTable from "./components/OrderItemsTable";
 import OrderExtrasAccordion from "./components/OrderExtrasAccordion";
 import OrderPaymentsCard from "./components/OrderPaymentsCard";
 import EmailActionsDrawer from "./components/EmailActionsDrawer";
+import SmsLogDrawer from "./components/SmsLogDrawer";
+import SendSmsDialog from "./components/SendSmsDialog";
 import { useOrderQuery } from "./hooks/useOrderQuery";
 import { useOrderExtrasMutations } from "./hooks/useOrderExtrasMutations";
 import { useFrameMutations } from "./hooks/useFrameMutations";
@@ -34,11 +36,13 @@ import {
 } from "./hooks/useOrderPayments";
 import { useEmailActions } from "./hooks/useEmailActions";
 import { useEmailLogsQuery } from "./hooks/useEmailLogsQuery";
+import { formatCurrency } from "@/utils";
 import { buildLineItems } from "./utils/buildLineItems";
 import { buildTotals } from "./utils/buildTotals";
 import { buildExtrasSummary } from "./utils/buildExtrasSummary";
 import { buildEmailPayload } from "./utils/buildEmailPayload";
 import { EMAIL_ACTIONS, type OrderExtrasDraft, type OrderFrame } from "./types";
+import { sendSms, type SmsType } from "@/api/send-sms";
 
 const defaultExtrasDraft: OrderExtrasDraft = {
   replacementFlowers: false,
@@ -89,6 +93,8 @@ const OrderPage = () => {
     null,
   );
   const [isEmailDrawerOpen, setIsEmailDrawerOpen] = useState(false);
+  const [isSmsOpen, setIsSmsOpen] = useState(false);
+  const [smsLogsOpen, setSmsLogsOpen] = useState(false);
   const [orderExtrasOpen, setOrderExtrasOpen] = useState(false);
 
   const [orderStatusDraft, setOrderStatusDraft] =
@@ -197,6 +203,11 @@ const OrderPage = () => {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["customers"] });
+        if (order?.orderId) {
+          queryClient.invalidateQueries({
+            queryKey: ["sms_logs", order.orderId],
+          });
+        }
         if (order?.orderId) {
           queryClient.invalidateQueries({
             queryKey: ["customer", order.orderId],
@@ -363,6 +374,36 @@ const OrderPage = () => {
     navigate("/");
   };
 
+  const { mutateAsync: sendSmsMessage, isPending: isSendingSms } = useMutation({
+    mutationFn: (payload: {
+      type: SmsType;
+      message: string;
+      sender?: string;
+    }) => {
+      if (!order?.orderId) {
+        throw new Error("Missing order ID");
+      }
+      const balanceDue = formatCurrency(invoiceTotals.balanceDue ?? 0);
+      const totalBalance = formatCurrency(invoiceTotals.grandTotal ?? 0);
+      return sendSms({
+        orderId: order.orderId,
+        type: payload.type,
+        message: payload.message,
+        sender: payload.sender,
+        balanceDue: balanceDue ?? undefined,
+        totalBalance: totalBalance ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      if (order?.orderId) {
+        queryClient.invalidateQueries({
+          queryKey: ["customer", order.orderId],
+        });
+      }
+    },
+  });
+
   const orderLabel = order?.orderNo ?? order?.orderId ?? "";
 
   if (!orderId) {
@@ -417,11 +458,14 @@ const OrderPage = () => {
         paymentStatus={paymentStatusDraft}
         onPreviewInvoice={handlePreviewInvoice}
         onOpenEmailActions={() => setIsEmailDrawerOpen(true)}
+        onOpenSms={() => setIsSmsOpen(true)}
+        onOpenSmsLogs={() => setSmsLogsOpen(true)}
         onUpdateStatus={updateStatus}
         isUpdatingStatus={isUpdatingStatus}
         isStatusDisabled={isOrderStatusDisabled}
         previewDisabled={!order?.orderId || isDraftOrCancelled}
         emailDisabled={isDraftOrCancelled}
+        smsDisabled={!customer?.phoneNumber}
         onDelete={handleDeleteOrder}
         isDeleting={isDeleting}
         showDelete={canDeleteOrder}
@@ -494,6 +538,31 @@ const OrderPage = () => {
         isLoadingLogs={isLoadingLogs}
         isLogsError={Boolean(isLogsError)}
       />
+      {order?.orderId && customer ? (
+        <SendSmsDialog
+          open={isSmsOpen}
+          onOpenChange={(next) => setIsSmsOpen(next)}
+          order={{ id: order.orderId, orderNo: order.orderNo }}
+          customer={{
+            fullName: customer.displayName,
+            firstName: customer.firstName,
+            phone: customer.phoneNumber,
+          }}
+          totals={{
+            totalBalance: formatCurrency(invoiceTotals.grandTotal) ?? "",
+            balanceDue: formatCurrency(invoiceTotals.balanceDue ?? 0) ?? "",
+          }}
+          onSend={(payload) => sendSmsMessage(payload)}
+          isSending={isSendingSms}
+        />
+      ) : null}
+      {order?.orderId ? (
+        <SmsLogDrawer
+          open={smsLogsOpen}
+          onOpenChange={setSmsLogsOpen}
+          order={{ id: order.orderId, orderNo: order.orderNo }}
+        />
+      ) : null}
     </Box>
   );
 };
