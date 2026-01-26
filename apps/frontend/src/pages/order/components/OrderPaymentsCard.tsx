@@ -293,6 +293,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       setRequiredBy("");
                     }
                   }}
+                  disabled={inputsDisabled}
                 >
                   <Select.Trigger disabled={inputsDisabled} />
                   <Select.Content>
@@ -433,6 +434,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                                 setEditRequiredBy("");
                               }
                             }}
+                            disabled={inputsDisabled}
                           >
                             <Select.Trigger disabled={inputsDisabled} />
                             <Select.Content>

@@ -18,7 +18,15 @@ const PaperweightItemActions: FC<PaperweightItemActionsProps> = ({
 }) => {
   return (
     <Flex direction="column" gap="2" align="start">
-      <Button size="1" variant="soft" onClick={onEdit}>
+      <Button
+        size="1"
+        variant="soft"
+        onClick={() => {
+          if (disabled) return;
+          onEdit();
+        }}
+        disabled={disabled}
+      >
         Paperweight options
       </Button>
       <InlineToggle

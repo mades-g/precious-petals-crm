@@ -96,6 +96,7 @@ const OrderItemsTable: FC<OrderItemsTableProps> = ({
                           onToggleFramingComplete(item.frame!, next)
                         }
                         isSavingCompletion={isSavingCompletion}
+                        disabled={!item.frame.frameId || isSavingCompletion}
                       />
                     ) : item.kind === "paperweight" ? (
                       <PaperweightItemActions

@@ -61,6 +61,15 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   isDeleting,
   showDelete,
 }) => {
+  const menuAction =
+    (disabled: boolean | undefined, action: () => void) => (event: Event) => {
+      if (disabled) {
+        event.preventDefault();
+        return;
+      }
+      action();
+    };
+
   return (
     <Card mb="3">
       <Flex justify="between" align="center" wrap="wrap" gap="3">
@@ -96,35 +105,45 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
               <DropdownMenu.Item
-                onClick={onPreviewInvoice}
+                onSelect={menuAction(previewDisabled, onPreviewInvoice)}
                 disabled={Boolean(previewDisabled)}
               >
                 Preview invoice
               </DropdownMenu.Item>
               <DropdownMenu.Item
-                onClick={onOpenEmailActions}
+                onSelect={menuAction(emailDisabled, onOpenEmailActions)}
                 disabled={Boolean(emailDisabled)}
               >
                 Email actions
               </DropdownMenu.Item>
               <DropdownMenu.Item
-                onClick={onOpenSms}
+                onSelect={menuAction(smsDisabled, onOpenSms)}
                 disabled={Boolean(smsDisabled)}
               >
                 Send SMS
               </DropdownMenu.Item>
-              <DropdownMenu.Item onClick={onOpenSmsLogs}>
+              <DropdownMenu.Item onSelect={menuAction(false, onOpenSmsLogs)}>
                 SMS Logs
               </DropdownMenu.Item>
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger disabled={isUpdatingStatus}>
-                  Update status
+                  Update order status
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent>
                   {ORDER_STATUS_OPTIONS.map((status) => (
                     <DropdownMenu.Item
                       key={status}
-                      onClick={() => onUpdateStatus(status)}
+                      onSelect={(event) => {
+                        if (
+                          isUpdatingStatus ||
+                          status === orderStatus ||
+                          isStatusDisabled(status)
+                        ) {
+                          event.preventDefault();
+                          return;
+                        }
+                        onUpdateStatus(status);
+                      }}
                       disabled={
                         isUpdatingStatus ||
                         status === orderStatus ||
@@ -140,7 +159,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
           </DropdownMenu.Root>
           {showDelete ? (
             <Button
-              size="1"
+              size="2"
               color="red"
               variant="soft"
               onClick={onDelete}
