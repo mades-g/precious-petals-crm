@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	_ "precious-petals/pb-crm/pb_migrations"
+
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/jsvm"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
-	_ "precious-petals/pb-crm/pb_migrations"
 )
 
 func main() {
@@ -24,14 +25,19 @@ func main() {
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		previewTemplatePath := resolvePathFromExecutable("pb_hooks", "views", "invoice.preview.html")
+		invoicePreviewTemplatePath := resolvePathFromExecutable("pb_hooks", "views", "invoice.preview.html")
 
-		registerInvoiceRoutes(se, app, previewTemplatePath)
-		registerEmailRoutes(se, app, previewTemplatePath)
+		resendClient, err := NewResendClient(app)
+		if err != nil {
+			// Fail fast so you don't silently ship with broken email.
+			return err
+		}
+
+		registerInvoiceRoutes(se, app, invoicePreviewTemplatePath)
+		registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient)
 		registerExportRoutes(se, app)
 		registerSmsRoutes(se, app)
 
-		// serving SPA app
 		publicDir := resolvePathFromExecutable("pb_public")
 		se.Router.GET("/{path...}", apis.Static(os.DirFS(publicDir), true))
 

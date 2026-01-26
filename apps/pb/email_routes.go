@@ -1,21 +1,23 @@
 package main
 
 import (
-	"bytes"
+	"encoding/base64"
 	"fmt"
-	"io"
 	"net/http"
-	"net/mail"
 	"strings"
 	"time"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/mailer"
 )
 
-func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previewTemplatePath string) {
+func registerEmailRoutes(
+	se *core.ServeEvent,
+	app *pocketbase.PocketBase,
+	previewTemplatePath string,
+	resend *ResendClient,
+) {
 	se.Router.POST("/api/email/invoice", func(e *core.RequestEvent) error {
 		var payload invoicePayload
 		if err := bindPayload(e, &payload); err != nil {
@@ -38,7 +40,6 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			subject = "Invoice"
 		}
 
-		// create log entry (attempted) - best effort
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "invoice", "manual", "invoice")
 		toName := buildCustomerDisplayName(payload)
 
@@ -49,13 +50,10 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			fmt.Println("email log create failed:", err.Error())
 		}
 
-		// render invoice html
 		view := buildInvoiceViewModel(payload)
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
-			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{
-				"stage": "render_html",
-			})
+			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{"stage": "render_html"})
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":      false,
 				"error":   "Failed to render invoice.",
@@ -64,7 +62,6 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			})
 		}
 
-		// render pdf
 		pdfStart := time.Now()
 		pdfBytes, err := renderInvoicePdf(html)
 		if err != nil {
@@ -80,15 +77,8 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			})
 		}
 
-		from := mail.Address{
-			Address: app.Settings().Meta.SenderAddress,
-			Name:    app.Settings().Meta.SenderName,
-		}
-		to := []mail.Address{{Address: payload.Customer.Email}}
-
-		msg := &mailer.Message{
-			From:    from,
-			To:      to,
+		req := ResendEmailRequest{
+			To:      []string{payload.Customer.Email},
 			Subject: subject,
 			HTML: fmt.Sprintf(
 				"<p>Hi %s,</p><p>Please find your invoice attached.</p>",
@@ -98,29 +88,47 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 				"Hi %s,\n\nPlease find your invoice attached.\n",
 				firstNonEmpty(payload.Customer.FirstName, "there"),
 			),
-			Attachments: map[string]io.Reader{
-				"invoice.pdf": bytes.NewReader(pdfBytes),
+			Attachments: []ResendAttachment{
+				{
+					Filename: "invoice.pdf",
+					Content:  base64.StdEncoding.EncodeToString(pdfBytes),
+				},
 			},
 		}
 
+		// Use email log record id as idempotency key (best available stable key).
+		idemKey := ""
+		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
+			idemKey = "email_log_" + logRec.Id
+		}
+
 		sendStart := time.Now()
-		if err := app.NewMailClient().Send(msg); err != nil {
-			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{
+		resp, sendErr := resend.SendEmail(e.Request.Context(), req, idemKey)
+		if sendErr != nil {
+			metaPatch := map[string]any{
 				"stage":    "send_email",
 				"sendMs":   time.Since(sendStart).Milliseconds(),
 				"pdfBytes": len(pdfBytes),
-			})
+			}
+			if httpErr, ok := sendErr.(*ResendHTTPError); ok {
+				metaPatch["resendStatus"] = httpErr.Status
+				metaPatch["resendBody"] = httpErr.Body
+			}
+			updateEmailLog(app, logRec, "failed", sendErr.Error(), metaPatch)
+
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":      false,
 				"error":   "Failed to send invoice email.",
-				"details": err.Error(),
+				"details": sendErr.Error(),
 			})
 		}
 
 		updateEmailLog(app, logRec, "sent", "", map[string]any{
-			"stage":    "sent",
-			"sendMs":   time.Since(sendStart).Milliseconds(),
-			"pdfBytes": len(pdfBytes),
+			"stage":          "sent",
+			"sendMs":         time.Since(sendStart).Milliseconds(),
+			"pdfBytes":       len(pdfBytes),
+			"resendId":       resp.ID,
+			"idempotencyKey": idemKey,
 		})
 
 		return e.JSON(http.StatusOK, map[string]any{"ok": true})
@@ -143,10 +151,8 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			})
 		}
 
-		// default subject; FE can override later by adding it to payload if you want
 		subject := "Your bouquet recommendation"
 
-		// log attempt
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "recommendation_bouquet", "manual", "recommendation")
 		toName := buildCustomerDisplayName(payload)
 
@@ -157,16 +163,8 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			fmt.Println("email log create failed:", err.Error())
 		}
 
-		from := mail.Address{
-			Address: app.Settings().Meta.SenderAddress,
-			Name:    app.Settings().Meta.SenderName,
-		}
-		to := []mail.Address{{Address: payload.Customer.Email}}
-
-		// Keep simple for now; once we hook FE eventType, you can select templates/body copy.
-		msg := &mailer.Message{
-			From:    from,
-			To:      to,
+		req := ResendEmailRequest{
+			To:      []string{payload.Customer.Email},
 			Subject: subject,
 			HTML: fmt.Sprintf(
 				"<p>Hi %s,</p><p>Your recommendation is ready. If you have any questions, reply to this email.</p>",
@@ -178,22 +176,36 @@ func registerEmailRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previe
 			),
 		}
 
+		idemKey := ""
+		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
+			idemKey = "email_log_" + logRec.Id
+		}
+
 		sendStart := time.Now()
-		if err := app.NewMailClient().Send(msg); err != nil {
-			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{
+		resp, sendErr := resend.SendEmail(e.Request.Context(), req, idemKey)
+		if sendErr != nil {
+			metaPatch := map[string]any{
 				"stage":  "send_email",
 				"sendMs": time.Since(sendStart).Milliseconds(),
-			})
+			}
+			if httpErr, ok := sendErr.(*ResendHTTPError); ok {
+				metaPatch["resendStatus"] = httpErr.Status
+				metaPatch["resendBody"] = httpErr.Body
+			}
+			updateEmailLog(app, logRec, "failed", sendErr.Error(), metaPatch)
+
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":      false,
 				"error":   "Failed to send recommendation email.",
-				"details": err.Error(),
+				"details": sendErr.Error(),
 			})
 		}
 
 		updateEmailLog(app, logRec, "sent", "", map[string]any{
-			"stage":  "sent",
-			"sendMs": time.Since(sendStart).Milliseconds(),
+			"stage":          "sent",
+			"sendMs":         time.Since(sendStart).Milliseconds(),
+			"resendId":       resp.ID,
+			"idempotencyKey": idemKey,
 		})
 
 		return e.JSON(http.StatusOK, map[string]any{"ok": true})

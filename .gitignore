@@ -1,5 +1,5 @@
 
-.env.*
+.env*
 
 # Editor and OS files
 .DS_Store
