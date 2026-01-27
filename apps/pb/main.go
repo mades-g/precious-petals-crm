@@ -7,6 +7,7 @@ import (
 
 	_ "precious-petals/pb-crm/pb_migrations"
 
+	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -25,6 +26,9 @@ func main() {
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		// Local env loading to support apps/pb/.env in dev.
+		_ = godotenv.Load(resolvePathFromExecutable(".env"))
+
 		invoicePreviewTemplatePath := resolvePathFromExecutable("pb_hooks", "views", "invoice.preview.html")
 
 		resendClient, err := NewResendClient(app)

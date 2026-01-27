@@ -464,7 +464,7 @@ const OrderPage = () => {
         isUpdatingStatus={isUpdatingStatus}
         isStatusDisabled={isOrderStatusDisabled}
         previewDisabled={!order?.orderId || isDraftOrCancelled}
-        emailDisabled={isDraftOrCancelled}
+        emailDisabled={orderStatusDraft === "cancelled"}
         smsDisabled={!customer?.phoneNumber}
         onDelete={handleDeleteOrder}
         isDeleting={isDeleting}

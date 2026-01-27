@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -41,6 +42,11 @@ func registerEmailRoutes(
 		}
 
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "invoice", "manual", "invoice")
+		if testRecipient := strings.TrimSpace(os.Getenv("RESEND_TEST_RECIPIENT")); testRecipient != "" {
+			meta["recipientOverride"] = true
+			meta["testRecipient"] = testRecipient
+			meta["originalRecipient"] = payload.Customer.Email
+		}
 		toName := buildCustomerDisplayName(payload)
 
 		var logRec *core.Record
@@ -154,6 +160,11 @@ func registerEmailRoutes(
 		subject := "Your bouquet recommendation"
 
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "recommendation_bouquet", "manual", "recommendation")
+		if testRecipient := strings.TrimSpace(os.Getenv("RESEND_TEST_RECIPIENT")); testRecipient != "" {
+			meta["recipientOverride"] = true
+			meta["testRecipient"] = testRecipient
+			meta["originalRecipient"] = payload.Customer.Email
+		}
 		toName := buildCustomerDisplayName(payload)
 
 		var logRec *core.Record

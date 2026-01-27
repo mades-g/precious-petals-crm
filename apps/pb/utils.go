@@ -453,7 +453,7 @@ func filterEmpty(values []string) []string {
 	return result
 }
 
-// best-effort base dir resolution so relative paths work regardless of cwd
+// Base dir resolution so relative paths work regardless of cwd
 func resolvePathFromExecutable(relativeParts ...string) string {
 	if exe, err := os.Executable(); err == nil {
 		exeDir := filepath.Dir(exe)
@@ -773,7 +773,6 @@ func buildEmailLogContextFromPayload(
 }
 
 // Creates an email_logs record with status=attempted.
-// Best practice: call this early; if it fails, do not block sending.
 func createEmailLog(app *pocketbase.PocketBase, e *core.RequestEvent, toEmail, toName, subject string, ctx emailLogContext, meta map[string]any) (*core.Record, error) {
 	coll, err := app.FindCollectionByNameOrId("email_logs")
 	if err != nil {

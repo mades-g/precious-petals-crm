@@ -22,6 +22,7 @@ type ResendClient struct {
 	apiKey  string
 	from    string
 	replyTo string
+	testTo  string
 	http    *http.Client
 }
 
@@ -73,11 +74,13 @@ func NewResendClient(app *pocketbase.PocketBase) (*ResendClient, error) {
 	}
 
 	replyTo := strings.TrimSpace(os.Getenv("RESEND_REPLY_TO"))
+	testTo := strings.TrimSpace(os.Getenv("RESEND_TEST_RECIPIENT"))
 
 	return &ResendClient{
 		apiKey:  apiKey,
 		from:    from,
 		replyTo: replyTo,
+		testTo:  testTo,
 		http: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -114,6 +117,9 @@ func (c *ResendClient) SendEmail(ctx context.Context, req ResendEmailRequest, id
 	req.From = c.from
 	if req.ReplyTo == "" && c.replyTo != "" {
 		req.ReplyTo = c.replyTo
+	}
+	if c.testTo != "" {
+		req.To = []string{c.testTo}
 	}
 
 	payload, err := json.Marshal(req)
