@@ -67,6 +67,32 @@ const editBouquetStage = async ({
 }: Omit<EditOrderStageArgs, "stage">): Promise<SubmitResult> => {
   const newBouquets = values.bouquets ?? [];
   const existingBouquets = currentCustomerForm?.bouquets ?? [];
+  const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
+    const hasRequiredMountPrice =
+      bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
+
+    return (
+      bq.measuredWidthIn !== null &&
+      bq.measuredHeightIn !== null &&
+      bq.layout &&
+      bq.recommendedSizeWidthIn !== null &&
+      bq.recommendedSizeHeightIn !== null &&
+      bq.preservationType &&
+      bq.frameType &&
+      typeof bq.framePrice === "number" &&
+      bq.mountColour &&
+      hasRequiredMountPrice
+    );
+  };
+
+  if (
+    newBouquets.length > 0 &&
+    newBouquets.some((bq) => !isBouquetComplete(bq))
+  ) {
+    return fail(
+      "Please complete all bouquet fields before saving this section.",
+    );
+  }
 
   // 🟡 CASE 1: No existing + no new → invalid
   if (existingBouquets.length === 0 && newBouquets.length === 0) {

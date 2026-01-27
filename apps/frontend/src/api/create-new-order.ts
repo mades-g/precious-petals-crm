@@ -27,17 +27,23 @@ export type CreateNewOrderResult = {
 export const createNewOrder = async (
   values: CreateOrderFormValues,
 ): Promise<CreateNewOrderResult> => {
-  const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) =>
-    bq.measuredWidthIn !== null &&
-    bq.measuredHeightIn !== null &&
-    bq.layout &&
-    bq.recommendedSizeWidthIn !== null &&
-    bq.recommendedSizeHeightIn !== null &&
-    bq.preservationType &&
-    bq.frameType &&
-    typeof bq.framePrice === "number" &&
-    bq.mountColour &&
-    typeof bq.mountPrice === "number";
+  const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
+    const hasRequiredMountPrice =
+      bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
+
+    return (
+      bq.measuredWidthIn !== null &&
+      bq.measuredHeightIn !== null &&
+      bq.layout &&
+      bq.recommendedSizeWidthIn !== null &&
+      bq.recommendedSizeHeightIn !== null &&
+      bq.preservationType &&
+      bq.frameType &&
+      typeof bq.framePrice === "number" &&
+      bq.mountColour &&
+      hasRequiredMountPrice
+    );
+  };
 
   const bouquets = (values.bouquets ?? []).filter(isBouquetComplete);
 
