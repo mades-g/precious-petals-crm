@@ -22,7 +22,6 @@ type ResendClient struct {
 	apiKey  string
 	from    string
 	replyTo string
-	testTo  string
 	http    *http.Client
 }
 
@@ -74,13 +73,11 @@ func NewResendClient(app *pocketbase.PocketBase) (*ResendClient, error) {
 	}
 
 	replyTo := strings.TrimSpace(os.Getenv("RESEND_REPLY_TO"))
-	testTo := strings.TrimSpace(os.Getenv("RESEND_TEST_RECIPIENT"))
 
 	return &ResendClient{
 		apiKey:  apiKey,
 		from:    from,
 		replyTo: replyTo,
-		testTo:  testTo,
 		http: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -96,7 +93,7 @@ func resolveResendFrom(app *pocketbase.PocketBase) (string, error) {
 		return "", errors.New("missing RESEND_FROM")
 	}
 
-	// Already formatted
+	// Already formatted, e.g. "Precious Petals <enquiries@updates.preciouspetals.co.uk>"
 	if strings.Contains(fromEmail, "<") && strings.Contains(fromEmail, ">") {
 		return fromEmail, nil
 	}
@@ -106,20 +103,16 @@ func resolveResendFrom(app *pocketbase.PocketBase) (string, error) {
 		return fromEmail, nil
 	}
 
-	addr := &mail.Address{
+	return (&mail.Address{
 		Name:    senderName,
 		Address: fromEmail,
-	}
-	return addr.String(), nil
+	}).String(), nil
 }
 
 func (c *ResendClient) SendEmail(ctx context.Context, req ResendEmailRequest, idempotencyKey string) (*ResendSendEmailResponse, error) {
 	req.From = c.from
 	if req.ReplyTo == "" && c.replyTo != "" {
 		req.ReplyTo = c.replyTo
-	}
-	if c.testTo != "" {
-		req.To = []string{c.testTo}
 	}
 
 	payload, err := json.Marshal(req)
@@ -134,8 +127,8 @@ func (c *ResendClient) SendEmail(ctx context.Context, req ResendEmailRequest, id
 
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 	httpReq.Header.Set("Content-Type", "application/json")
-	if strings.TrimSpace(idempotencyKey) != "" {
-		httpReq.Header.Set("Idempotency-Key", strings.TrimSpace(idempotencyKey))
+	if k := strings.TrimSpace(idempotencyKey); k != "" {
+		httpReq.Header.Set("Idempotency-Key", k)
 	}
 
 	resp, err := c.http.Do(httpReq)
@@ -160,5 +153,6 @@ func (c *ResendClient) SendEmail(ctx context.Context, req ResendEmailRequest, id
 	if len(respBody) > 0 {
 		_ = json.Unmarshal(respBody, &parsed)
 	}
+
 	return &parsed, nil
 }
