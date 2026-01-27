@@ -262,6 +262,15 @@ const OrderPage = () => {
     return false;
   };
 
+  let statusHelperText = "";
+  if (!readyEligible) {
+    statusHelperText =
+      "Ready requires all frames complete and paperweight received.";
+  } else if (!deliveredEligible) {
+    statusHelperText =
+      "Delivered/Collected requires final balance paid and outstanding balance £0.";
+  }
+
   const { canSendEmails, sendEmail, emailStatus } = useEmailActions({
     customer,
     order,
@@ -347,7 +356,7 @@ const OrderPage = () => {
   };
 
   const handlePreviewInvoice = () => {
-    if (!order?.orderId || isDraftOrCancelled) return;
+    if (!order?.orderId) return;
 
     const payload = buildEmailPayload({
       customer,
@@ -441,15 +450,7 @@ const OrderPage = () => {
 
   return (
     <Box p="4" style={{ margin: "0 auto", maxWidth: 1100 }} width="100%">
-      <OrderHeader
-        orderLabel={`${orderLabel}`}
-        onBack={() => navigate(-1)}
-        actionsHelperText={
-          isDraftOrCancelled
-            ? "Invoice preview and emails are disabled for draft/cancelled orders."
-            : undefined
-        }
-      />
+      <OrderHeader orderLabel={`${orderLabel}`} onBack={() => navigate(-1)} />
       <OrderActionsBar
         created={order?.created}
         occasionDate={order?.occasionDate}
@@ -463,7 +464,7 @@ const OrderPage = () => {
         onUpdateStatus={updateStatus}
         isUpdatingStatus={isUpdatingStatus}
         isStatusDisabled={isOrderStatusDisabled}
-        previewDisabled={!order?.orderId || isDraftOrCancelled}
+        statusHelperText={statusHelperText}
         emailDisabled={orderStatusDraft === "cancelled"}
         smsDisabled={!customer?.phoneNumber}
         onDelete={handleDeleteOrder}

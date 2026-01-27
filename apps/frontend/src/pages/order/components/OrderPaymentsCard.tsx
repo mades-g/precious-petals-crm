@@ -258,7 +258,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           <Heading size="4">Payments</Heading>
           {outstandingLabel ? (
             <Text size="2" color="gray" weight="bold">
-              Outstanding balance: {outstandingLabel}
+              Outstanding balance (incl. VAT): {outstandingLabel}
             </Text>
           ) : null}
         </Flex>

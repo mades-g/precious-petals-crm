@@ -33,7 +33,7 @@ export type OrderActionsBarProps = {
   onUpdateStatus: (status: OrdersOrderStatusOptions) => void;
   isUpdatingStatus: boolean;
   isStatusDisabled: (status: OrdersOrderStatusOptions) => boolean;
-  previewDisabled?: boolean;
+  statusHelperText?: string;
   emailDisabled?: boolean;
   smsDisabled?: boolean;
   onDelete: () => void;
@@ -54,7 +54,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   onUpdateStatus,
   isUpdatingStatus,
   isStatusDisabled,
-  previewDisabled,
+  statusHelperText,
   emailDisabled,
   smsDisabled,
   onDelete,
@@ -72,103 +72,107 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
 
   return (
     <Card mb="3">
-      <Flex justify="between" align="center" wrap="wrap" gap="3">
-        <Flex gap="2" wrap="wrap" align="center">
-          {created ? (
-            <Badge variant="soft" color="gray">
-              <Text weight="bold">Created:</Text> {formatDate(created)}
+      <Flex direction="column" gap="2">
+        <Flex justify="between" align="center" wrap="wrap" gap="3">
+          <Flex gap="2" wrap="wrap" align="center">
+            {created ? (
+              <Badge variant="soft" color="gray">
+                <Text weight="bold">Created:</Text> {formatDate(created)}
+              </Badge>
+            ) : null}
+            {occasionDate ? (
+              <Badge variant="soft" color="gray">
+                <Text weight="bold">Occasion:</Text> {formatDate(occasionDate)}
+              </Badge>
+            ) : null}
+            {requiredBy ? (
+              <Badge variant="soft" color="orange">
+                <Text weight="bold">Required by:</Text> {requiredBy}
+              </Badge>
+            ) : null}
+          </Flex>
+          <Flex gap="2" align="center" wrap="wrap">
+            <Badge variant="soft" color={getOrderStatusColor(orderStatus)}>
+              <Text weight="bold">Order status:</Text>{" "}
+              {formatSnakeCase(orderStatus)}
             </Badge>
-          ) : null}
-          {occasionDate ? (
-            <Badge variant="soft" color="gray">
-              <Text weight="bold">Occasion:</Text> {formatDate(occasionDate)}
+            <Badge variant="soft" color={getPaymentStatusColor(paymentStatus)}>
+              <Text weight="bold">Payment status:</Text>{" "}
+              {formatSnakeCase(paymentStatus)}
             </Badge>
-          ) : null}
-          {requiredBy ? (
-            <Badge variant="soft" color="orange">
-              <Text weight="bold">Required by:</Text> {requiredBy}
-            </Badge>
-          ) : null}
-        </Flex>
-        <Flex gap="2" align="center" wrap="wrap">
-          <Badge variant="soft" color={getOrderStatusColor(orderStatus)}>
-            <Text weight="bold">Order status:</Text>{" "}
-            {formatSnakeCase(orderStatus)}
-          </Badge>
-          <Badge variant="soft" color={getPaymentStatusColor(paymentStatus)}>
-            <Text weight="bold">Payment status:</Text>{" "}
-            {formatSnakeCase(paymentStatus)}
-          </Badge>
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <Button variant="solid">Actions</Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Item
-                onSelect={menuAction(previewDisabled, onPreviewInvoice)}
-                disabled={Boolean(previewDisabled)}
-              >
-                Preview invoice
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onSelect={menuAction(emailDisabled, onOpenEmailActions)}
-                disabled={Boolean(emailDisabled)}
-              >
-                Email actions
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                onSelect={menuAction(smsDisabled, onOpenSms)}
-                disabled={Boolean(smsDisabled)}
-              >
-                Send SMS
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onSelect={menuAction(false, onOpenSmsLogs)}>
-                SMS Logs
-              </DropdownMenu.Item>
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger disabled={isUpdatingStatus}>
-                  Update order status
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                  {ORDER_STATUS_OPTIONS.map((status) => (
-                    <DropdownMenu.Item
-                      key={status}
-                      onSelect={(event) => {
-                        if (
+            <Button variant="soft" onClick={onPreviewInvoice}>
+              Preview invoice
+            </Button>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button variant="solid">Actions</Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Item
+                  onSelect={menuAction(emailDisabled, onOpenEmailActions)}
+                  disabled={Boolean(emailDisabled)}
+                >
+                  Email actions
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onSelect={menuAction(smsDisabled, onOpenSms)}
+                  disabled={Boolean(smsDisabled)}
+                >
+                  Send SMS
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onSelect={menuAction(false, onOpenSmsLogs)}>
+                  SMS Logs
+                </DropdownMenu.Item>
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger disabled={isUpdatingStatus}>
+                    Update order status
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.SubContent>
+                    {ORDER_STATUS_OPTIONS.map((status) => (
+                      <DropdownMenu.Item
+                        key={status}
+                        onSelect={(event) => {
+                          if (
+                            isUpdatingStatus ||
+                            status === orderStatus ||
+                            isStatusDisabled(status)
+                          ) {
+                            event.preventDefault();
+                            return;
+                          }
+                          onUpdateStatus(status);
+                        }}
+                        disabled={
                           isUpdatingStatus ||
                           status === orderStatus ||
                           isStatusDisabled(status)
-                        ) {
-                          event.preventDefault();
-                          return;
                         }
-                        onUpdateStatus(status);
-                      }}
-                      disabled={
-                        isUpdatingStatus ||
-                        status === orderStatus ||
-                        isStatusDisabled(status)
-                      }
-                    >
-                      {formatSnakeCase(status)}
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-          {showDelete ? (
-            <Button
-              size="2"
-              color="red"
-              variant="soft"
-              onClick={onDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          ) : null}
+                      >
+                        {formatSnakeCase(status)}
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Sub>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+            {showDelete ? (
+              <Button
+                size="2"
+                color="red"
+                variant="soft"
+                onClick={onDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            ) : null}
+          </Flex>
         </Flex>
+        {statusHelperText ? (
+          <Text size="2" color="gray" weight="bold">
+            {statusHelperText}
+          </Text>
+        ) : null}
       </Flex>
     </Card>
   );
