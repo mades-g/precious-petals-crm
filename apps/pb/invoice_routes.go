@@ -26,7 +26,7 @@ func registerInvoiceRoutes(
 			})
 		}
 
-		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI)
+		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI, true)
 
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
@@ -53,7 +53,7 @@ func registerInvoiceRoutes(
 			})
 		}
 
-		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI)
+		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI, false)
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
 			return e.JSON(http.StatusInternalServerError, map[string]any{

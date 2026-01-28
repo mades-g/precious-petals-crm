@@ -217,6 +217,7 @@ type invoiceViewModel struct {
 	InvoiceNo     string
 	LogoDataURI   string
 	FooterDataURI string
+	ShowFooter    bool
 	Rows          []invoiceRow
 	Notes         string
 	SubTotal      string
@@ -393,7 +394,7 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 	return rows
 }
 
-func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDataURI string) invoiceViewModel {
+func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDataURI string, showFooter bool) invoiceViewModel {
 	paidTotal := payload.Totals.PaidTotal
 	if paidTotal < 0 {
 		paidTotal = 0
@@ -439,6 +440,7 @@ func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDat
 		InvoiceNo:     formatInvoiceNo(payload.Order.OrderNo.Float64()),
 		LogoDataURI:   strings.TrimSpace(logoDataURI),
 		FooterDataURI: strings.TrimSpace(footerDataURI),
+		ShowFooter:    showFooter,
 		Rows:          buildInvoiceRows(payload),
 		Notes:         notes,
 		SubTotal:      formatMoney(payload.Totals.SubTotal),
@@ -473,6 +475,15 @@ func resolvePathFromExecutable(relativeParts ...string) string {
 	return filepath.Join(append([]string{cwd}, relativeParts...)...)
 }
 
+// Resolve pb_public assets whether running from apps/pb or repo root.
+func resolvePBPublicPath(relativeParts ...string) string {
+	primary := resolvePathFromExecutable(append([]string{"pb_public"}, relativeParts...)...)
+	if _, err := os.Stat(primary); err == nil {
+		return primary
+	}
+	return resolvePathFromExecutable(append([]string{"apps", "pb", "pb_public"}, relativeParts...)...)
+}
+
 // Parse *all* html templates in the views directory so {{template "x"}} works.
 func renderInvoiceTemplate(templatePath string, view invoiceViewModel) (string, error) {
 	dir := filepath.Dir(templatePath)
@@ -488,6 +499,7 @@ func renderInvoiceTemplate(templatePath string, view invoiceViewModel) (string, 
 
 	funcs := template.FuncMap{
 		"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+		"safeURL":  func(s string) template.URL { return template.URL(s) },
 	}
 
 	tmpl, err := template.New("invoice").Funcs(funcs).Option("missingkey=error").ParseGlob(pattern)
@@ -530,6 +542,7 @@ func renderInvoicePdf(html string) ([]byte, error) {
 
 	tempDir := os.TempDir()
 
+
 	// ---- Write main invoice HTML to temp file ----
 	htmlFile, err := os.CreateTemp(tempDir, "invoice-*.html")
 	if err != nil {
@@ -544,9 +557,12 @@ func renderInvoicePdf(html string) ([]byte, error) {
 	if err := htmlFile.Close(); err != nil {
 		return nil, err
 	}
+	if strings.TrimSpace(os.Getenv("INVOICE_PDF_DEBUG_HTML")) != "" {
+		fmt.Println("invoice pdf html:", htmlFile.Name())
+	}
 
 	// ---- Write footer HTML to temp file (wkhtmltopdf --footer-html) ----
-	footerImagePath := resolvePathFromExecutable("pb_public", "email", "pp-invoice-footer.png")
+	footerImagePath := resolvePBPublicPath("email", "pp-invoice-footer.png")
 	footerImageURL := "file://" + footerImagePath
 
 	footerHTML := `<!doctype html>
@@ -565,9 +581,11 @@ func renderInvoicePdf(html string) ([]byte, error) {
       img {
         display: block;
         margin: 0 auto;
-        max-width: 520px;
-        width: 100%;
+        width: auto;
+        max-width: 100%;
         height: auto;
+        max-height: 520px;
+        shape-rendering: geometricPrecision;
       }
     </style>
   </head>
@@ -607,7 +625,7 @@ func renderInvoicePdf(html string) ([]byte, error) {
 		"--margin-top", "0",
 		"--margin-right", "0",
 		"--margin-left", "0",
-		"--margin-bottom", "22mm",
+		"--margin-bottom", "85mm",
 
 		// footer
 		"--footer-html", footerFile.Name(),

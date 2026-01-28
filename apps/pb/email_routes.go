@@ -84,7 +84,7 @@ func registerEmailRoutes(
 			fmt.Println("email log create failed:", err.Error())
 		}
 
-		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI)
+		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI, false)
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
 			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{"stage": "render_html"})

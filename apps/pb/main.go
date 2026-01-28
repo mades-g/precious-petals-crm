@@ -47,7 +47,7 @@ func main() {
 		}
 
 		logoDataURI := ""
-		logoPath := resolvePathFromExecutable("pb_public", "email", "pp-logo.png")
+		logoPath := resolvePBPublicPath("email", "pp-logo.png")
 		if logoBytes, logoErr := os.ReadFile(logoPath); logoErr != nil {
 			fmt.Println("WARN: failed to read invoice logo:", logoErr.Error())
 		} else {
@@ -55,7 +55,7 @@ func main() {
 		}
 
 		footerDataURI := ""
-		footerPath := resolvePathFromExecutable("pb_public", "email", "pp-invoice-footer.png")
+		footerPath := resolvePBPublicPath("email", "pp-invoice-footer.png")
 		if footerBytes, footerErr := os.ReadFile(footerPath); footerErr != nil {
 			fmt.Println("WARN: failed to read invoice footer:", footerErr.Error())
 		} else {

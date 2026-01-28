@@ -3,10 +3,6 @@
   <head>
     <meta charset="utf-8" />
     <title>Invoice {{.InvoiceNo}}</title>
-    <link
-      href="https://fonts.googleapis.com/css?family=Antic+Didone&display=swap"
-      rel="stylesheet"
-    />
     <style>
       * {
         box-sizing: border-box;
@@ -26,7 +22,6 @@
         margin: 0;
         padding: 48px 64px 48px;
 
-        font-family: "Antic Didone", serif;
         color: #111;
         background: #fff;
         font-size: 13px;
@@ -50,13 +45,14 @@
       }
 
       .header td {
-        vertical-align: top;
+        vertical-align: baseline;
       }
 
       .logo {
         display: block;
-        width: 240px;
+        width: 300px;
         height: auto;
+        margin: -57px;
       }
 
       .logo-text {
@@ -201,6 +197,11 @@
         margin-top: 18px;
       }
 
+      strong,
+      b {
+        font-weight: 700;
+      }
+
       .notes-box {
         margin-top: 6px;
         border: 1px solid #222;
@@ -218,15 +219,11 @@
       .preview-footer img {
         display: block;
         margin: 0 auto;
-        max-width: 520px;
-        width: 100%;
+        width: auto;
+        max-width: 100%;
         height: auto;
-      }
-
-      @media print {
-        .preview-footer {
-          display: none;
-        }
+        max-height: 320px;
+        shape-rendering: geometricPrecision;
       }
     </style>
   </head>
@@ -242,7 +239,7 @@
                 {{if .LogoDataURI}}
                 <img
                   class="logo"
-                  src="{{.LogoDataURI}}"
+                  src="{{safeURL .LogoDataURI}}"
                   alt="Precious Petals"
                 />
                 {{else}}
@@ -326,9 +323,12 @@
             </tr>
           </table>
 
-          {{if .FooterDataURI}}
+          {{if and .ShowFooter .FooterDataURI}}
           <div class="preview-footer">
-            <img src="{{.FooterDataURI}}" alt="Precious Petals footer" />
+            <img
+              src="{{safeURL .FooterDataURI}}"
+              alt="Precious Petals footer"
+            />
           </div>
           {{end}}
         </td>

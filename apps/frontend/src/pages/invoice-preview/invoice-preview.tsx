@@ -1,5 +1,13 @@
 import { type FC, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Heading,
+  Text,
+} from "@radix-ui/themes";
 import { useLocation, useNavigate } from "react-router";
 import { pb } from "@/services/pb/client";
 
@@ -212,6 +220,12 @@ const InvoicePreview: FC = () => {
         <Heading size="4" align="center">
           Invoice preview
         </Heading>
+        <Flex justify="center" mt="2">
+          <Badge variant="soft" color="orange">
+            This preview matches the fully rendered PDF invoice. Click Download
+            to view or save the final PDF.
+          </Badge>
+        </Flex>
       </Flex>
 
       {error ? (
