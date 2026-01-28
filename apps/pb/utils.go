@@ -211,17 +211,19 @@ type invoiceRow struct {
 }
 
 type invoiceViewModel struct {
-	Address      string
-	OccasionDate string
-	InvoiceDate  string
-	InvoiceNo    string
-	Rows         []invoiceRow
-	Notes        string
-	SubTotal     string
-	VatTotal     string
-	GrandTotal   string
-	Credits      string
-	BalanceDue   string
+	Address       string
+	OccasionDate  string
+	InvoiceDate   string
+	InvoiceNo     string
+	LogoDataURI   string
+	FooterDataURI string
+	Rows          []invoiceRow
+	Notes         string
+	SubTotal      string
+	VatTotal      string
+	GrandTotal    string
+	Credits       string
+	BalanceDue    string
 }
 
 func formatMoney(value float64) string {
@@ -391,7 +393,7 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 	return rows
 }
 
-func buildInvoiceViewModel(payload invoicePayload) invoiceViewModel {
+func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDataURI string) invoiceViewModel {
 	paidTotal := payload.Totals.PaidTotal
 	if paidTotal < 0 {
 		paidTotal = 0
@@ -431,17 +433,19 @@ func buildInvoiceViewModel(payload invoicePayload) invoiceViewModel {
 	occasionDate := formatDate(string(payload.Order.OccasionDate))
 
 	return invoiceViewModel{
-		Address:      address,
-		OccasionDate: occasionDate,
-		InvoiceDate:  formatDate(time.Now().Format("2006-01-02")),
-		InvoiceNo:    formatInvoiceNo(payload.Order.OrderNo.Float64()),
-		Rows:         buildInvoiceRows(payload),
-		Notes:        notes,
-		SubTotal:     formatMoney(payload.Totals.SubTotal),
-		VatTotal:     formatMoney(payload.Totals.VatTotal),
-		GrandTotal:   formatMoney(payload.Totals.GrandTotal),
-		Credits:      formatMoney(paidTotal),
-		BalanceDue:   formatMoney(balanceDue),
+		Address:       address,
+		OccasionDate:  occasionDate,
+		InvoiceDate:   formatDate(time.Now().Format("2006-01-02")),
+		InvoiceNo:     formatInvoiceNo(payload.Order.OrderNo.Float64()),
+		LogoDataURI:   strings.TrimSpace(logoDataURI),
+		FooterDataURI: strings.TrimSpace(footerDataURI),
+		Rows:          buildInvoiceRows(payload),
+		Notes:         notes,
+		SubTotal:      formatMoney(payload.Totals.SubTotal),
+		VatTotal:      formatMoney(payload.Totals.VatTotal),
+		GrandTotal:    formatMoney(payload.Totals.GrandTotal),
+		Credits:       formatMoney(paidTotal),
+		BalanceDue:    formatMoney(balanceDue),
 	}
 }
 
@@ -542,6 +546,9 @@ func renderInvoicePdf(html string) ([]byte, error) {
 	}
 
 	// ---- Write footer HTML to temp file (wkhtmltopdf --footer-html) ----
+	footerImagePath := resolvePathFromExecutable("pb_public", "email", "pp-invoice-footer.png")
+	footerImageURL := "file://" + footerImagePath
+
 	footerHTML := `<!doctype html>
 <html>
   <head>
@@ -549,51 +556,25 @@ func renderInvoicePdf(html string) ([]byte, error) {
     <style>
       body {
         margin: 0;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 10px;
-        color: #444;
       }
       .wrap {
         width: 100%;
         text-align: center;
-        line-height: 1.35;
-        position: relative;
+        padding: 0;
       }
-      .pager {
-        position: absolute;
-        right: 0;
-        top: 0;
-        white-space: nowrap;
-        text-align: right;
-        padding-right: 6.5mm;
+      img {
+        display: block;
+        margin: 0 auto;
+        max-width: 520px;
+        width: 100%;
+        height: auto;
       }
     </style>
   </head>
   <body>
     <div class="wrap">
-      <div class="pager">Page <span class="page"></span> of <span class="topage"></span></div>
-
-      Precious Petals Limited, Unit 10 Cufaude Business Park, Cufaude Lane, Bramley, RG26 5DL.
-      Telephone 01256 882422.<br/>
-      Our studio opening times are Monday to Thursday 9:00am to 4:00pm, plus Friday and Saturday
-      9:30am to 12:30 (by advance appointment only).<br/>
-      Company Reg.no: 04705425. VAT Reg no: 742539622.
+      <img src="` + footerImageURL + `" alt="Precious Petals footer" />
     </div>
-
-    <script>
-      (function () {
-        var vars = {};
-        var qs = document.location.search.substring(1).split("&");
-        for (var i = 0; i < qs.length; i++) {
-          var kv = qs[i].split("=");
-          vars[kv[0]] = decodeURIComponent(kv[1] || "");
-        }
-        var pageEls = document.getElementsByClassName("page");
-        for (var j = 0; j < pageEls.length; j++) pageEls[j].textContent = vars.page || "";
-        var topEls = document.getElementsByClassName("topage");
-        for (var k = 0; k < topEls.length; k++) topEls[k].textContent = vars.topage || "";
-      })();
-    </script>
   </body>
 </html>`
 

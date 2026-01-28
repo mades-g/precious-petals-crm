@@ -36,6 +36,8 @@ func registerEmailRoutes(
 	previewTemplatePath string,
 	resend *ResendClient,
 	footerPngBytes []byte,
+	logoDataURI string,
+	footerDataURI string,
 ) {
 	viewsDir := resolvePathFromExecutable("pb_hooks", "views")
 
@@ -82,7 +84,7 @@ func registerEmailRoutes(
 			fmt.Println("email log create failed:", err.Error())
 		}
 
-		view := buildInvoiceViewModel(payload)
+		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI)
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
 			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{"stage": "render_html"})

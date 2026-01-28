@@ -9,7 +9,13 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func registerInvoiceRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, previewTemplatePath string) {
+func registerInvoiceRoutes(
+	se *core.ServeEvent,
+	app *pocketbase.PocketBase,
+	previewTemplatePath string,
+	logoDataURI string,
+	footerDataURI string,
+) {
 	se.Router.POST("/api/invoice/preview", func(e *core.RequestEvent) error {
 		var payload invoicePayload
 		if err := bindPayload(e, &payload); err != nil {
@@ -20,7 +26,7 @@ func registerInvoiceRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, prev
 			})
 		}
 
-		view := buildInvoiceViewModel(payload)
+		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI)
 
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
@@ -47,7 +53,7 @@ func registerInvoiceRoutes(se *core.ServeEvent, app *pocketbase.PocketBase, prev
 			})
 		}
 
-		view := buildInvoiceViewModel(payload)
+		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI)
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
 			return e.JSON(http.StatusInternalServerError, map[string]any{

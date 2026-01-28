@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -45,8 +46,24 @@ func main() {
 			footerPngBytes = nil
 		}
 
+		logoDataURI := ""
+		logoPath := resolvePathFromExecutable("pb_public", "email", "pp-logo.png")
+		if logoBytes, logoErr := os.ReadFile(logoPath); logoErr != nil {
+			fmt.Println("WARN: failed to read invoice logo:", logoErr.Error())
+		} else {
+			logoDataURI = "data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes)
+		}
+
+		footerDataURI := ""
+		footerPath := resolvePathFromExecutable("pb_public", "email", "pp-invoice-footer.png")
+		if footerBytes, footerErr := os.ReadFile(footerPath); footerErr != nil {
+			fmt.Println("WARN: failed to read invoice footer:", footerErr.Error())
+		} else {
+			footerDataURI = "data:image/png;base64," + base64.StdEncoding.EncodeToString(footerBytes)
+		}
+
 		// Always register the rest.
-		registerInvoiceRoutes(se, app, invoicePreviewTemplatePath)
+		registerInvoiceRoutes(se, app, invoicePreviewTemplatePath, logoDataURI, footerDataURI)
 		registerExportRoutes(se, app)
 		registerSmsRoutes(se, app)
 
@@ -58,7 +75,7 @@ func main() {
 			if err != nil {
 				return fmt.Errorf("email disabled: resend misconfigured: %w", err)
 			}
-			registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes)
+			registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, logoDataURI, footerDataURI)
 
 		} else {
 			// Dev: optional
@@ -67,7 +84,7 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("resend misconfigured in dev: %w", err)
 				}
-				registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes)
+				registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, logoDataURI, footerDataURI)
 			}
 		}
 
