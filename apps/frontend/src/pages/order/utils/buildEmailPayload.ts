@@ -43,6 +43,7 @@ export const buildEmailPayload = ({
       orderNo: order?.orderNo,
       created: order?.created ? formatDate(order.created) : "",
       occasionDate: order?.occasionDate ? formatDate(order.occasionDate) : "",
+      requiredBy: order?.requiredBy ?? "",
       billingAddressLine1: order?.billingAddressLine1,
       billingAddressLine2: order?.billingAddressLine2,
       billingTown: order?.billingTown,

@@ -31,16 +31,18 @@ type ResendEmailRequest struct {
 	Subject     string             `json:"subject"`
 	HTML        string             `json:"html,omitempty"`
 	Text        string             `json:"text,omitempty"`
-	ReplyTo     string             `json:"replyTo,omitempty"`
+	ReplyTo     string             `json:"reply_to,omitempty"`
 	Attachments []ResendAttachment `json:"attachments,omitempty"`
 	Tags        []ResendTag        `json:"tags,omitempty"`
 }
 
 type ResendAttachment struct {
-	Filename  string `json:"filename"`
-	Content   string `json:"content,omitempty"` // base64 string
-	Path      string `json:"path,omitempty"`    // remote URL
-	ContentID string `json:"contentId,omitempty"`
+	Filename           string `json:"filename"`
+	Content            string `json:"content,omitempty"` // base64 string
+	Path               string `json:"path,omitempty"`    // remote URL (Resend can fetch)
+	ContentType        string `json:"content_type,omitempty"`
+	ContentID          string `json:"content_id,omitempty"`
+	ContentDisposition string `json:"content_disposition,omitempty"` // "inline" for CID
 }
 
 type ResendTag struct {

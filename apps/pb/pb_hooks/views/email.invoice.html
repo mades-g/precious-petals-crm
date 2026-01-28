@@ -1,35 +1,25 @@
 {{define "title"}}Invoice #{{.order.invoiceNumber}}{{end}} {{define "body"}}
-<p>Hi {{.customer.firstName}},</p>
+<p>Dear {{.customer.title}} {{.customer.surname}}</p>
 
-<p>Thank you for your order. Here is your invoice:</p>
-
-<h2>Order summary</h2>
-
-{{if .bouquet}}
-<h3>Bouquet</h3>
 <p>
-  Style: {{.bouquet.style}}<br />
-  Price: €{{.bouquet.price}}
+  Reference: Name: {{.customer.surname}}, Occasion Date:
+  {{.order.occasionDate}}, Invoice: {{.order.invoiceNumber}}
 </p>
-{{end}} {{if .paperweight}}
-<h3>Paperweight</h3>
-<p>
-  Type: {{.paperweight.type}}<br />
-  Price: €{{.paperweight.price}}
-</p>
-{{end}} {{if .frame}}
-<h3>Frame</h3>
-<p>
-  Layout: {{.frame.layout}}<br />
-  Price: €{{.frame.price}}
-</p>
+{{if .order.requiredBy}}
+<p>Estimated Completion Date: {{.order.requiredBy}}</p>
 {{end}}
 
-<p><strong>Total:</strong> €{{.order.total}}</p>
+<p>
+  Please see attached your final invoice which details your display choices, the
+  payments that you have made and the outstanding balance, which is due one
+  month before completion, this will enable us to meet the estimated completion
+  date.
+</p>
 
-{{if .order.occasionDate}}
-<p><strong>Occasion date:</strong> {{.order.occasionDate}}</p>
-{{end}}
+<p>
+  We kindly request that you read through the details on your invoice and get in
+  touch as soon as possible if you need to amend anything.
+</p>
 
-<p>If anything looks wrong, just reply to this email.</p>
+<p>Kind Regards<br />The Precious Petals Team</p>
 {{end}}

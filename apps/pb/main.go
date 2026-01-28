@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	_ "precious-petals/pb-crm/pb_migrations"
 
@@ -26,21 +28,48 @@ func main() {
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		// Local env loading to support apps/pb/.env in dev.
-		_ = godotenv.Load(resolvePathFromExecutable(".env"))
+		env := strings.ToLower(strings.TrimSpace(os.Getenv("PB_ENV")))
+		if env == "" {
+			// Best-effort local env loading so PB_ENV/RESEND_* can be picked up in dev.
+			_ = godotenv.Load(resolvePathFromExecutable(".env"))
+			env = strings.ToLower(strings.TrimSpace(os.Getenv("PB_ENV")))
+		}
+		isDev := env == "dev"
 
 		invoicePreviewTemplatePath := resolvePathFromExecutable("pb_hooks", "views", "invoice.preview.html")
 
-		resendClient, err := NewResendClient(app)
+		footerPngPath := resolvePathFromExecutable("pb_public", "email", "pp-footer.png")
+		footerPngBytes, err := os.ReadFile(footerPngPath)
 		if err != nil {
-			// Fail fast so you don't silently ship with broken email.
-			return err
+			fmt.Println("WARN: failed to read footer image:", err.Error())
+			footerPngBytes = nil
 		}
 
+		// Always register the rest.
 		registerInvoiceRoutes(se, app, invoicePreviewTemplatePath)
-		registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient)
 		registerExportRoutes(se, app)
 		registerSmsRoutes(se, app)
+
+		// Email:
+		// - In prod/default: fail fast if Resend isn't configured correctly.
+		// - In dev: only enable if RESEND_API_KEY is present (so dev can boot without it).
+		if !isDev {
+			resendClient, err := NewResendClient(app)
+			if err != nil {
+				return fmt.Errorf("email disabled: resend misconfigured: %w", err)
+			}
+			registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes)
+
+		} else {
+			// Dev: optional
+			if strings.TrimSpace(os.Getenv("RESEND_API_KEY")) != "" {
+				resendClient, err := NewResendClient(app)
+				if err != nil {
+					return fmt.Errorf("resend misconfigured in dev: %w", err)
+				}
+				registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes)
+			}
+		}
 
 		publicDir := resolvePathFromExecutable("pb_public")
 		se.Router.GET("/{path...}", apis.Static(os.DirFS(publicDir), true))

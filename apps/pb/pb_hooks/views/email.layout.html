@@ -8,6 +8,7 @@
         font-family: Arial, Helvetica, sans-serif;
         line-height: 1.5;
         color: #111;
+        background: #fff;
       }
       .container {
         max-width: 680px;
@@ -19,8 +20,24 @@
       }
     </style>
   </head>
-
   <body>
-    <div class="container">{{block "body" .}}{{end}}</div>
+    <div class="container">
+      {{block "body" .}}{{end}}
+      <div style="margin-top: 24px; background: #fff">
+        <img
+          src="cid:pp_footer"
+          alt="Precious Petals footer"
+          style="
+            display: block;
+            border: 0;
+            outline: none;
+            text-decoration: none;
+            width: 100%;
+            max-width: 520px;
+            height: auto;
+          "
+        />
+      </div>
+    </div>
   </body>
 </html>

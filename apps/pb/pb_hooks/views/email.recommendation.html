@@ -4,8 +4,7 @@
 
 <p>
   <strong>Reference:</strong>
-  Name:{{.customer.surname}} &nbsp;&nbsp;Occasion Date: {{.order.occasionDate}}
-  &nbsp;&nbsp;{{.order.ref}}
+  Name: {{.customer.surname}} &nbsp;&nbsp;Occasion Date: {{.order.occasionDate}}
 </p>
 
 <p>
@@ -22,20 +21,22 @@
 <p><a href="{{.links.jotform}}">{{.links.jotform}}</a></p>
 
 <p>
-  If you would prefer to come our studio to complete the form and discuss your
-  options with one of our artists or would like a phone consultation please call
-  us as soon as possible for an appointment. The flowers will be ready for you
-  to view in a month's time.
+  If you would prefer to come our to studio to complete the form and discuss
+  your options with one of our artists or would like a phone consultation please
+  call us as soon as possible for an appointment. The flowers will be ready for
+  you to view in a month's time.
 </p>
 
 <p>
-  We would like to suggest that a
-  <strong>{{.suggestions.frame.name}}</strong> would look lovely with your
-  flowers, the price of this is <strong>{{.suggestions.frame.price}}</strong> to
-  include the frame with conservation glass and a single mount. An additional
-  sage mount would also complement the flowers which would be
-  <strong>{{.suggestions.sageMountPrice}}</strong>.
+  We would like to suggest the following frame option{{if gt (len
+  .recommendation.frames) 1}}s{{end}}:
 </p>
+
+{{.recommendation.tableHtml}} {{if .recommendation.framesTotal}}
+<p>
+  <strong>Total for recommended frames:</strong> {{.recommendation.framesTotal}}
+</p>
+{{end}}
 
 <p>
   There are many more ideas for you to see on our website, including beautiful
@@ -55,8 +56,6 @@
   florist used, so that we can be sure to source the correct ones, seasonal
   flowers may need to be ordered straight away.
 </p>
-
-{{.recommendation.tableHtml}}
 
 <p>
   The order form can be found on the frame styles section of our website
@@ -86,14 +85,12 @@
   receive your final payment.
 </p>
 
+{{if .recommendation.portalTotal}}
 <p><strong>Portal total:</strong> {{.recommendation.portalTotal}}</p>
+{{end}}
 
 <p>
   Kind Regards<br />
-  The Team<br />
-  {{.brand.name}}<br />
-  {{.brand.tagline}}<br />
-  {{.brand.phone}}<br />
-  <a href="{{.brand.website}}">{{.brand.website}}</a>
+  The Team
 </p>
 {{end}}

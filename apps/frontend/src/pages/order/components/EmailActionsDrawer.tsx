@@ -24,6 +24,8 @@ export type EmailActionsDrawerProps = {
   onSend: (action: EmailActionConfig, note?: string) => Promise<void> | void;
   emailStatus: EmailActionStatus | null;
   canSendEmails: boolean;
+  isActionDisabled?: (action: EmailActionConfig) => boolean;
+  actionDisabledMessage?: (action: EmailActionConfig) => string | null;
   disabledMessage?: string;
   logs: EmailLogEntry[];
   isLoadingLogs: boolean;
@@ -44,6 +46,8 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
   onSend,
   emailStatus,
   canSendEmails,
+  isActionDisabled,
+  actionDisabledMessage,
   disabledMessage,
   logs,
   isLoadingLogs,
@@ -76,13 +80,11 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
               <Button variant="soft">Close</Button>
             </Dialog.Close>
           </Flex>
-
           {!canSendEmails ? (
             <Text size="2" color="red">
               {disabledMessage || "You must be logged in to send emails."}
             </Text>
           ) : null}
-
           <Box>
             <Heading size="3" mb="2">
               Send email
@@ -94,6 +96,12 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
                   emailStatus && emailStatus.actionKey === action.key
                     ? emailStatus
                     : null;
+                const actionIsDisabled = isActionDisabled
+                  ? isActionDisabled(action)
+                  : false;
+                const actionDisabledText = actionDisabledMessage
+                  ? actionDisabledMessage(action)
+                  : null;
 
                 return (
                   <Box
@@ -119,7 +127,13 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
                             updateNote(action.key, event.target.value)
                           }
                           resize="vertical"
+                          disabled={actionIsDisabled}
                         />
+                      ) : null}
+                      {actionDisabledText ? (
+                        <Text size="2" color="gray">
+                          {actionDisabledText}
+                        </Text>
                       ) : null}
                       {actionStatus ? (
                         <Text
@@ -138,6 +152,7 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
                         size="2"
                         disabled={
                           !canSendEmails ||
+                          actionIsDisabled ||
                           (action.requiresNote &&
                             actionNote.trim().length === 0)
                         }

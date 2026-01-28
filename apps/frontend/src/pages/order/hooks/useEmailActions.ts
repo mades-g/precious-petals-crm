@@ -77,8 +77,13 @@ export const useEmailActions = ({
     try {
       if (action.endpoint === "invoice") {
         await postEmailInvoice(payload);
-      } else {
+      } else if (action.endpoint === "recommendation") {
         await postEmailRecommendation(payload);
+      } else {
+        await pb.send("/api/email/delivery-collect", {
+          method: "POST",
+          body: payload,
+        });
       }
 
       setStatus({

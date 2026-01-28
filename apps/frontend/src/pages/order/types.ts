@@ -53,7 +53,10 @@ export type Totals = {
   balanceDue?: number;
 };
 
-export type EmailActionEndpoint = "invoice" | "recommendation";
+export type EmailActionEndpoint =
+  | "invoice"
+  | "recommendation"
+  | "delivery_collect";
 
 export type EmailActionConfig = {
   key: string;
@@ -99,7 +102,7 @@ export type EmailLogEntry = {
 export const EMAIL_ACTIONS: EmailActionConfig[] = [
   {
     key: "invoice",
-    label: "Send invoice",
+    label: "Send SSD invoice",
     description: "Email the latest invoice PDF to the customer.",
     endpoint: "invoice",
     emailType: "invoice",
@@ -114,6 +117,15 @@ export const EMAIL_ACTIONS: EmailActionConfig[] = [
     emailType: "recommendation_bouquet",
     eventType: "bouquet_recommendation",
     templateKey: "email.recommendation",
+  },
+  {
+    key: "delivery_collect",
+    label: "Send ready for collection/delivery",
+    description: "Notify the customer their order is ready.",
+    endpoint: "delivery_collect",
+    emailType: "delivery_collect",
+    eventType: "delivery_collect",
+    templateKey: "email.delivery_collect",
   },
 ];
 

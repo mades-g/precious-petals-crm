@@ -279,7 +279,8 @@ const OrderPage = () => {
     extras: orderExtrasDraft,
     totals: invoiceTotals,
   });
-  const canSendOrderEmails = canSendEmails && !isDraftOrCancelled;
+  const canSendOrderEmails = canSendEmails && orderStatusDraft !== "cancelled";
+  const canSendSsdInvoice = Boolean(order?.requiredBy);
 
   const {
     data: emailLogs,
@@ -530,6 +531,21 @@ const OrderPage = () => {
         onSend={sendEmail}
         emailStatus={emailStatus}
         canSendEmails={canSendOrderEmails}
+        isActionDisabled={(action) =>
+          action.key === "invoice"
+            ? !canSendSsdInvoice
+            : action.key === "delivery_collect"
+              ? order?.orderStatus !== "ready"
+              : false
+        }
+        actionDisabledMessage={(action) =>
+          action.key === "invoice" && !canSendSsdInvoice
+            ? "Add Required by date to send SSD invoice."
+            : action.key === "delivery_collect" &&
+                order?.orderStatus !== "ready"
+              ? "Order must be Ready to send this email."
+              : null
+        }
         disabledMessage={
           isDraftOrCancelled
             ? "Emails are disabled for draft or cancelled orders."

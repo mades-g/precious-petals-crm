@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -127,6 +128,7 @@ type invoicePayload struct {
 	Order struct {
 		OrderNo      Number     `json:"orderNo"`
 		OccasionDate StringDate `json:"occasionDate"`
+		RequiredBy   StringDate `json:"requiredBy"`
 
 		BillingAddressLine1 string `json:"billingAddressLine1"`
 		BillingAddressLine2 string `json:"billingAddressLine2"`
@@ -154,14 +156,15 @@ type invoicePayload struct {
 	} `json:"orderExtras"`
 
 	Frames []struct {
-		Size            string `json:"size"`
-		MeasuredSize    string `json:"measuredSize"`
-		RecommendedSize string `json:"recommendedSize"`
-		FrameType       string `json:"frameType"`
-		GlassType       string `json:"glassType"`
-		Inclusions      string `json:"inclusions"`
-		MountColour     string `json:"mountColour"`
-		GlassEngraving  string `json:"glassEngraving"`
+		Size             string `json:"size"`
+		MeasuredSize     string `json:"measuredSize"`
+		RecommendedSize  string `json:"recommendedSize"`
+		FrameType        string `json:"frameType"`
+		GlassType        string `json:"glassType"`
+		PreservationType string `json:"preservationType"`
+		Inclusions       string `json:"inclusions"`
+		MountColour      string `json:"mountColour"`
+		GlassEngraving   string `json:"glassEngraving"`
 
 		Price  Number `json:"price"`
 		Extras *struct {
@@ -856,9 +859,7 @@ func updateEmailLog(app *pocketbase.PocketBase, rec *core.Record, status string,
 		if existing == nil {
 			existing = map[string]any{}
 		}
-		for k, v := range metaPatch {
-			existing[k] = v
-		}
+		maps.Copy(existing, metaPatch)
 		rec.Set("meta", existing)
 	}
 
