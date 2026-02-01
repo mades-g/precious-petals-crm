@@ -30,6 +30,33 @@ func addCidFooter(req *ResendEmailRequest, footerPngBytes []byte) {
 	}, req.Attachments...)
 }
 
+func buildOrderSubject(payload invoicePayload) string {
+	nameParts := []string{
+		strings.TrimSpace(payload.Customer.Title),
+		strings.TrimSpace(payload.Customer.FirstName),
+		strings.TrimSpace(payload.Customer.Surname),
+	}
+	filtered := make([]string, 0, len(nameParts))
+	for _, part := range nameParts {
+		if part != "" {
+			filtered = append(filtered, part)
+		}
+	}
+	bookingName := strings.TrimSpace(strings.Join(filtered, " "))
+	if bookingName == "" {
+		bookingName = strings.TrimSpace(payload.Customer.Surname)
+	}
+	orderNo := formatInvoiceNo(payload.Order.OrderNo.Float64())
+	if orderNo == "-" {
+		orderNo = strings.TrimSpace(payload.Order.OrderID)
+	}
+	orderNo = strings.TrimSpace(orderNo)
+	if orderNo == "" {
+		orderNo = "Order"
+	}
+	return fmt.Sprintf("%s %s - Your flower preservation", bookingName, orderNo)
+}
+
 func registerEmailRoutes(
 	se *core.ServeEvent,
 	app *pocketbase.PocketBase,
@@ -64,10 +91,7 @@ func registerEmailRoutes(
 			toEmail = devOverride
 		}
 
-		subject := strings.TrimSpace(fmt.Sprintf("Invoice #%s", formatInvoiceNo(payload.Order.OrderNo.Float64())))
-		if subject == "Invoice #-" {
-			subject = "Invoice"
-		}
+		subject := buildOrderSubject(payload)
 
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "invoice", "manual", "invoice")
 		if toEmail != originalTo {
@@ -237,7 +261,7 @@ func registerEmailRoutes(
 			toEmail = devOverride
 		}
 
-		subject := "Your bouquet recommendation"
+		subject := buildOrderSubject(payload)
 
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "recommendation_bouquet", "manual", "recommendation")
 		if toEmail != originalTo {
@@ -261,7 +285,7 @@ func registerEmailRoutes(
 			ref = strings.TrimSpace(fmt.Sprintf("%v", payload.Order.OrderNo.Float64()))
 		}
 
-		recoTableHTML, frameCount, framesTotal := buildRecommendationTableHTMLFromPayload(payload)
+		recoTableHTML, frameCount := buildRecommendationNarrativeHTMLFromPayload(payload)
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.recommendation.html", map[string]any{
 			"customer": map[string]any{
@@ -283,7 +307,7 @@ func registerEmailRoutes(
 			"recommendation": map[string]any{
 				"frames":      make([]any, frameCount),
 				"tableHtml":   template.HTML(recoTableHTML),
-				"framesTotal": framesTotal,
+				"framesTotal": "",
 				"portalTotal": "",
 			},
 			"brand": map[string]any{
@@ -382,7 +406,7 @@ func registerEmailRoutes(
 		}
 
 		orderNo := formatInvoiceNo(payload.Order.OrderNo.Float64())
-		subject := fmt.Sprintf("Order #%s – Ready", orderNo)
+		subject := buildOrderSubject(payload)
 
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "delivery_collect", "delivery_collect", "delivery_collect")
 		if toEmail != originalTo {
@@ -480,91 +504,102 @@ func htmlEscape(s string) string {
 	return s
 }
 
-type recoFrameRow struct {
-	Index            int
-	Size             string
-	Style            string
-	Glass            string
-	Mount            string
-	PreservationType string
-	Price            string
-}
-
-func buildRecommendationTableHTMLFromPayload(payload invoicePayload) (string, int, string) {
+func buildRecommendationNarrativeHTMLFromPayload(payload invoicePayload) (string, int) {
 	frames := payload.Frames
 	if len(frames) == 0 {
-		return "<p><em>No frame recommendations found.</em></p>", 0, ""
+		return "<p><em>No frame recommendations found.</em></p>", 0
 	}
 
-	rows := make([]recoFrameRow, 0, len(frames))
-	totalSum := 0.0
+	paragraphs := make([]string, 0, len(frames))
 	for i, f := range frames {
-		mountPrice, glassPrice, engravingPrice := extractFrameExtras(f.Extras)
+		mountPrice, engravingPrice, glassPrice, framePrice := extractFrameExtras(f.Extras)
 		size := formatFrameSizeFromPayloadFrame(f.RecommendedSize, f.MeasuredSize, f.Size)
-		rowTotal := computeRecoFrameTotal(
-			f.Price,
-			f.MountColour,
-			mountPrice,
-			glassPrice,
-			engravingPrice,
-		)
-		totalSum += rowTotal
-		total := formatGBP(rowTotal)
-
 		mount := strings.TrimSpace(f.MountColour)
 		if mount == "" || mount == "No Second Mount" {
 			mount = "-"
 		}
+		layout := strings.TrimSpace(f.Layout)
+		frameType := strings.TrimSpace(f.FrameType)
+		glassType := strings.TrimSpace(f.GlassType)
 		preservation := strings.TrimSpace(f.PreservationType)
 		if preservation == "" {
 			preservation = strings.TrimSpace(f.Inclusions)
 		}
-		if preservation == "" {
-			preservation = "-"
+
+		basePrice := floatFromNumber(f.Price)
+		if framePrice.Float64() != nil {
+			basePrice = floatFromNumber(framePrice)
+		} else if glassPrice.Float64() != nil && *glassPrice.Float64() > 0 {
+			basePrice = basePrice - floatFromNumber(glassPrice)
+		}
+		if basePrice < 0 {
+			basePrice = 0
 		}
 
-		glass := strings.TrimSpace(f.GlassType)
-		if glass == "" {
-			glass = "-"
+		mainParts := []string{}
+		if size != "" {
+			mainParts = append(mainParts, size)
+		}
+		if layout != "" {
+			mainParts = append(mainParts, layout)
+		}
+		if frameType != "" {
+			mainParts = append(mainParts, frameType)
+		}
+		frameDescriptor := strings.Join(mainParts, " ")
+		if frameDescriptor == "" {
+			frameDescriptor = fmt.Sprintf("frame %d", i+1)
 		}
 
-		rows = append(rows, recoFrameRow{
-			Index:            i + 1,
-			Size:             size,
-			Style:            strings.TrimSpace(f.FrameType),
-			Glass:            glass,
-			Mount:            mount,
-			PreservationType: preservation,
-			Price:            total,
-		})
+		glassSegment := "conservation glass"
+		if glassType != "" {
+			glassSegment = glassType
+		}
+		singleMount := "a single mount"
+		if mount == "-" {
+			singleMount = "a single mount"
+		}
+		preservationSegment := ""
+		if preservation != "" {
+			preservationSegment = fmt.Sprintf(" with %s preservation", preservation)
+		}
+
+		mainSentence := fmt.Sprintf(
+			"We would like to suggest that a %s display%s would look lovely with your bridal flowers. The price of this is %s to include the frame with %s and %s.",
+			htmlEscape(frameDescriptor),
+			htmlEscape(preservationSegment),
+			formatGBP(basePrice),
+			htmlEscape(glassSegment),
+			singleMount,
+		)
+
+		additionalSentence := ""
+		if mount != "-" && mountPrice.Float64() != nil && *mountPrice.Float64() > 0 {
+			additionalSentence = fmt.Sprintf(
+				" An additional %s mount would also complement the flowers which would be %s.",
+				htmlEscape(mount),
+				formatGBP(floatFromNumber(mountPrice)),
+			)
+		}
+
+		engravingSentence := ""
+		if engravingPrice.Float64() != nil && *engravingPrice.Float64() > 0 {
+			engravingText := strings.TrimSpace(f.GlassEngraving)
+			engravingLabel := "Glass engraving"
+			if engravingText != "" {
+				engravingLabel = fmt.Sprintf("Glass engraving - \"%s\"", engravingText)
+			}
+			engravingSentence = fmt.Sprintf(
+				" %s would be %s.",
+				htmlEscape(engravingLabel),
+				formatGBP(floatFromNumber(engravingPrice)),
+			)
+		}
+
+		paragraphs = append(paragraphs, fmt.Sprintf("<p>%s%s%s</p>", mainSentence, additionalSentence, engravingSentence))
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, `%s`, `<table style="width:100%; border-collapse:collapse; margin:16px 0;">`)
-	fmt.Fprintf(&b, `%s`, `<thead><tr>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Frame</th>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Size</th>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Style</th>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Glass</th>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Mount</th>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">Preservation</th>`)
-	fmt.Fprintf(&b, `%s`, `<th style="text-align:right; border-bottom:1px solid #ddd; padding:8px;">Price</th>`)
-	fmt.Fprintf(&b, `%s`, `</tr></thead><tbody>`)
-
-	for _, r := range rows {
-		fmt.Fprintf(&b, `%s`, `<tr>`)
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee;">Frame %d</td>`, r.Index)
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee;">%s</td>`, htmlEscape(r.Size))
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee;">%s</td>`, htmlEscape(r.Style))
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee;">%s</td>`, htmlEscape(r.Glass))
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee;">%s</td>`, htmlEscape(r.Mount))
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee;">%s</td>`, htmlEscape(r.PreservationType))
-		fmt.Fprintf(&b, `<td style="padding:8px; border-bottom:1px solid #eee; text-align:right;">%s</td>`, htmlEscape(r.Price))
-		fmt.Fprintf(&b, `%s`, `</tr>`)
-	}
-
-	fmt.Fprintf(&b, `%s`, `</tbody></table>`)
-	return b.String(), len(rows), formatGBP(totalSum)
+	return strings.Join(paragraphs, "\n"), len(frames)
 }
 
 func formatFrameSizeFromPayloadFrame(recommendedSize, measuredSize, size string) string {
@@ -577,24 +612,6 @@ func formatFrameSizeFromPayloadFrame(recommendedSize, measuredSize, size string)
 	return strings.TrimSpace(size)
 }
 
-func computeRecoFrameTotal(
-	price Number,
-	mountColour string,
-	mountPrice Number,
-	glassPrice Number,
-	engravingPrice Number,
-) float64 {
-	total := floatFromNumber(price)
-
-	if strings.TrimSpace(mountColour) != "No Second Mount" {
-		total += floatFromNumber(mountPrice)
-	}
-	total += floatFromNumber(glassPrice)
-	total += floatFromNumber(engravingPrice)
-
-	return total
-}
-
 func floatFromNumber(n Number) float64 {
 	if n.Float64() == nil {
 		return 0
@@ -603,13 +620,14 @@ func floatFromNumber(n Number) float64 {
 }
 
 func extractFrameExtras(extras *struct {
+	FramePrice          Number `json:"framePrice"`
 	MountPrice          Number `json:"mountPrice"`
 	GlassPrice          Number `json:"glassPrice"`
 	GlassEngravingPrice Number `json:"glassEngravingPrice"`
-}) (Number, Number, Number) {
-	var mountPrice, glassPrice, engravingPrice Number
+}) (Number, Number, Number, Number) {
+	var mountPrice, engravingPrice, glassPrice, framePrice Number
 	if extras == nil {
-		return mountPrice, glassPrice, engravingPrice
+		return mountPrice, engravingPrice, glassPrice, framePrice
 	}
-	return extras.MountPrice, extras.GlassPrice, extras.GlassEngravingPrice
+	return extras.MountPrice, extras.GlassEngravingPrice, extras.GlassPrice, extras.FramePrice
 }

@@ -69,7 +69,6 @@ export const ORDER_STATUS_COLOR_MAP: Record<
   OrdersOrderStatusOptions,
   "gray" | "green" | "yellow" | "red" | "blue"
 > = {
-  draft: "gray",
   in_progress: "blue",
   ready: "yellow",
   delivered: "green",

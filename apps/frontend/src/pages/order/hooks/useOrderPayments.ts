@@ -43,13 +43,16 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
 
   const { mutateAsync: addPayment, isPending: isSavingPayment } = useMutation({
     mutationFn: async (
-      payload: CreateOrderPaymentDraft & { requiredBy?: string },
+      payload: CreateOrderPaymentDraft & {
+        requiredBy?: string;
+        artistHours?: number;
+      },
     ) => {
       if (!orderId) {
         throw new Error("Missing order ID");
       }
 
-      const { requiredBy, ...paymentPayload } = payload;
+      const { requiredBy, artistHours, ...paymentPayload } = payload;
       const payment = await createOrderPayment({ ...paymentPayload, orderId });
       const nextStatus = PAYMENT_STATUS_BY_TYPE[payload.paymentType];
       if (nextStatus) {
@@ -68,6 +71,15 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
         };
         await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
       }
+      if (
+        payload.paymentType === "second_deposit" &&
+        typeof artistHours === "number"
+      ) {
+        const updatePayload: Update<"orders"> = {
+          artistHours,
+        };
+        await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
+      }
 
       return payment;
     },
@@ -78,12 +90,15 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
     useMutation({
       mutationFn: async (payload: {
         id: string;
-        data: CreateOrderPaymentDraft & { requiredBy?: string };
+        data: CreateOrderPaymentDraft & {
+          requiredBy?: string;
+          artistHours?: number;
+        };
       }) => {
         if (!orderId) {
           throw new Error("Missing order ID");
         }
-        const { requiredBy, ...paymentData } = payload.data;
+        const { requiredBy, artistHours, ...paymentData } = payload.data;
         const updated = await updateOrderPayment(payload.id, paymentData);
         if (
           payload.data.paymentType === "second_deposit" &&
@@ -92,6 +107,17 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
         ) {
           const updatePayload: Update<"orders"> = {
             requiredBy: requiredBy.trim(),
+          };
+          await pb
+            .collection(COLLECTIONS.ORDERS)
+            .update(orderId, updatePayload);
+        }
+        if (
+          payload.data.paymentType === "second_deposit" &&
+          typeof artistHours === "number"
+        ) {
+          const updatePayload: Update<"orders"> = {
+            artistHours,
           };
           await pb
             .collection(COLLECTIONS.ORDERS)

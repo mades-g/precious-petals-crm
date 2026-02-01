@@ -27,7 +27,6 @@ const PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
 ];
 
 const ORDER_STATUS_OPTIONS: OrdersOrderStatusOptions[] = [
-  "draft",
   "in_progress",
   "cancelled",
   "ready",

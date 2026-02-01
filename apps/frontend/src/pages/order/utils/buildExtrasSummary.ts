@@ -61,10 +61,6 @@ export const buildExtrasSummary = (orderExtras: OrderExtrasDraft): string[] => {
     items.push(returnUnused);
   }
 
-  if (orderExtras.artistHours && orderExtras.artistHours > 0) {
-    items.push(`Artist hours - ${orderExtras.artistHours}`);
-  }
-
   const trimmedNotes = orderExtras.notes.trim();
   if (trimmedNotes.length > 0) {
     const shortNote =

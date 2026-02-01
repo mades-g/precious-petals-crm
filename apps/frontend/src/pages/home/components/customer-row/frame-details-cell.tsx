@@ -8,7 +8,6 @@ import {
   ensureInchesSuffix,
   formatAddon,
   normaliseDash,
-  titleCase,
 } from "./customer.row.utils";
 
 export const FrameDetailsCell: FC<{
@@ -20,7 +19,6 @@ export const FrameDetailsCell: FC<{
     layout,
     preservationType,
     price,
-    glassType,
     inclusions,
     glassEngraving,
     extras,
@@ -46,7 +44,6 @@ export const FrameDetailsCell: FC<{
       : null;
 
   const mountPrice = extras?.mountPrice ?? null;
-  const glassPrice = extras?.glassPrice ?? null;
   const glassEngravingPrice = extras?.glassEngravingPrice ?? null;
 
   // Mount
@@ -54,20 +51,13 @@ export const FrameDetailsCell: FC<{
     lines.push(formatAddon("Mount", mountDetail, mountPrice));
   }
 
-  // Glass (+ buttonhole)
-  if (
-    glassType ||
-    (typeof glassPrice === "number" && glassPrice > 0) ||
-    (inclusions && inclusions !== "No")
-  ) {
-    const glassDetail = glassType ? titleCase(glassType) : null;
-    let glassLine = formatAddon("Glass", glassDetail, glassPrice);
-
-    if (inclusions && inclusions !== "No") {
-      glassLine += " · Buttonhole";
+  if (inclusions === "Buttonhole") {
+    const mountIndex = lines.findIndex((line) => line.startsWith("Mount"));
+    if (mountIndex >= 0) {
+      lines[mountIndex] = `${lines[mountIndex]} · Buttonhole`;
+    } else {
+      lines.push("Buttonhole");
     }
-
-    lines.push(glassLine);
   }
 
   // Engraving

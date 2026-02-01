@@ -1,11 +1,7 @@
 import type { BouquetItemFormValues } from "@/pages/home/components/create-new-customer-form/create-new-customer-form";
 
 export const mapBouquetToFrameItemPayload = (bq: BouquetItemFormValues) => ({
-  price:
-    (typeof bq.framePrice === "number" ? bq.framePrice : 0) +
-    (typeof bq.mountPrice === "number" ? bq.mountPrice : 0) +
-    (typeof bq.glassPrice === "number" ? bq.glassPrice : 0) +
-    (typeof bq.glassEngravingPrice === "number" ? bq.glassEngravingPrice : 0),
+  price: typeof bq.framePrice === "number" ? bq.framePrice : 0,
   frameType: bq.frameType,
   layout: bq.layout,
   frameMountColour: bq.mountColour,
@@ -14,8 +10,6 @@ export const mapBouquetToFrameItemPayload = (bq: BouquetItemFormValues) => ({
   glassEngraving: bq.glassEngraving || undefined,
   glassType: bq.glassType || undefined,
   inclusions: bq.inclusions || undefined,
-  artworkComplete: bq.artworkComplete,
-  framingComplete: bq.framingComplete,
   extras: {
     measuredWidthIn: bq.measuredWidthIn,
     measuredHeightIn: bq.measuredHeightIn,

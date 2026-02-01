@@ -127,19 +127,20 @@ export type CustomersRecord = {
 
 export type OrderFrameItemsFrameMountColourOptions =
   | "No Second Mount"
-  | "Cream - 8674"
-  | "Red - 8020"
-  | "Burgundy - 8151"
-  | "Gold - 8246"
-  | "Sage - 8633"
-  | "Silver - 835"
-  | "Blue - 8168"
-  | "Purple - 8146"
-  | "Navy - 8687"
-  | "Pink - 8064"
-  | "Maroon - 8016"
-  | "Light Grey - 8664"
-  | "Bright white - 897";
+  | "Cream"
+  | "Red"
+  | "Burgundy"
+  | "Gold"
+  | "Sage"
+  | "Silver"
+  | "Blue"
+  | "Purple"
+  | "Navy"
+  | "Pink"
+  | "Maroon"
+  | "Light Grey"
+  | "Bright white"
+  | "Artist design";
 
 export type OrderFrameItemsFrameTypeOptions =
   | "Black"
@@ -164,7 +165,7 @@ export type OrderFrameItemsFrameTypeOptions =
   | "Stone silver";
 
 export type OrderFrameItemsLayoutOptions =
-  | "Hand tied birds eve"
+  | "Hand tied birds eye"
   | "Hand tied side profile"
   | "Hand tied side profile diagonal"
   | "Straight on shower or teardrop"
@@ -179,11 +180,9 @@ export type OrderFrameItemsInclusionsOptions = "Yes" | "No" | "Buttonhole";
 export type OrderFrameItemsPreservationTypeOptions = "3D" | "pressed";
 
 export type OrderFrameItemsRecord<Textras = unknown> = {
-  artworkComplete?: boolean;
   created: IsoAutoDateString;
   extras?: null | Textras;
   frameType: OrderFrameItemsFrameTypeOptions;
-  framingComplete?: boolean;
   glassEngraving?: string;
   glassType: OrderFrameItemsGlassTypeOptions;
   id: string;
@@ -238,12 +237,13 @@ export type OrdersOrderStatusOptions =
   | "ready"
   | "delivered"
   | "collected"
-  | "cancelled"
-  | "draft";
+  | "cancelled";
 
 export type OrdersRecord = {
+  artworkComplete?: boolean;
   created: IsoAutoDateString;
   frameOrderId?: RecordIdString[];
+  framingComplete?: boolean;
   id: string;
   isDeleted?: boolean;
   notes?: string;

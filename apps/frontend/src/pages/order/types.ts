@@ -18,7 +18,6 @@ export type OrderExtrasDraft = {
   deliveryPrice: number | null;
   returnUnusedFlowers: boolean;
   returnUnusedFlowersPrice: number | null;
-  artistHours: number | null;
   notes: string;
 };
 

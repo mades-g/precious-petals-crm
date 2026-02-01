@@ -19,6 +19,7 @@ import type {
   OrdersPaymentStatusOptions,
 } from "@/services/pb/types";
 import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
+import InlineToggle from "./InlineToggle";
 
 export type OrderActionsBarProps = {
   created?: string | null;
@@ -39,6 +40,12 @@ export type OrderActionsBarProps = {
   onDelete: () => void;
   isDeleting: boolean;
   showDelete: boolean;
+  showFrameCompletion?: boolean;
+  artworkComplete?: boolean;
+  framingComplete?: boolean;
+  onToggleArtworkComplete?: (next: boolean) => void;
+  onToggleFramingComplete?: (next: boolean) => void;
+  isSavingCompletion?: boolean;
 };
 
 const OrderActionsBar: FC<OrderActionsBarProps> = ({
@@ -60,6 +67,12 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   onDelete,
   isDeleting,
   showDelete,
+  showFrameCompletion,
+  artworkComplete,
+  framingComplete,
+  onToggleArtworkComplete,
+  onToggleFramingComplete,
+  isSavingCompletion,
 }) => {
   const menuAction =
     (disabled: boolean | undefined, action: () => void) => (event: Event) => {
@@ -172,6 +185,25 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
           <Text size="2" color="gray" weight="bold">
             {statusHelperText}
           </Text>
+        ) : null}
+        {showFrameCompletion ? (
+          <Flex gap="3" align="center" wrap="wrap">
+            <Text size="2" weight="bold">
+              Completion:
+            </Text>
+            <InlineToggle
+              label="Artwork complete"
+              checked={Boolean(artworkComplete)}
+              onChange={(next) => onToggleArtworkComplete?.(next)}
+              disabled={isSavingCompletion}
+            />
+            <InlineToggle
+              label="Framing complete"
+              checked={Boolean(framingComplete)}
+              onChange={(next) => onToggleFramingComplete?.(next)}
+              disabled={isSavingCompletion}
+            />
+          </Flex>
         ) : null}
       </Flex>
     </Card>

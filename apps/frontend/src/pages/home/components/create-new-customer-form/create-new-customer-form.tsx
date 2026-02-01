@@ -30,8 +30,6 @@ export type BouquetItemFormValues = {
   glassType: OrderFrameItemsGlassTypeOptions | "";
   glassPrice: number | null;
   inclusions: OrderFrameItemsInclusionsOptions | "";
-  artworkComplete: boolean;
-  framingComplete: boolean;
 };
 
 // TODO: Create a type for each respective collection ID

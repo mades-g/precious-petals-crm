@@ -6,6 +6,7 @@
   <strong>Reference:</strong>
   Name: {{.customer.surname}} &nbsp;&nbsp;Occasion Date: {{.order.occasionDate}}
 </p>
+<p><strong>Reference number:</strong> {{.order.ref}}</p>
 
 <p>
   We are delighted to have been asked to preserve your flowers. They have been
@@ -32,11 +33,7 @@
   .recommendation.frames) 1}}s{{end}}:
 </p>
 
-{{.recommendation.tableHtml}} {{if .recommendation.framesTotal}}
-<p>
-  <strong>Total for recommended frames:</strong> {{.recommendation.framesTotal}}
-</p>
-{{end}}
+{{.recommendation.tableHtml}}
 
 <p>
   There are many more ideas for you to see on our website, including beautiful
@@ -84,10 +81,6 @@
   Your preserved arrangement will then be ready 4 weeks from the point we
   receive your final payment.
 </p>
-
-{{if .recommendation.portalTotal}}
-<p><strong>Portal total:</strong> {{.recommendation.portalTotal}}</p>
-{{end}}
 
 <p>
   Kind Regards<br />

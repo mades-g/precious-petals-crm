@@ -161,6 +161,7 @@ type invoicePayload struct {
 		RecommendedSize  string `json:"recommendedSize"`
 		FrameType        string `json:"frameType"`
 		GlassType        string `json:"glassType"`
+		Layout           string `json:"layout"`
 		PreservationType string `json:"preservationType"`
 		Inclusions       string `json:"inclusions"`
 		MountColour      string `json:"mountColour"`
@@ -168,6 +169,7 @@ type invoicePayload struct {
 
 		Price  Number `json:"price"`
 		Extras *struct {
+			FramePrice          Number `json:"framePrice"`
 			MountPrice          Number `json:"mountPrice"`
 			GlassPrice          Number `json:"glassPrice"`
 			GlassEngravingPrice Number `json:"glassEngravingPrice"`
@@ -258,7 +260,9 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 
 	for _, frame := range payload.Frames {
 		basePrice := 0.0
-		if frame.Price.Float64() != nil {
+		if frame.Extras != nil && frame.Extras.FramePrice.Float64() != nil {
+			basePrice = *frame.Extras.FramePrice.Float64()
+		} else if frame.Price.Float64() != nil {
 			basePrice = *frame.Price.Float64()
 		}
 
@@ -275,9 +279,6 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 		}
 		if frame.FrameType != "" {
 			descriptionParts = append(descriptionParts, fmt.Sprintf("%s frame", frame.FrameType))
-		}
-		if frame.GlassType != "" {
-			descriptionParts = append(descriptionParts, frame.GlassType)
 		}
 
 		rows = append(rows, invoiceRow{
@@ -302,15 +303,6 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 					ItemLabel:   "",
 					Description: mountLabel + mountSuffix,
 					Amount:      formatMoney(*frame.Extras.MountPrice.Float64()),
-					IsSubItem:   true,
-				})
-			}
-
-			if frame.Extras.GlassPrice.Float64() != nil && *frame.Extras.GlassPrice.Float64() > 0 {
-				rows = append(rows, invoiceRow{
-					ItemLabel:   "",
-					Description: fmt.Sprintf("Glass - %s", frame.GlassType),
-					Amount:      formatMoney(*frame.Extras.GlassPrice.Float64()),
 					IsSubItem:   true,
 				})
 			}
@@ -541,7 +533,6 @@ func renderInvoicePdf(html string) ([]byte, error) {
 	}
 
 	tempDir := os.TempDir()
-
 
 	// ---- Write main invoice HTML to temp file ----
 	htmlFile, err := os.CreateTemp(tempDir, "invoice-*.html")

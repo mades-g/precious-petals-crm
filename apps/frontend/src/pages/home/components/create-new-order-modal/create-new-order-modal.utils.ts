@@ -82,8 +82,6 @@ export const buildCustomerFormDefaults = (
         glassPrice: extras?.glassPrice ?? null,
         inclusions: frameOrder.inclusions ?? "",
         mountColour: frameOrder.mountColour,
-        artworkComplete: Boolean(frameOrder.artworkComplete),
-        framingComplete: Boolean(frameOrder.framingComplete),
       };
     }),
   };

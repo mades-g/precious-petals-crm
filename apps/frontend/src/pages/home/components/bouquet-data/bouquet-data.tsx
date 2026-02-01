@@ -2,7 +2,6 @@ import { useEffect, type FC } from "react";
 import * as Form from "@radix-ui/react-form";
 import {
   Box,
-  Checkbox,
   Flex,
   Select,
   Separator,
@@ -65,6 +64,15 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
           shouldValidate: true,
         });
       }
+      if (
+        bouquet?.glassType !== "Clearview uv glass" &&
+        bouquet?.glassPrice !== null
+      ) {
+        setValue(`bouquets.${index}.glassPrice`, null, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
     });
   }, [bouquetValues, setValue]);
 
@@ -105,8 +113,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                 glassType: "",
                 glassPrice: null,
                 inclusions: "",
-                artworkComplete: false,
-                framingComplete: false,
               })
             }
           >
@@ -129,7 +135,7 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
           bouquetValues?.[index]?.glassEngraving ?? "";
         const glassTypeValue = bouquetValues?.[index]?.glassType ?? "";
         const engravingPriceRequired = Boolean(glassEngravingValue.trim());
-        const glassPriceRequired = Boolean(glassTypeValue);
+        const glassPriceRequired = glassTypeValue === "Clearview uv glass";
         return (
           <Box
             key={field.id}
@@ -596,22 +602,22 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                         className={formStyles.field}
                       >
                         <Form.Label className={formStyles.label} asChild>
-                          <Text>Glass type</Text>
+                          <Text>
+                            <Text color="red">*</Text> Glass type
+                          </Text>
                         </Form.Label>
                         <Form.Control asChild>
                           <Controller
                             control={control}
                             name={`${prefix}.glassType`}
+                            rules={{ required: "Glass type is required" }}
                             render={({ field }) => (
                               <Select.Root
-                                value={field.value || "none"}
-                                onValueChange={(value) =>
-                                  field.onChange(value === "none" ? "" : value)
-                                }
+                                value={field.value || ""}
+                                onValueChange={field.onChange}
                               >
                                 <Select.Trigger placeholder="Glass type" />
                                 <Select.Content>
-                                  <Select.Item value="none">None</Select.Item>
                                   {FRAME_GLASS_TYPE_OPTIONS.map((opt) => (
                                     <Select.Item key={opt} value={opt}>
                                       {opt}
@@ -622,6 +628,11 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                             )}
                           />
                         </Form.Control>
+                        {bouquetErrors?.glassType && (
+                          <Text size="1" color="red">
+                            {bouquetErrors.glassType.message as string}
+                          </Text>
+                        )}
                       </Form.Field>
                     </Box>
                     <Box>
@@ -649,43 +660,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                           </Text>
                         )}
                       </Form.Field>
-                    </Box>
-                  </Flex>
-                  <Flex gap="3" justify="between" direction="row" wrap="wrap">
-                    <Box minWidth="250px">
-                      <Text weight="medium">Completion</Text>
-                      <Flex direction="column" gap="2" mt="2">
-                        <Controller
-                          name={`${prefix}.artworkComplete`}
-                          control={control}
-                          render={({ field }) => (
-                            <Flex align="center" gap="2">
-                              <Checkbox
-                                checked={!!field.value}
-                                onCheckedChange={(checked) =>
-                                  field.onChange(!!checked)
-                                }
-                              />
-                              <Text size="1">Artwork complete</Text>
-                            </Flex>
-                          )}
-                        />
-                        <Controller
-                          name={`${prefix}.framingComplete`}
-                          control={control}
-                          render={({ field }) => (
-                            <Flex align="center" gap="2">
-                              <Checkbox
-                                checked={!!field.value}
-                                onCheckedChange={(checked) =>
-                                  field.onChange(!!checked)
-                                }
-                              />
-                              <Text size="1">Framing complete</Text>
-                            </Flex>
-                          )}
-                        />
-                      </Flex>
                     </Box>
                   </Flex>
                 </>

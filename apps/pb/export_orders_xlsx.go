@@ -81,6 +81,7 @@ func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error 
 	// ---- Build id lists + maps ----
 	orderIds := make([]string, 0, len(orders))
 	orderNoById := map[string]int{}
+	orderById := map[string]*core.Record{}
 	frameItemOrderMap := map[string]string{}
 	paperweightOrderMap := map[string]string{}
 	frameItemIds := []string{}
@@ -90,6 +91,7 @@ func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error 
 		oid := order.Id
 		orderIds = append(orderIds, oid)
 		orderNoById[oid] = order.GetInt("orderNo")
+		orderById[oid] = order
 
 		frameIds := order.GetStringSlice("frameOrderId")
 		for _, frameId := range frameIds {
@@ -316,7 +318,7 @@ func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error 
 	// Other sheets
 	file.NewSheet("Orders")
 	writeOrdersSheet(file, orders, customerByOrderId, framesByOrderId)
-	writeFrameItemsSheet(file, frameItems, frameItemOrderMap, orderNoById, customerByOrderId)
+	writeFrameItemsSheet(file, frameItems, frameItemOrderMap, orderNoById, orderById, customerByOrderId)
 	writePaperweightsSheet(file, paperweights, paperweightOrderMap, orderNoById, customerByOrderId)
 	writeEmailLogsSheet(file, emailLogs, orderNoById, customerByOrderId, customerById, sentByDisplayById)
 
@@ -388,10 +390,8 @@ func writeProductionOverviewSheet(
 
 	leftHeaders := []string{
 		"Married name",
-		"Email",
 		"Order no",
 		"Occasion date",
-		"Order ID",
 		"Booking date",
 		"Required by date",
 		"Artist hours",
@@ -418,7 +418,6 @@ func writeProductionOverviewSheet(
 		"Delivered / collected",
 		"Paperweight quantity",
 		"Paperweight received",
-		"Paperweight price (£)",
 	}
 
 	headers := append(append(leftHeaders, frameHeaders...), rightHeaders...)
@@ -434,31 +433,18 @@ func writeProductionOverviewSheet(
 		frames := framesByOrderId[oid]
 		pw := paperweightByOrderId[oid]
 
-		allArtworkComplete := true
-		allFramingComplete := true
-		if len(frames) == 0 {
-			allArtworkComplete = false
-			allFramingComplete = false
-		} else {
-			for _, f := range frames {
-				if !f.GetBool("artworkComplete") {
-					allArtworkComplete = false
-				}
-				if !f.GetBool("framingComplete") {
-					allFramingComplete = false
-				}
-			}
+		allArtworkComplete := false
+		allFramingComplete := false
+		if len(frames) > 0 {
+			allArtworkComplete = order.GetBool("artworkComplete")
+			allFramingComplete = order.GetBool("framingComplete")
 		}
 
-		// Delivered / Collected (derived from quantities you already export elsewhere)
-		deliveredCollected := ""
+		// Delivered / Collected (derived from delivery; collection is home pickup)
+		deliveredCollected := "Collected"
 		deliveryQty := order.GetFloat("deliveryQty")
-		collectionQty := order.GetFloat("collectionQty")
-		switch {
-		case deliveryQty > 0:
+		if deliveryQty > 0 {
 			deliveredCollected = "Delivered"
-		case collectionQty > 0:
-			deliveredCollected = "Collected"
 		}
 
 		orderTotal := calculateOrderTotal(order, frames, pw)
@@ -477,10 +463,8 @@ func writeProductionOverviewSheet(
 
 		leftValues := []any{
 			customer.name,
-			customer.email,
 			orderNoById[oid],
 			exportDateDMY(order.GetString("occasionDate")),
-			oid,
 			exportDateDMY(bookingDate),
 			exportDateDMY(requiredBy),
 			artistHours,
@@ -505,12 +489,10 @@ func writeProductionOverviewSheet(
 
 		pwQty := ""
 		pwReceived := ""
-		pwPrice := ""
 		if pw != nil {
 			qty := pw.GetInt("quantity")
 			pwQty = fmtInt(qty)
 			pwReceived = fmtBool(pw.GetBool("paperweightReceived"))
-			pwPrice = fmtMoney(paperweightUnitPrice(pw.GetFloat("price"), qty))
 		}
 
 		rightValues := []any{
@@ -523,7 +505,6 @@ func writeProductionOverviewSheet(
 			deliveredCollected,
 			pwQty,
 			pwReceived,
-			pwPrice,
 		}
 
 		values := append(append(leftValues, frameValues...), rightValues...)
@@ -626,7 +607,11 @@ func calculateOrderTotal(order *core.Record, frames []*core.Record, pw *core.Rec
 		if f == nil {
 			continue
 		}
-		frameTotal += f.GetFloat("price")
+		basePrice := f.GetFloat("price")
+		extras := readExtrasMap(f.Get("extras"))
+		mountPrice, _ := coerceFloat(extras["mountPrice"])
+		engravingPrice, _ := coerceFloat(extras["glassEngravingPrice"])
+		frameTotal += basePrice + mountPrice + engravingPrice
 	}
 
 	paperweightTotal := 0.0
@@ -952,6 +937,7 @@ func writeFrameItemsSheet(
 	frames []*core.Record,
 	frameItemOrderMap map[string]string,
 	orderNoById map[string]int,
+	orderById map[string]*core.Record,
 	customerByOrderId map[string]orderExportCustomer,
 ) {
 	sheet := "Frame Items"
@@ -991,8 +977,16 @@ func writeFrameItemsSheet(
 	for i, frame := range frames {
 		row := i + 2
 		orderId := frameItemOrderMap[frame.Id]
+		order := orderById[orderId]
 		customer := customerByOrderId[orderId]
 		extras := readExtrasMap(frame.Get("extras"))
+
+		artworkComplete := false
+		framingComplete := false
+		if order != nil {
+			artworkComplete = order.GetBool("artworkComplete")
+			framingComplete = order.GetBool("framingComplete")
+		}
 
 		values := []any{
 			orderId,
@@ -1011,8 +1005,8 @@ func writeFrameItemsSheet(
 			frame.GetString("frameMountColour"),
 			frame.GetString("inclusions"),
 			frame.GetString("glassEngraving"),
-			frame.GetBool("artworkComplete"),
-			frame.GetBool("framingComplete"),
+			artworkComplete,
+			framingComplete,
 			exportDateDMY(frame.GetString("preservationDate")),
 			exportMoneyNumber(frame.GetFloat("price")),
 			exportExtrasValue("framePrice", extras["framePrice"]),

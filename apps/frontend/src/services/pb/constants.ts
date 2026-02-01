@@ -52,19 +52,20 @@ export const CUSTOMERS_HOW_RECOMMENDED_OPTIONS: CustomersHowRecommendedOptions[]
 export const FRAME_MOUNT_COLOUR_OPTIONS: OrderFrameItemsFrameMountColourOptions[] =
   [
     "No Second Mount",
-    "Cream - 8674",
-    "Red - 8020",
-    "Burgundy - 8151",
-    "Gold - 8246",
-    "Sage - 8633",
-    "Silver - 835",
-    "Blue - 8168",
-    "Purple - 8146",
-    "Navy - 8687",
-    "Pink - 8064",
-    "Maroon - 8016",
-    "Light Grey - 8664",
-    "Bright white - 897",
+    "Cream",
+    "Red",
+    "Burgundy",
+    "Gold",
+    "Sage",
+    "Silver",
+    "Blue",
+    "Purple",
+    "Navy",
+    "Pink",
+    "Maroon",
+    "Light Grey",
+    "Bright white",
+    "Artist design",
   ];
 
 export const FRAME_TYPE_OPTIONS: OrderFrameItemsFrameTypeOptions[] = [
@@ -91,7 +92,7 @@ export const FRAME_TYPE_OPTIONS: OrderFrameItemsFrameTypeOptions[] = [
 ];
 
 export const FRAME_LAYOUT_OPTIONS: OrderFrameItemsLayoutOptions[] = [
-  "Hand tied birds eve",
+  "Hand tied birds eye",
   "Hand tied side profile",
   "Hand tied side profile diagonal",
   "Straight on shower or teardrop",
@@ -122,7 +123,6 @@ export const ORDER_PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
 ];
 
 export const ORDER_STATUS_OPTIONS: OrdersOrderStatusOptions[] = [
-  "draft",
   "in_progress",
   "cancelled",
   "ready",

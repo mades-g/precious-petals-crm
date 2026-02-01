@@ -60,7 +60,6 @@ export const buildEmailPayload = ({
       deliveryPrice: extras.deliveryPrice,
       returnUnusedFlowers: extras.returnUnusedFlowers,
       returnUnusedFlowersPrice: extras.returnUnusedFlowersPrice,
-      artistHours: extras.artistHours,
       notes: extras.notes,
     },
     frames,

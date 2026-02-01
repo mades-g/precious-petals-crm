@@ -34,12 +34,19 @@ type OrderPaymentsCardProps = {
   isSaving: boolean;
   outstanding?: number;
   orderRequiredBy?: string | null;
+  orderArtistHours?: number | null;
   onCreate: (
-    payload: CreateOrderPaymentDraft & { requiredBy?: string },
+    payload: CreateOrderPaymentDraft & {
+      requiredBy?: string;
+      artistHours?: number;
+    },
   ) => Promise<unknown>;
   onUpdate: (payload: {
     id: string;
-    data: CreateOrderPaymentDraft & { requiredBy?: string };
+    data: CreateOrderPaymentDraft & {
+      requiredBy?: string;
+      artistHours?: number;
+    };
   }) => Promise<unknown>;
   disabled?: boolean;
 };
@@ -51,6 +58,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   isSaving,
   outstanding,
   orderRequiredBy,
+  orderArtistHours,
   onCreate,
   onUpdate,
   disabled,
@@ -61,6 +69,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const [paidAt, setPaidAt] = useState(defaultPaidAt());
   const [notes, setNotes] = useState("");
   const [requiredBy, setRequiredBy] = useState("");
+  const [artistHours, setArtistHours] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasOutstanding =
     typeof outstanding === "number" && Number.isFinite(outstanding);
@@ -73,6 +82,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const [editPaidAt, setEditPaidAt] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editRequiredBy, setEditRequiredBy] = useState("");
+  const [editArtistHours, setEditArtistHours] = useState("");
 
   const hasPayments = payments.length > 0;
   const inputsDisabled = Boolean(disabled) || isSaving;
@@ -104,6 +114,8 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     type === "other";
 
   const requiresRequiredBy = (type: OrderPaymentsPaymentTypeOptions) =>
+    type === "second_deposit";
+  const requiresArtistHours = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "second_deposit";
 
   const isFinalBalance = (type: OrderPaymentsPaymentTypeOptions) =>
@@ -155,6 +167,18 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       setSubmitError("Required by date is required for second deposits.");
       return;
     }
+    if (requiresArtistHours(paymentType) && artistHours.trim() === "") {
+      setSubmitError("Artist hours are required for second deposits.");
+      return;
+    }
+    const parsedArtistHours = Number(artistHours);
+    if (
+      requiresArtistHours(paymentType) &&
+      (Number.isNaN(parsedArtistHours) || parsedArtistHours <= 0)
+    ) {
+      setSubmitError("Artist hours must be greater than 0.");
+      return;
+    }
 
     setSubmitError(null);
     try {
@@ -166,10 +190,14 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
         ...(requiresRequiredBy(paymentType) && requiredBy.trim()
           ? { requiredBy: toUkDate(requiredBy.trim()) }
           : {}),
+        ...(requiresArtistHours(paymentType)
+          ? { artistHours: parsedArtistHours }
+          : {}),
       });
       setAmount("");
       setNotes("");
       setRequiredBy("");
+      setArtistHours("");
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Failed to save payment.",
@@ -184,6 +212,9 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditPaidAt(payment.paidAt ?? "");
     setEditNotes(payment.notes ?? "");
     setEditRequiredBy(toIsoDate(orderRequiredBy ?? ""));
+    setEditArtistHours(
+      orderArtistHours != null ? String(orderArtistHours) : "",
+    );
     setSubmitError(null);
   };
 
@@ -194,6 +225,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditPaidAt("");
     setEditNotes("");
     setEditRequiredBy("");
+    setEditArtistHours("");
     setSubmitError(null);
   };
 
@@ -228,6 +260,18 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       setSubmitError("Required by date is required for second deposits.");
       return;
     }
+    if (requiresArtistHours(editPaymentType) && editArtistHours.trim() === "") {
+      setSubmitError("Artist hours are required for second deposits.");
+      return;
+    }
+    const parsedEditArtistHours = Number(editArtistHours);
+    if (
+      requiresArtistHours(editPaymentType) &&
+      (Number.isNaN(parsedEditArtistHours) || parsedEditArtistHours <= 0)
+    ) {
+      setSubmitError("Artist hours must be greater than 0.");
+      return;
+    }
 
     setSubmitError(null);
     try {
@@ -240,6 +284,9 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           ...(editNotes.trim() ? { notes: editNotes.trim() } : {}),
           ...(requiresRequiredBy(editPaymentType) && editRequiredBy.trim()
             ? { requiredBy: toUkDate(editRequiredBy.trim()) }
+            : {}),
+          ...(requiresArtistHours(editPaymentType)
+            ? { artistHours: parsedEditArtistHours }
             : {}),
         },
       });
@@ -291,6 +338,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                     setPaymentType(next);
                     if (next !== "second_deposit") {
                       setRequiredBy("");
+                      setArtistHours("");
                     }
                   }}
                   disabled={inputsDisabled}
@@ -328,6 +376,21 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   lang="en-GB"
                   value={requiredBy}
                   onChange={(event) => setRequiredBy(event.target.value)}
+                  disabled={inputsDisabled}
+                />
+              </Box>
+            ) : null}
+            {requiresArtistHours(paymentType) ? (
+              <Box style={{ minWidth: 160 }}>
+                <Text size="1" color="gray">
+                  Artist hours
+                </Text>
+                <TextField.Root
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={artistHours}
+                  onChange={(event) => setArtistHours(event.target.value)}
                   disabled={inputsDisabled}
                 />
               </Box>
@@ -379,6 +442,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 <Table.ColumnHeaderCell>Type</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Amount</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Required by</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Artist hours</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>Notes</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell />
               </Table.Row>
@@ -432,6 +496,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                               setEditPaymentType(next);
                               if (next !== "second_deposit") {
                                 setEditRequiredBy("");
+                                setEditArtistHours("");
                               }
                             }}
                             disabled={inputsDisabled}
@@ -480,6 +545,28 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                         ) : payment.paymentType === "second_deposit" &&
                           orderRequiredBy ? (
                           orderRequiredBy
+                        ) : (
+                          ""
+                        )}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {isEditing && requiresArtistHours(editPaymentType) ? (
+                          <TextField.Root
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editArtistHours}
+                            onChange={(event) =>
+                              setEditArtistHours(event.target.value)
+                            }
+                            disabled={inputsDisabled}
+                          />
+                        ) : payment.paymentType === "second_deposit" ? (
+                          orderArtistHours != null ? (
+                            String(orderArtistHours)
+                          ) : (
+                            ""
+                          )
                         ) : (
                           ""
                         )}

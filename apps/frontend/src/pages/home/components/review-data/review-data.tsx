@@ -24,6 +24,9 @@ const ReviewData: FC<ReviewDataProps> = ({
   const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
     const hasRequiredMountPrice =
       bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
+    const hasRequiredGlassPrice =
+      bq.glassType !== "Clearview uv glass" ||
+      typeof bq.glassPrice === "number";
 
     return (
       bq.measuredWidthIn !== null &&
@@ -35,7 +38,9 @@ const ReviewData: FC<ReviewDataProps> = ({
       bq.frameType &&
       typeof bq.framePrice === "number" &&
       bq.mountColour &&
-      hasRequiredMountPrice
+      hasRequiredMountPrice &&
+      bq.glassType &&
+      hasRequiredGlassPrice
     );
   };
 

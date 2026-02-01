@@ -14,9 +14,7 @@ export const normaliseFrameOrder = (
       extras,
       sizeX,
       sizeY,
-      framingComplete,
       frameType,
-      artworkComplete,
       preservationDate,
       preservationType,
       price,
@@ -36,7 +34,6 @@ export const normaliseFrameOrder = (
           ? `${extras.recommendedSizeWidthIn}x${extras.recommendedSizeHeightIn} inches`
           : null,
       frameType,
-      artworkComplete,
       preservationDate,
       preservationType,
       layout,
@@ -47,7 +44,6 @@ export const normaliseFrameOrder = (
       inclusions,
       specialNotes,
       frameId,
-      framingComplete,
       updated,
       created,
       mountColour,
@@ -119,6 +115,8 @@ export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
       deliveryCounty,
       deliveryPostcode,
       requiredBy,
+      artworkComplete,
+      framingComplete,
       updated,
       created,
       collectionId: colId,
@@ -165,6 +163,8 @@ export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
     deliveryCounty,
     deliveryPostcode,
     requiredBy,
+    artworkComplete,
+    framingComplete,
   };
 };
 

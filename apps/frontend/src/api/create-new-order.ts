@@ -30,6 +30,9 @@ export const createNewOrder = async (
   const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
     const hasRequiredMountPrice =
       bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
+    const hasRequiredGlassPrice =
+      bq.glassType !== "Clearview uv glass" ||
+      typeof bq.glassPrice === "number";
 
     return (
       bq.measuredWidthIn !== null &&
@@ -41,7 +44,9 @@ export const createNewOrder = async (
       bq.frameType &&
       typeof bq.framePrice === "number" &&
       bq.mountColour &&
-      hasRequiredMountPrice
+      hasRequiredMountPrice &&
+      bq.glassType &&
+      hasRequiredGlassPrice
     );
   };
 
@@ -80,7 +85,7 @@ export const createNewOrder = async (
     ...mapOrderAddressesToPayload(values),
     notes: "",
     payment_status: "waiting_first_deposit",
-    orderStatus: "draft" as const,
+    orderStatus: "in_progress" as const,
     frameOrderId: frameItems.map((fi) => fi.id),
     paperweightOrderId: paperweightItem ? paperweightItem.id : undefined,
   };

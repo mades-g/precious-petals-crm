@@ -19,8 +19,6 @@ export type UpdateBouquetPayload = {
   preservationType?: string;
   special_notes?: string;
   preservationDate?: string | null;
-  artworkComplete?: boolean;
-  framingComplete?: boolean;
 };
 
 export const updateBouquet = async ({

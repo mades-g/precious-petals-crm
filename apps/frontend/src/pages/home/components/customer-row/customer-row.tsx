@@ -86,12 +86,11 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const hasFirstPayment =
     paymentIndex >= paymentSequence.indexOf("first_deposit_paid");
 
+  const hasFrames = Boolean(orderDetails?.frameOrder?.length);
   const framesComplete = orderDetails
-    ? orderDetails.frameOrder.length === 0 ||
-      orderDetails.frameOrder.every(
-        (frame) =>
-          Boolean(frame.artworkComplete) && Boolean(frame.framingComplete),
-      )
+    ? !hasFrames ||
+      (Boolean(orderDetails.artworkComplete) &&
+        Boolean(orderDetails.framingComplete))
     : false;
   const paperweightComplete = orderDetails?.paperWeightOrder
     ? Boolean(orderDetails.paperWeightOrder.paperweightReceived)
@@ -103,9 +102,8 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
     OrdersOrderStatusOptions,
     OrdersOrderStatusOptions[]
   > = {
-    draft: ["draft", "in_progress", "cancelled"],
-    in_progress: ["in_progress", "draft", "cancelled", "ready"],
-    cancelled: ["cancelled", "draft"],
+    in_progress: ["in_progress", "cancelled", "ready"],
+    cancelled: ["cancelled"],
     ready: ["ready", "in_progress", "cancelled", "delivered", "collected"],
     delivered: ["delivered"],
     collected: ["collected"],

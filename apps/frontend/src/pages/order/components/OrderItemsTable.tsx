@@ -4,7 +4,7 @@ import { Box, Card, Table, Text } from "@radix-ui/themes";
 import { formatCurrency } from "@/utils";
 import FrameItemActions from "./FrameItemActions";
 import PaperweightItemActions from "./PaperweightItemActions";
-import type { LineItem, OrderFrame, OrderPaperweight } from "../types";
+import type { LineItem, OrderPaperweight } from "../types";
 
 export type OrderItemsTableProps = {
   lineItems: LineItem[];
@@ -12,10 +12,7 @@ export type OrderItemsTableProps = {
   paperweightReceived: boolean;
   onEditFrame: (frameId: string | null | undefined) => void;
   onEditPaperweight: () => void;
-  onToggleArtworkComplete: (frame: OrderFrame, next: boolean) => void;
-  onToggleFramingComplete: (frame: OrderFrame, next: boolean) => void;
   onTogglePaperweightReceived: (next: boolean) => void;
-  isSavingCompletion: boolean;
   isSavingPaperweight: boolean;
 };
 
@@ -25,10 +22,7 @@ const OrderItemsTable: FC<OrderItemsTableProps> = ({
   paperweightReceived,
   onEditFrame,
   onEditPaperweight,
-  onToggleArtworkComplete,
-  onToggleFramingComplete,
   onTogglePaperweightReceived,
-  isSavingCompletion,
   isSavingPaperweight,
 }) => {
   const mainItems = lineItems.filter((item) => item.kind !== "extra");
@@ -89,14 +83,7 @@ const OrderItemsTable: FC<OrderItemsTableProps> = ({
                       <FrameItemActions
                         frame={item.frame}
                         onEdit={() => onEditFrame(item.frame?.frameId)}
-                        onToggleArtworkComplete={(next) =>
-                          onToggleArtworkComplete(item.frame!, next)
-                        }
-                        onToggleFramingComplete={(next) =>
-                          onToggleFramingComplete(item.frame!, next)
-                        }
-                        isSavingCompletion={isSavingCompletion}
-                        disabled={!item.frame.frameId || isSavingCompletion}
+                        disabled={!item.frame.frameId}
                       />
                     ) : item.kind === "paperweight" ? (
                       <PaperweightItemActions

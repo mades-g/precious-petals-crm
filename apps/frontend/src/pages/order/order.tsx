@@ -27,7 +27,7 @@ import SmsLogDrawer from "./components/SmsLogDrawer";
 import SendSmsDialog from "./components/SendSmsDialog";
 import { useOrderQuery } from "./hooks/useOrderQuery";
 import { useOrderExtrasMutations } from "./hooks/useOrderExtrasMutations";
-import { useFrameMutations } from "./hooks/useFrameMutations";
+import { useOrderCompletionMutations } from "./hooks/useOrderCompletionMutations";
 import { usePaperweightMutations } from "./hooks/usePaperweightMutations";
 import { useOrderDeleteMutation } from "./hooks/useOrderDeleteMutation";
 import {
@@ -41,7 +41,7 @@ import { buildLineItems } from "./utils/buildLineItems";
 import { buildTotals } from "./utils/buildTotals";
 import { buildExtrasSummary } from "./utils/buildExtrasSummary";
 import { buildEmailPayload } from "./utils/buildEmailPayload";
-import { EMAIL_ACTIONS, type OrderExtrasDraft, type OrderFrame } from "./types";
+import { EMAIL_ACTIONS, type OrderExtrasDraft } from "./types";
 import { sendSms, type SmsType } from "@/api/send-sms";
 
 const defaultExtrasDraft: OrderExtrasDraft = {
@@ -54,7 +54,6 @@ const defaultExtrasDraft: OrderExtrasDraft = {
   deliveryPrice: null,
   returnUnusedFlowers: false,
   returnUnusedFlowersPrice: null,
-  artistHours: null,
   notes: "",
 };
 
@@ -98,11 +97,13 @@ const OrderPage = () => {
   const [orderExtrasOpen, setOrderExtrasOpen] = useState(false);
 
   const [orderStatusDraft, setOrderStatusDraft] =
-    useState<OrdersOrderStatusOptions>("draft");
+    useState<OrdersOrderStatusOptions>("in_progress");
   const [paymentStatusDraft, setPaymentStatusDraft] =
     useState<OrdersPaymentStatusOptions>("waiting_first_deposit");
   const [paperweightReceivedDraft, setPaperweightReceivedDraft] =
     useState(false);
+  const [artworkCompleteDraft, setArtworkCompleteDraft] = useState(false);
+  const [framingCompleteDraft, setFramingCompleteDraft] = useState(false);
   const [orderExtrasDraft, setOrderExtrasDraft] =
     useState<OrderExtrasDraft>(defaultExtrasDraft);
 
@@ -115,11 +116,13 @@ const OrderPage = () => {
   useEffect(() => {
     if (!order) return;
 
-    setOrderStatusDraft(order.orderStatus ?? "draft");
+    setOrderStatusDraft(order.orderStatus ?? "in_progress");
     setPaymentStatusDraft(order.paymentStatus ?? "waiting_first_deposit");
     setPaperweightReceivedDraft(
       Boolean(order.paperWeightOrder?.paperweightReceived),
     );
+    setArtworkCompleteDraft(Boolean(order.artworkComplete));
+    setFramingCompleteDraft(Boolean(order.framingComplete));
     setOrderExtrasDraft({
       replacementFlowers: Boolean(order.replacementFlowers),
       replacementFlowersQty: normalizeLoadedNumber(order.replacementFlowersQty),
@@ -134,7 +137,6 @@ const OrderPage = () => {
       returnUnusedFlowersPrice: normalizeLoadedNumber(
         order.returnUnusedFlowersPrice,
       ),
-      artistHours: normalizeLoadedNumber(order.artistHours),
       notes: order.notes ?? "",
     });
   }, [order]);
@@ -156,9 +158,8 @@ const OrderPage = () => {
   const { saveExtras, isSavingExtras } = useOrderExtrasMutations(
     order?.orderId,
   );
-  const { updateFrameCompletion, isSavingCompletion } = useFrameMutations(
-    order?.orderId,
-  );
+  const { updateOrderCompletion, isSavingCompletion } =
+    useOrderCompletionMutations(order?.orderId);
   const { updatePaperweight, isSavingPaperweight } = usePaperweightMutations(
     order?.orderId,
   );
@@ -186,8 +187,7 @@ const OrderPage = () => {
     }),
     [totals, totalPaid, outstandingBalance],
   );
-  const isDraftOrCancelled =
-    orderStatusDraft === "draft" || orderStatusDraft === "cancelled";
+  const isCancelled = orderStatusDraft === "cancelled";
   const canDeleteOrder = isAdmin && orderStatusDraft === "cancelled";
 
   const { mutateAsync: updateStatus, isPending: isUpdatingStatus } =
@@ -217,14 +217,10 @@ const OrderPage = () => {
     });
 
   const hasPaperweight = Boolean(paperweight?.paperWeightId);
+  const hasFrames = frames.length > 0;
   const framesComplete = useMemo(
-    () =>
-      frames.length === 0 ||
-      frames.every(
-        (frame) =>
-          Boolean(frame.artworkComplete) && Boolean(frame.framingComplete),
-      ),
-    [frames],
+    () => !hasFrames || (artworkCompleteDraft && framingCompleteDraft),
+    [hasFrames, artworkCompleteDraft, framingCompleteDraft],
   );
   const paperweightComplete = useMemo(
     () => !hasPaperweight || paperweightReceivedDraft,
@@ -244,9 +240,8 @@ const OrderPage = () => {
     OrdersOrderStatusOptions,
     OrdersOrderStatusOptions[]
   > = {
-    draft: ["draft", "in_progress", "cancelled"],
-    in_progress: ["in_progress", "draft", "cancelled", "ready"],
-    cancelled: ["cancelled", "draft"],
+    in_progress: ["in_progress", "cancelled", "ready"],
+    cancelled: ["cancelled"],
     ready: ["ready", "in_progress", "cancelled", "delivered", "collected"],
     delivered: ["delivered"],
     collected: ["collected"],
@@ -265,7 +260,7 @@ const OrderPage = () => {
   let statusHelperText = "";
   if (!readyEligible) {
     statusHelperText =
-      "Ready requires all frames complete and paperweight received.";
+      "Ready requires artwork & framing complete (if frames exist) and paperweight received.";
   } else if (!deliveredEligible) {
     statusHelperText =
       "Delivered/Collected requires final balance paid and outstanding balance £0.";
@@ -305,10 +300,33 @@ const OrderPage = () => {
       returnUnusedFlowers: orderExtrasDraft.returnUnusedFlowers,
       returnUnusedFlowersPrice:
         orderExtrasDraft.returnUnusedFlowersPrice ?? undefined,
-      artistHours: orderExtrasDraft.artistHours ?? undefined,
     };
 
     await saveExtras(payload);
+  };
+
+  const handleUpdateExtrasField = (
+    key: keyof OrderExtrasDraft,
+    value: OrderExtrasDraft[keyof OrderExtrasDraft],
+  ) => {
+    setOrderExtrasDraft((prev) => {
+      if (key === "replacementFlowers" && value === false) {
+        return {
+          ...prev,
+          replacementFlowers: false,
+          replacementFlowersQty: null,
+          replacementFlowersPrice: null,
+        };
+      }
+      if (key === "returnUnusedFlowers" && value === false) {
+        return {
+          ...prev,
+          returnUnusedFlowers: false,
+          returnUnusedFlowersPrice: null,
+        };
+      }
+      return { ...prev, [key]: value };
+    });
   };
 
   const handleTogglePaperweightReceived = async (next: boolean) => {
@@ -328,26 +346,32 @@ const OrderPage = () => {
     }
   };
 
-  const handleToggleArtworkComplete = async (
-    frame: OrderFrame,
-    next: boolean,
-  ) => {
-    if (!frame.frameId) return;
-    await updateFrameCompletion({
-      frameId: frame.frameId,
-      artworkComplete: next,
-    });
+  const handleToggleArtworkComplete = async (next: boolean) => {
+    if (!order?.orderId) return;
+    const previous = artworkCompleteDraft;
+    setArtworkCompleteDraft(next);
+    try {
+      await updateOrderCompletion({
+        orderId: order.orderId,
+        artworkComplete: next,
+      });
+    } catch {
+      setArtworkCompleteDraft(previous);
+    }
   };
 
-  const handleToggleFramingComplete = async (
-    frame: OrderFrame,
-    next: boolean,
-  ) => {
-    if (!frame.frameId) return;
-    await updateFrameCompletion({
-      frameId: frame.frameId,
-      framingComplete: next,
-    });
+  const handleToggleFramingComplete = async (next: boolean) => {
+    if (!order?.orderId) return;
+    const previous = framingCompleteDraft;
+    setFramingCompleteDraft(next);
+    try {
+      await updateOrderCompletion({
+        orderId: order.orderId,
+        framingComplete: next,
+      });
+    } catch {
+      setFramingCompleteDraft(previous);
+    }
   };
 
   const openEditModal = (stage: FormStage, bouquetId?: string | null) => {
@@ -458,6 +482,12 @@ const OrderPage = () => {
         requiredBy={order?.requiredBy}
         orderStatus={orderStatusDraft}
         paymentStatus={paymentStatusDraft}
+        showFrameCompletion={hasFrames}
+        artworkComplete={artworkCompleteDraft}
+        framingComplete={framingCompleteDraft}
+        onToggleArtworkComplete={handleToggleArtworkComplete}
+        onToggleFramingComplete={handleToggleFramingComplete}
+        isSavingCompletion={isSavingCompletion}
         onPreviewInvoice={handlePreviewInvoice}
         onOpenEmailActions={() => setIsEmailDrawerOpen(true)}
         onOpenSms={() => setIsSmsOpen(true)}
@@ -480,6 +510,7 @@ const OrderPage = () => {
           isSaving={isSavingPayment || isUpdatingPayment}
           outstanding={outstandingBalance}
           orderRequiredBy={order?.requiredBy}
+          orderArtistHours={order?.artistHours ?? null}
           onCreate={addPayment}
           onUpdate={updatePayment}
           disabled={orderStatusDraft === "cancelled"}
@@ -492,10 +523,7 @@ const OrderPage = () => {
           paperweightReceived={paperweightReceivedDraft}
           onEditFrame={(frameId) => openEditModal("bouquet_data", frameId)}
           onEditPaperweight={() => openEditModal("paperweight_data")}
-          onToggleArtworkComplete={handleToggleArtworkComplete}
-          onToggleFramingComplete={handleToggleFramingComplete}
           onTogglePaperweightReceived={handleTogglePaperweightReceived}
-          isSavingCompletion={isSavingCompletion}
           isSavingPaperweight={isSavingPaperweight}
         />
       </Box>
@@ -505,9 +533,7 @@ const OrderPage = () => {
           summary={orderExtrasSummary}
           open={orderExtrasOpen}
           onOpenChange={setOrderExtrasOpen}
-          onUpdateField={(key, value) =>
-            setOrderExtrasDraft((prev) => ({ ...prev, [key]: value }))
-          }
+          onUpdateField={handleUpdateExtrasField}
           onSave={handleSaveExtras}
           isSaving={isSavingExtras}
         />
@@ -547,9 +573,7 @@ const OrderPage = () => {
               : null
         }
         disabledMessage={
-          isDraftOrCancelled
-            ? "Emails are disabled for draft or cancelled orders."
-            : undefined
+          isCancelled ? "Emails are disabled for cancelled orders." : undefined
         }
         logs={emailLogs ?? []}
         isLoadingLogs={isLoadingLogs}

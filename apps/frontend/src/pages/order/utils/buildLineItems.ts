@@ -12,7 +12,6 @@ export const buildLineItems = (
     const descParts = [
       frame.recommendedSize,
       frame.frameType,
-      frame.glassType,
       frame.preservationType,
       mountColour ? `Mount: ${mountColour}` : null,
     ].filter(Boolean);
@@ -43,18 +42,6 @@ export const buildLineItems = (
         qty: 1,
         unitPrice: extras.mountPrice,
         total: extras.mountPrice,
-        kind: "extra",
-        frame,
-      });
-    }
-
-    if (typeof extras?.glassPrice === "number" && extras.glassPrice > 0) {
-      items.push({
-        id: `${baseId}-glass`,
-        description: `Glass - ${frame.glassType}`,
-        qty: 1,
-        unitPrice: extras.glassPrice,
-        total: extras.glassPrice,
         kind: "extra",
         frame,
       });

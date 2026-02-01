@@ -203,29 +203,6 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
                       </Table.Row>
                     );
                   })}
-                  <Table.Row>
-                    <Table.Cell>Artist hours</Table.Cell>
-                    <Table.Cell />
-                    <Table.Cell>
-                      <TextField.Root
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={
-                          orderExtras.artistHours == null
-                            ? ""
-                            : String(orderExtras.artistHours)
-                        }
-                        onChange={(event) =>
-                          onUpdateField(
-                            "artistHours",
-                            parseNumberInput(event.target.value),
-                          )
-                        }
-                      />
-                    </Table.Cell>
-                    <Table.Cell />
-                  </Table.Row>
                 </Table.Body>
               </Table.Root>
 
