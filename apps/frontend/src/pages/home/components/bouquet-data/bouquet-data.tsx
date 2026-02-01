@@ -514,6 +514,71 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                   </Form.Field>
                 </Box>
               </Flex>
+              <Flex gap="3" justify="between" direction="row" wrap="wrap">
+                <Box minWidth="250px">
+                  <Form.Field
+                    name={`${prefix}.glassType`}
+                    className={formStyles.field}
+                  >
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>
+                        <Text color="red">*</Text> Glass type
+                      </Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <Controller
+                        control={control}
+                        name={`${prefix}.glassType`}
+                        rules={{ required: "Glass type is required" }}
+                        render={({ field }) => (
+                          <Select.Root
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                          >
+                            <Select.Trigger placeholder="Glass type" />
+                            <Select.Content>
+                              {FRAME_GLASS_TYPE_OPTIONS.map((opt) => (
+                                <Select.Item key={opt} value={opt}>
+                                  {opt}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+                        )}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.glassType && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.glassType.message as string}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+                <Box>
+                  <Form.Field name={`${prefix}.glassPrice`}>
+                    <Form.Label className={formStyles.label} asChild>
+                      <Text>Glass price (£)</Text>
+                    </Form.Label>
+                    <Form.Control asChild>
+                      <TextField.Root
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        disabled={!glassPriceRequired}
+                        {...register(`${prefix}.glassPrice`, {
+                          valueAsNumber: true,
+                          required: glassPriceRequired ? "Required" : undefined,
+                        })}
+                      />
+                    </Form.Control>
+                    {bouquetErrors?.glassPrice && (
+                      <Text size="1" color="red">
+                        {bouquetErrors.glassPrice.message as string}
+                      </Text>
+                    )}
+                  </Form.Field>
+                </Box>
+              </Flex>
               {mode === "edit" && (
                 <>
                   <Separator orientation="horizontal" size="4" />
@@ -594,71 +659,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                             )}
                           />
                         </Form.Control>
-                      </Form.Field>
-                    </Box>
-                    <Box minWidth="250px">
-                      <Form.Field
-                        name={`${prefix}.glassType`}
-                        className={formStyles.field}
-                      >
-                        <Form.Label className={formStyles.label} asChild>
-                          <Text>
-                            <Text color="red">*</Text> Glass type
-                          </Text>
-                        </Form.Label>
-                        <Form.Control asChild>
-                          <Controller
-                            control={control}
-                            name={`${prefix}.glassType`}
-                            rules={{ required: "Glass type is required" }}
-                            render={({ field }) => (
-                              <Select.Root
-                                value={field.value || ""}
-                                onValueChange={field.onChange}
-                              >
-                                <Select.Trigger placeholder="Glass type" />
-                                <Select.Content>
-                                  {FRAME_GLASS_TYPE_OPTIONS.map((opt) => (
-                                    <Select.Item key={opt} value={opt}>
-                                      {opt}
-                                    </Select.Item>
-                                  ))}
-                                </Select.Content>
-                              </Select.Root>
-                            )}
-                          />
-                        </Form.Control>
-                        {bouquetErrors?.glassType && (
-                          <Text size="1" color="red">
-                            {bouquetErrors.glassType.message as string}
-                          </Text>
-                        )}
-                      </Form.Field>
-                    </Box>
-                    <Box>
-                      <Form.Field name={`${prefix}.glassPrice`}>
-                        <Form.Label className={formStyles.label} asChild>
-                          <Text>Glass price (£)</Text>
-                        </Form.Label>
-                        <Form.Control asChild>
-                          <TextField.Root
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            disabled={!glassPriceRequired}
-                            {...register(`${prefix}.glassPrice`, {
-                              valueAsNumber: true,
-                              required: glassPriceRequired
-                                ? "Required"
-                                : undefined,
-                            })}
-                          />
-                        </Form.Control>
-                        {bouquetErrors?.glassPrice && (
-                          <Text size="1" color="red">
-                            {bouquetErrors.glassPrice.message as string}
-                          </Text>
-                        )}
                       </Form.Field>
                     </Box>
                   </Flex>
