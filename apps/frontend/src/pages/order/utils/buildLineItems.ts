@@ -10,10 +10,11 @@ export const buildLineItems = (
     const mountColour = frame.mountColour ?? null;
 
     const descParts = [
+      "Picture",
       frame.recommendedSize,
       frame.frameType,
       frame.preservationType,
-      mountColour ? `Mount: ${mountColour}` : null,
+      frame.glassType === "Conservation glass" ? frame.glassType : null,
     ].filter(Boolean);
 
     const description = descParts.join(", ");
@@ -42,6 +43,22 @@ export const buildLineItems = (
         qty: 1,
         unitPrice: extras.mountPrice,
         total: extras.mountPrice,
+        kind: "extra",
+        frame,
+      });
+    }
+
+    if (
+      frame.glassType === "Clearview uv glass" &&
+      typeof extras?.glassPrice === "number" &&
+      extras.glassPrice > 0
+    ) {
+      items.push({
+        id: `${baseId}-glass`,
+        description: `Glass - ${frame.glassType}`,
+        qty: 1,
+        unitPrice: extras.glassPrice,
+        total: extras.glassPrice,
         kind: "extra",
         frame,
       });

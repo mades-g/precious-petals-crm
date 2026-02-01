@@ -611,7 +611,13 @@ func calculateOrderTotal(order *core.Record, frames []*core.Record, pw *core.Rec
 		extras := readExtrasMap(f.Get("extras"))
 		mountPrice, _ := coerceFloat(extras["mountPrice"])
 		engravingPrice, _ := coerceFloat(extras["glassEngravingPrice"])
-		frameTotal += basePrice + mountPrice + engravingPrice
+		glassPrice := 0.0
+		if strings.EqualFold(strings.TrimSpace(f.GetString("glassType")), "clearview uv glass") {
+			if gp, ok := coerceFloat(extras["glassPrice"]); ok {
+				glassPrice = gp
+			}
+		}
+		frameTotal += basePrice + mountPrice + engravingPrice + glassPrice
 	}
 
 	paperweightTotal := 0.0

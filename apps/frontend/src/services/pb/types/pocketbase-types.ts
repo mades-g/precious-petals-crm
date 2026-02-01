@@ -177,7 +177,7 @@ export type OrderFrameItemsGlassTypeOptions =
 
 export type OrderFrameItemsInclusionsOptions = "Yes" | "No" | "Buttonhole";
 
-export type OrderFrameItemsPreservationTypeOptions = "3D" | "pressed";
+export type OrderFrameItemsPreservationTypeOptions = "3D" | "Pressed";
 
 export type OrderFrameItemsRecord<Textras = unknown> = {
   created: IsoAutoDateString;

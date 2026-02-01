@@ -111,7 +111,7 @@ export const FRAME_INCLUSIONS_OPTIONS: OrderFrameItemsInclusionsOptions[] = [
 ];
 
 export const FRAME_PRESERVATION_TYPE_OPTIONS: OrderFrameItemsPreservationTypeOptions[] =
-  ["3D", "pressed"];
+  ["3D", "Pressed"];
 
 export const ORDER_PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
   "waiting_first_deposit",

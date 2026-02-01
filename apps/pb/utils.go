@@ -278,9 +278,18 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 			descriptionParts = append(descriptionParts, size)
 		}
 		if frame.FrameType != "" {
-			descriptionParts = append(descriptionParts, fmt.Sprintf("%s frame", frame.FrameType))
+			descriptionParts = append(descriptionParts, frame.FrameType)
+		}
+		if frame.PreservationType != "" {
+			descriptionParts = append(descriptionParts, frame.PreservationType)
+		}
+		if strings.EqualFold(strings.TrimSpace(frame.GlassType), "conservation glass") {
+			descriptionParts = append(descriptionParts, "Conservation glass")
 		}
 
+		if len(descriptionParts) == 0 {
+			descriptionParts = append(descriptionParts, "Frame")
+		}
 		rows = append(rows, invoiceRow{
 			ItemLabel:   fmt.Sprintf("Item %d", itemIndex),
 			Description: strings.Join(descriptionParts, ", "),
@@ -305,6 +314,17 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 					Amount:      formatMoney(*frame.Extras.MountPrice.Float64()),
 					IsSubItem:   true,
 				})
+			}
+
+			if strings.EqualFold(strings.TrimSpace(frame.GlassType), "clearview uv glass") {
+				if frame.Extras.GlassPrice.Float64() != nil && *frame.Extras.GlassPrice.Float64() > 0 {
+					rows = append(rows, invoiceRow{
+						ItemLabel:   "",
+						Description: "Glass - Clearview uv glass",
+						Amount:      formatMoney(*frame.Extras.GlassPrice.Float64()),
+						IsSubItem:   true,
+					})
+				}
 			}
 
 			if frame.Extras.GlassEngravingPrice.Float64() != nil && *frame.Extras.GlassEngravingPrice.Float64() > 0 {
