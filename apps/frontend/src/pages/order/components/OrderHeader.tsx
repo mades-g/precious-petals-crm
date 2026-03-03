@@ -5,12 +5,14 @@ export type OrderHeaderProps = {
   orderLabel: string;
   onBack: () => void;
   actionsHelperText?: string;
+  customerName?: string;
 };
 
 const OrderHeader: FC<OrderHeaderProps> = ({
   orderLabel,
   onBack,
   actionsHelperText,
+  customerName,
 }) => {
   return (
     <Flex justify="between" align="center" mb="3" gap="3" wrap="wrap">
@@ -19,11 +21,16 @@ const OrderHeader: FC<OrderHeaderProps> = ({
           variant="ghost"
           size="1"
           onClick={onBack}
-          style={{ paddingLeft: 0 }}
+          style={{ paddingLeft: 0, width: "fit-content" }}
         >
           ← Customers
         </Button>
         <Heading size="4">Order {orderLabel}</Heading>
+        {customerName ? (
+          <Text size="2" color="gray">
+            {customerName}
+          </Text>
+        ) : null}
       </Flex>
       {actionsHelperText ? (
         <Text size="1" color="gray" align="right">

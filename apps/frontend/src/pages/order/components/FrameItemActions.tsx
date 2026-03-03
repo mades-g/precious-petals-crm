@@ -28,6 +28,16 @@ const FrameItemActions: FC<FrameItemActionsProps> = ({
       >
         Frame options
       </Button>
+      {frame.layout ? (
+        <Badge variant="soft" color="cyan">
+          Layout: {frame.layout}
+        </Badge>
+      ) : null}
+      {frame.preservationType ? (
+        <Badge variant="soft" color="teal">
+          Type: {frame.preservationType}
+        </Badge>
+      ) : null}
       {frame.preservationDate ? (
         <Badge variant="soft" color="blue">
           Preservation {formatDate(frame.preservationDate)}

@@ -19,7 +19,7 @@ const getSubmitBtnTitle = (
     if (formStage === "bouquet_data" && currentCustomerForm.bouquets?.length) {
       title = "Update changes";
     }
-    if (formStage === "costumer_data") {
+    if (formStage === "customer_data") {
       title = "Update changes";
     }
   }
@@ -61,7 +61,7 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
       </Button>
       {mode === "create" && (
         <>
-          {currentFormStage === "costumer_data" && (
+          {currentFormStage === "customer_data" && (
             <Flex justify="end" gap="2">
               <Button
                 type="submit"
@@ -87,7 +87,7 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
                 type="button"
                 variant="soft"
                 color="gray"
-                onClick={() => onGoBack("costumer_data")}
+                onClick={() => onGoBack("customer_data")}
                 disabled={isSubmitting}
               >
                 Back to customer

@@ -12,6 +12,7 @@ export const buildLineItems = (
     const descParts = [
       "Picture",
       frame.recommendedSize,
+      frame.layout,
       frame.frameType,
       frame.preservationType,
       frame.glassType === "Conservation glass" ? frame.glassType : null,

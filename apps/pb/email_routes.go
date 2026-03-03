@@ -282,7 +282,7 @@ func registerEmailRoutes(
 
 		ref := strings.TrimSpace(payload.Order.OrderID)
 		if ref == "" {
-			ref = strings.TrimSpace(fmt.Sprintf("%v", payload.Order.OrderNo.Float64()))
+			ref = formatInvoiceNo(payload.Order.OrderNo.Float64())
 		}
 
 		recoTableHTML, frameCount := buildRecommendationNarrativeHTMLFromPayload(payload)
@@ -597,6 +597,16 @@ func buildRecommendationNarrativeHTMLFromPayload(payload invoicePayload) (string
 		}
 
 		paragraphs = append(paragraphs, fmt.Sprintf("<p>%s%s%s</p>", mainSentence, additionalSentence, engravingSentence))
+	}
+
+	if pw := payload.GetPaperweight(); pw != nil && pw.Price.Float64() != nil {
+		qty := 1.0
+		if pw.Quantity.Float64() != nil && *pw.Quantity.Float64() > 0 {
+			qty = *pw.Quantity.Float64()
+		}
+		total := *pw.Price.Float64()
+		pwSentence := fmt.Sprintf("We also recommend a Paperweight (Quantity: %.0f) for %s.", qty, formatGBP(total))
+		paragraphs = append(paragraphs, fmt.Sprintf("<p>%s</p>", pwSentence))
 	}
 
 	return strings.Join(paragraphs, "\n"), len(frames)

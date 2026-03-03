@@ -18,12 +18,12 @@ export const buildTotals = (
   lineItems: LineItem[],
   extras?: OrderExtrasDraft | null,
 ): Totals => {
-  const subTotal =
+  const grandTotal =
     lineItems.reduce((sum, item) => sum + item.total, 0) +
     (getExtrasTotal(extras) || 0);
   const vatRate = 0.2;
-  const vatTotal = subTotal * vatRate;
-  const grandTotal = subTotal + vatTotal;
+  const vatTotal = grandTotal - grandTotal / (1 + vatRate);
+  const subTotal = grandTotal - vatTotal;
 
   return { subTotal, vatRate, vatTotal, grandTotal };
 };

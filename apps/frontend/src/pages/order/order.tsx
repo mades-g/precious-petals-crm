@@ -475,7 +475,11 @@ const OrderPage = () => {
 
   return (
     <Box p="4" style={{ margin: "0 auto", maxWidth: 1100 }} width="100%">
-      <OrderHeader orderLabel={`${orderLabel}`} onBack={() => navigate(-1)} />
+      <OrderHeader
+        orderLabel={`${orderLabel}`}
+        onBack={() => navigate(-1)}
+        customerName={customer?.displayName ?? ""}
+      />
       <OrderActionsBar
         created={order?.created}
         occasionDate={order?.occasionDate}
@@ -568,7 +572,7 @@ const OrderPage = () => {
           action.key === "invoice" && !canSendSsdInvoice
             ? "Add Required by date to send SSD invoice."
             : action.key === "delivery_collect" &&
-                order?.orderStatus !== "ready"
+              order?.orderStatus !== "ready"
               ? "Order must be Ready to send this email."
               : null
         }

@@ -19,7 +19,7 @@ import { getModalTitle } from "./create-new-order-modal.utils";
 import { editOrderStage } from "./services/edit-order.service";
 
 export type FormStage =
-  | "costumer_data"
+  | "customer_data"
   | "bouquet_data"
   | "paperweight_data"
   | "review_data";
@@ -77,7 +77,7 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
 
   const handleCancel = () => {
     onCancel();
-    setCurrentFormStage("costumer_data");
+    setCurrentFormStage("customer_data");
     setNextStageAfterSubmit(null);
     setSubmitError(null);
   };
@@ -168,6 +168,11 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
                 Create new customer, frame and/or paperweight order
               </Dialog.Description>
             )}
+            {modalMode === "edit" && currentCustomerForm && (
+              <Dialog.Description size="2" color="gray">
+                {currentCustomerForm.firstName} {currentCustomerForm.surname}
+              </Dialog.Description>
+            )}
           </Flex>
 
           <CreateNewCustomerForm
@@ -179,7 +184,7 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
                 : { ...currentCustomerForm }
             }
           >
-            {currentFormStage === "costumer_data" && (
+            {currentFormStage === "customer_data" && (
               <CustomerData nextOrderNo={nextOrderNo} />
             )}
             {currentFormStage === "bouquet_data" && (
@@ -193,7 +198,7 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
             )}
             {modalMode === "create" && currentFormStage === "review_data" && (
               <ReviewData
-                onEditCustomer={() => setCurrentFormStage("costumer_data")}
+                onEditCustomer={() => setCurrentFormStage("customer_data")}
                 onEditBouquets={() => setCurrentFormStage("bouquet_data")}
                 onEditPaperweight={() =>
                   setCurrentFormStage("paperweight_data")

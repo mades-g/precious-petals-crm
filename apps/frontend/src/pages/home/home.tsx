@@ -18,7 +18,7 @@ import { getCustomers, type GetCustomersParams } from "@/api/get-customers";
 import { useAuth } from "@/auth/hooks/use-auth";
 import { formatDate } from "@/utils";
 
-import CustomerTable from "./components/customer-table/costumer-table";
+import CustomerTable from "./components/customer-table/customer-table";
 import ExportOrdersModal from "./components/export-orders-modal/export-orders-modal";
 
 import "react-day-picker/dist/style.css";
@@ -89,13 +89,13 @@ const Home = () => {
 
   const handleChange =
     (field: keyof typeof filters) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setFilters((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    };
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setFilters((prev) => ({
+          ...prev,
+          [field]: value,
+        }));
+      };
 
   const handleClear = (field: keyof typeof filters) => {
     setFilters((prev) => ({

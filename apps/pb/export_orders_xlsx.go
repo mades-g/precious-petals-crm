@@ -391,6 +391,7 @@ func writeProductionOverviewSheet(
 	leftHeaders := []string{
 		"Married name",
 		"Order no",
+		"Order status",
 		"Occasion date",
 		"Booking date",
 		"Required by date",
@@ -464,6 +465,7 @@ func writeProductionOverviewSheet(
 		leftValues := []any{
 			customer.name,
 			orderNoById[oid],
+			order.GetString("orderStatus"),
 			exportDateDMY(order.GetString("occasionDate")),
 			exportDateDMY(bookingDate),
 			exportDateDMY(requiredBy),

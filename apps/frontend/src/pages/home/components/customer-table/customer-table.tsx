@@ -35,7 +35,7 @@ const CustomerTable: FC<CustomerTableProps> = ({
   modalMode,
 }) => {
   const [currentFormStage, setCurrentFormStage] =
-    useState<FormStage>("costumer_data");
+    useState<FormStage>("customer_data");
 
   const [currentCustomerForm, setCurrentCustomerForm] =
     useState<Partial<CreateOrderFormValues> | null>(null);

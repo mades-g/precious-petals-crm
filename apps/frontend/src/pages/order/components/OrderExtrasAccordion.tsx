@@ -44,32 +44,32 @@ const orderExtrasRows: Array<{
   qtyKey?: keyof OrderExtrasDraft;
   priceKey?: keyof OrderExtrasDraft;
 }> = [
-  {
-    id: "replacement-flowers",
-    label: "Replacement flowers",
-    toggleKey: "replacementFlowers",
-    qtyKey: "replacementFlowersQty",
-    priceKey: "replacementFlowersPrice",
-  },
-  {
-    id: "collection",
-    label: "Collection",
-    qtyKey: "collectionQty",
-    priceKey: "collectionPrice",
-  },
-  {
-    id: "delivery",
-    label: "Delivery",
-    qtyKey: "deliveryQty",
-    priceKey: "deliveryPrice",
-  },
-  {
-    id: "return-unused-flowers",
-    label: "Return unused flowers",
-    toggleKey: "returnUnusedFlowers",
-    priceKey: "returnUnusedFlowersPrice",
-  },
-];
+    {
+      id: "replacement-flowers",
+      label: "Replacement flowers",
+      toggleKey: "replacementFlowers",
+      qtyKey: "replacementFlowersQty",
+      priceKey: "replacementFlowersPrice",
+    },
+    {
+      id: "collection",
+      label: "Collection",
+      qtyKey: "collectionQty",
+      priceKey: "collectionPrice",
+    },
+    {
+      id: "delivery",
+      label: "Delivery",
+      qtyKey: "deliveryQty",
+      priceKey: "deliveryPrice",
+    },
+    {
+      id: "return-unused-flowers",
+      label: "Return unused flowers",
+      toggleKey: "returnUnusedFlowers",
+      priceKey: "returnUnusedFlowersPrice",
+    },
+  ];
 
 const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
   orderExtras,
@@ -152,9 +152,13 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
                           {row.toggleKey ? (
                             <Checkbox
                               checked={Boolean(orderExtras[row.toggleKey])}
-                              onCheckedChange={(checked) =>
-                                onUpdateField(row.toggleKey!, Boolean(checked))
-                              }
+                              onCheckedChange={(checked) => {
+                                onUpdateField(row.toggleKey!, Boolean(checked));
+                                if (!checked) {
+                                  if (row.qtyKey) onUpdateField(row.qtyKey, null);
+                                  if (row.priceKey) onUpdateField(row.priceKey, null);
+                                }
+                              }}
                             />
                           ) : null}
                         </Table.Cell>

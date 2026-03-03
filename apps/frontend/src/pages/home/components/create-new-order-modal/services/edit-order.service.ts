@@ -296,7 +296,7 @@ export const editOrderStage = async ({
   currentCustomerForm,
 }: EditOrderStageArgs): Promise<SubmitResult> => {
   switch (stage) {
-    case "costumer_data":
+    case "customer_data":
       return editCustomerStage({ values, currentCustomerForm });
     case "bouquet_data":
       return editBouquetStage({ values, currentCustomerForm });

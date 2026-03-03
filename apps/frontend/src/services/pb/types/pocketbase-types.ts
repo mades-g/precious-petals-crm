@@ -30,8 +30,8 @@ export type HTMLString = string;
 
 export type ExpandType<T> = unknown extends T
   ? T extends unknown
-    ? { expand?: unknown }
-    : { expand: T }
+  ? { expand?: unknown }
+  : { expand: T }
   : { expand: T };
 
 /* -----------------------------------------------------------------------------
@@ -169,7 +169,9 @@ export type OrderFrameItemsLayoutOptions =
   | "Hand tied side profile"
   | "Hand tied side profile diagonal"
   | "Straight on shower or teardrop"
-  | "Meadow";
+  | "Meadow"
+  | "Blanket"
+  | "Other";
 
 export type OrderFrameItemsGlassTypeOptions =
   | "Clearview uv glass"
@@ -402,14 +404,14 @@ type ProcessCreateAndUpdateFields<T> = Omit<
   {
     // Omit AutoDate fields
     [K in keyof T as Extract<T[K], IsoAutoDateString> extends never
-      ? K
-      : never]: T[K] extends infer U // Convert FileNameString to File
-      ? U extends FileNameString | FileNameString[]
-        ? U extends unknown[]
-          ? File[]
-          : File
-        : U
-      : never;
+    ? K
+    : never]: T[K] extends infer U // Convert FileNameString to File
+    ? U extends FileNameString | FileNameString[]
+    ? U extends unknown[]
+    ? File[]
+    : File
+    : U
+    : never;
   },
   "id"
 >;
@@ -449,14 +451,14 @@ export type UpdateBase<T> = Partial<
 // Get the correct create type for any collection
 export type Create<T extends keyof CollectionResponses> =
   CollectionResponses[T] extends AuthSystemFields
-    ? CreateAuth<CollectionRecords[T]>
-    : CreateBase<CollectionRecords[T]>;
+  ? CreateAuth<CollectionRecords[T]>
+  : CreateBase<CollectionRecords[T]>;
 
 // Get the correct update type for any collection
 export type Update<T extends keyof CollectionResponses> =
   CollectionResponses[T] extends AuthSystemFields
-    ? UpdateAuth<CollectionRecords[T]>
-    : UpdateBase<CollectionRecords[T]>;
+  ? UpdateAuth<CollectionRecords[T]>
+  : UpdateBase<CollectionRecords[T]>;
 
 /* -----------------------------------------------------------------------------
  * TypedPocketBase helper

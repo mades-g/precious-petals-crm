@@ -52,12 +52,12 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
 
   const deliveryLines = orderDetails
     ? formatAddressLines({
-        line1: orderDetails.deliveryAddressLine1,
-        line2: orderDetails.deliveryAddressLine2,
-        town: orderDetails.deliveryTown,
-        county: orderDetails.deliveryCounty,
-        postcode: orderDetails.deliveryPostcode,
-      })
+      line1: orderDetails.deliveryAddressLine1,
+      line2: orderDetails.deliveryAddressLine2,
+      town: orderDetails.deliveryTown,
+      county: orderDetails.deliveryCounty,
+      postcode: orderDetails.deliveryPostcode,
+    })
     : [];
 
   const hasOrder = Boolean(orderDetails);
@@ -89,8 +89,8 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const hasFrames = Boolean(orderDetails?.frameOrder?.length);
   const framesComplete = orderDetails
     ? !hasFrames ||
-      (Boolean(orderDetails.artworkComplete) &&
-        Boolean(orderDetails.framingComplete))
+    (Boolean(orderDetails.artworkComplete) &&
+      Boolean(orderDetails.framingComplete))
     : false;
   const paperweightComplete = orderDetails?.paperWeightOrder
     ? Boolean(orderDetails.paperWeightOrder.paperweightReceived)
@@ -290,7 +290,7 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
               View order
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              onClick={() => onClick("costumer_data")}
+              onClick={() => onClick("customer_data")}
               disabled={isEditDisabled}
             >
               Edit customer data

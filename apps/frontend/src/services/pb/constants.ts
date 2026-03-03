@@ -97,6 +97,8 @@ export const FRAME_LAYOUT_OPTIONS: OrderFrameItemsLayoutOptions[] = [
   "Hand tied side profile diagonal",
   "Straight on shower or teardrop",
   "Meadow",
+  "Blanket",
+  "Other",
 ];
 
 export const FRAME_GLASS_TYPE_OPTIONS: OrderFrameItemsGlassTypeOptions[] = [
