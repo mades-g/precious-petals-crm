@@ -1,41 +1,28 @@
 import type { FC } from "react";
-import { Button, Flex } from "@radix-ui/themes";
-
-import InlineToggle from "./InlineToggle";
+import { Button } from "@radix-ui/themes";
 
 export type PaperweightItemActionsProps = {
   onEdit: () => void;
-  received: boolean;
-  onToggleReceived: (next: boolean) => void;
   disabled?: boolean;
 };
 
 const PaperweightItemActions: FC<PaperweightItemActionsProps> = ({
   onEdit,
-  received,
-  onToggleReceived,
   disabled,
 }) => {
   return (
-    <Flex direction="column" gap="2" align="start">
-      <Button
-        size="1"
-        variant="soft"
-        onClick={() => {
-          if (disabled) return;
-          onEdit();
-        }}
-        disabled={disabled}
-      >
-        Paperweight options
-      </Button>
-      <InlineToggle
-        label="Received"
-        checked={received}
-        onChange={onToggleReceived}
-        disabled={disabled}
-      />
-    </Flex>
+    <Button
+      size="2"
+      variant="solid"
+      onClick={() => {
+        if (disabled) return;
+        onEdit();
+      }}
+      disabled={disabled}
+      style={{ minWidth: 170, justifyContent: "center" }}
+    >
+      Paperweight options
+    </Button>
   );
 };
 

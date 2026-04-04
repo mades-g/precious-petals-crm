@@ -14,7 +14,8 @@ import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
 } from "@/services/pb/types";
-import { formatSnakeCase } from "@/utils";
+import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
+import { formatSnakeCase, todayDateOnly } from "@/utils";
 import { exportOrdersXlsx } from "@/api/export-orders";
 
 const PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
@@ -26,16 +27,8 @@ const PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
   "final_balance_paid",
 ];
 
-const ORDER_STATUS_OPTIONS: OrdersOrderStatusOptions[] = [
-  "in_progress",
-  "cancelled",
-  "ready",
-  "delivered",
-  "collected",
-];
-
 const buildFallbackFilename = () => {
-  const today = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const today = todayDateOnly().replaceAll("-", "");
   return `orders-export-${today}.xlsx`;
 };
 

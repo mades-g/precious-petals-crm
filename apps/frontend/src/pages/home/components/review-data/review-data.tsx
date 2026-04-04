@@ -2,6 +2,12 @@ import { type FC } from "react";
 import { useFormContext } from "react-hook-form";
 import { Box, Flex, Text, Separator, Button } from "@radix-ui/themes";
 
+import {
+  CLEARVIEW_GLASS_TYPE,
+  DEFAULT_FRAME_GLASS_TYPE,
+} from "@/services/pb/constants";
+import { formatCurrency, formatDate } from "@/utils";
+
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
 import ReviewDataRow from "../review-data-row/review-data-row";
 
@@ -22,10 +28,11 @@ const ReviewData: FC<ReviewDataProps> = ({
   const values = getValues();
 
   const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
+    const glassType = bq.glassType || DEFAULT_FRAME_GLASS_TYPE;
     const hasRequiredMountPrice =
       bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
     const hasRequiredGlassPrice =
-      bq.glassType !== "Clearview uv glass" ||
+      glassType !== CLEARVIEW_GLASS_TYPE ||
       typeof bq.glassPrice === "number";
 
     return (
@@ -39,7 +46,6 @@ const ReviewData: FC<ReviewDataProps> = ({
       typeof bq.framePrice === "number" &&
       bq.mountColour &&
       hasRequiredMountPrice &&
-      bq.glassType &&
       hasRequiredGlassPrice
     );
   };
@@ -57,9 +63,7 @@ const ReviewData: FC<ReviewDataProps> = ({
   );
   const paperweightQuantity = values.paperweightQuantity || 0;
   const paperweightPrice = values.paperweightPrice || 0;
-  const paperweightTotal = hasPaperweight
-    ? paperweightQuantity * paperweightPrice
-    : 0;
+  const paperweightTotal = hasPaperweight ? paperweightPrice : 0;
 
   const grandTotal = bouquetTotal + paperweightTotal;
 
@@ -144,7 +148,7 @@ const ReviewData: FC<ReviewDataProps> = ({
             )}
           </ReviewDataRow>
           <ReviewDataRow label="Occasion date">
-            {values.occasionDate}
+            {values.occasionDate ? formatDate(values.occasionDate) : "—"}
           </ReviewDataRow>
         </Flex>
       </Box>
@@ -199,13 +203,22 @@ const ReviewData: FC<ReviewDataProps> = ({
                     {bq.preservationType || "—"}
                   </ReviewDataRow>
                   <ReviewDataRow label="Preservation date">
-                    {bq.preservationDate || "—"}
+                    {bq.preservationDate
+                      ? formatDate(bq.preservationDate)
+                      : "—"}
                   </ReviewDataRow>
                   <ReviewDataRow label="Frame type">
                     {bq.frameType || "—"}
                   </ReviewDataRow>
                   <ReviewDataRow label="Mount colour">
                     {bq.mountColour || "—"}
+                  </ReviewDataRow>
+                  <ReviewDataRow label="Inclusions">
+                    {bq.inclusions === "Yes"
+                      ? bq.specialNotes.trim()
+                        ? `Yes - ${bq.specialNotes.trim()}`
+                        : "Yes"
+                      : bq.inclusions || "—"}
                   </ReviewDataRow>
                   <ReviewDataRow label="Frame price">
                     {typeof bq.framePrice === "number"
@@ -255,11 +268,8 @@ const ReviewData: FC<ReviewDataProps> = ({
             <ReviewDataRow label="Quantity">
               {paperweightQuantity || "—"}
             </ReviewDataRow>
-            <ReviewDataRow label="Price per unit">
-              {paperweightPrice ? `£${paperweightPrice.toFixed(2)}` : "—"}
-            </ReviewDataRow>
-            <ReviewDataRow label="Subtotal">
-              {paperweightTotal ? `£${paperweightTotal.toFixed(2)}` : "—"}
+            <ReviewDataRow label="Total price">
+              {formatCurrency(paperweightPrice) ?? "—"}
             </ReviewDataRow>
           </Flex>
         )}
@@ -281,7 +291,7 @@ const ReviewData: FC<ReviewDataProps> = ({
             {bouquetTotal ? `£${bouquetTotal.toFixed(2)}` : "£0.00"}
           </ReviewDataRow>
           <ReviewDataRow label="Paperweight total">
-            {paperweightTotal ? `£${paperweightTotal.toFixed(2)}` : "£0.00"}
+            {formatCurrency(paperweightTotal) ?? "£0.00"}
           </ReviewDataRow>
           <Separator orientation="horizontal" size="2" my="1" />
           <ReviewDataRow label="Grand total">

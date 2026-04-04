@@ -149,6 +149,8 @@ type invoicePayload struct {
 		CollectionPrice          Number `json:"collectionPrice"`
 		DeliveryQty              Number `json:"deliveryQty"`
 		DeliveryPrice            Number `json:"deliveryPrice"`
+		RecreateButtonholeQty    Number `json:"recreateButtonholeQty"`
+		RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
 		ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
 		ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`
 		ArtistHours              Number `json:"artistHours"`
@@ -164,6 +166,7 @@ type invoicePayload struct {
 		Layout           string `json:"layout"`
 		PreservationType string `json:"preservationType"`
 		Inclusions       string `json:"inclusions"`
+		SpecialNotes     string `json:"specialNotes"`
 		MountColour      string `json:"mountColour"`
 		GlassEngraving   string `json:"glassEngraving"`
 
@@ -254,6 +257,31 @@ func formatInvoiceNo(value *float64) string {
 	return strconv.FormatInt(int64(*value), 10)
 }
 
+func formatInvoiceFrameSize(recommendedSize, measuredSize, size string) string {
+	value := strings.TrimSpace(recommendedSize)
+	if value == "" {
+		value = strings.TrimSpace(measuredSize)
+	}
+	if value == "" {
+		value = strings.TrimSpace(size)
+	}
+	if value == "" {
+		return ""
+	}
+
+	value = strings.ReplaceAll(value, `"`, "")
+	value = strings.Join(strings.Fields(value), " ")
+
+	lowerValue := strings.ToLower(value)
+	if strings.Contains(lowerValue, "inch") {
+		return value
+	}
+	if strings.HasSuffix(lowerValue, " in") {
+		return strings.TrimSpace(value[:len(value)-3]) + " inches"
+	}
+	return value + " inches"
+}
+
 func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 	rows := []invoiceRow{}
 	itemIndex := 1
@@ -267,18 +295,13 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 		}
 
 		descriptionParts := []string{"Picture"}
-		size := strings.TrimSpace(frame.RecommendedSize)
-		if size == "" {
-			size = strings.TrimSpace(frame.Size)
-		}
-		if size == "" {
-			size = strings.TrimSpace(frame.MeasuredSize)
-		}
+		size := formatInvoiceFrameSize(
+			frame.RecommendedSize,
+			frame.MeasuredSize,
+			frame.Size,
+		)
 		if size != "" {
 			descriptionParts = append(descriptionParts, size)
-		}
-		if frame.Layout != "" {
-			descriptionParts = append(descriptionParts, frame.Layout)
 		}
 		if frame.FrameType != "" {
 			descriptionParts = append(descriptionParts, frame.FrameType)
@@ -303,17 +326,13 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 			mountColour := strings.TrimSpace(frame.MountColour)
 
 			if frame.Extras.MountPrice.Float64() != nil && *frame.Extras.MountPrice.Float64() > 0 {
-				mountSuffix := ""
-				if frame.Inclusions == "Buttonhole" {
-					mountSuffix = " - Buttonhole"
-				}
-				mountLabel := "Mount"
+				mountLabel := "Additional Mount"
 				if mountColour != "" {
-					mountLabel = fmt.Sprintf("Mount - %s", mountColour)
+					mountLabel = fmt.Sprintf("Additional Mount - %s", mountColour)
 				}
 				rows = append(rows, invoiceRow{
 					ItemLabel:   "",
-					Description: mountLabel + mountSuffix,
+					Description: mountLabel,
 					Amount:      formatMoney(*frame.Extras.MountPrice.Float64()),
 					IsSubItem:   true,
 				})
@@ -378,27 +397,19 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 		}
 
 		if extras.ReplacementFlowers || extras.ReplacementFlowersQty.Float64() != nil || extras.ReplacementFlowersPrice.Float64() != nil {
-			qtyPart := ""
-			if extras.ReplacementFlowersQty.Float64() != nil {
-				qtyPart = fmt.Sprintf(" - Qty %.0f", *extras.ReplacementFlowersQty.Float64())
-			}
-			pushOtherRow(fmt.Sprintf("Replacement flowers%s", qtyPart), extras.ReplacementFlowersPrice.Float64())
+			pushOtherRow("Replacement flowers", extras.ReplacementFlowersPrice.Float64())
 		}
 
 		if extras.CollectionQty.Float64() != nil || extras.CollectionPrice.Float64() != nil {
-			qtyPart := ""
-			if extras.CollectionQty.Float64() != nil {
-				qtyPart = fmt.Sprintf(" - Qty %.0f", *extras.CollectionQty.Float64())
-			}
-			pushOtherRow(fmt.Sprintf("Collection%s", qtyPart), extras.CollectionPrice.Float64())
+			pushOtherRow("Collection", extras.CollectionPrice.Float64())
 		}
 
 		if extras.DeliveryQty.Float64() != nil || extras.DeliveryPrice.Float64() != nil {
-			qtyPart := ""
-			if extras.DeliveryQty.Float64() != nil {
-				qtyPart = fmt.Sprintf(" - Qty %.0f", *extras.DeliveryQty.Float64())
-			}
-			pushOtherRow(fmt.Sprintf("Delivery%s", qtyPart), extras.DeliveryPrice.Float64())
+			pushOtherRow("Delivery", extras.DeliveryPrice.Float64())
+		}
+
+		if extras.RecreateButtonholeQty.Float64() != nil || extras.RecreateButtonholePrice.Float64() != nil {
+			pushOtherRow("Recreate buttonhole", extras.RecreateButtonholePrice.Float64())
 		}
 
 		if extras.ReturnUnusedFlowers || extras.ReturnUnusedFlowersPrice.Float64() != nil {
@@ -407,6 +418,67 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 	}
 
 	return rows
+}
+
+func buildInvoiceNotes(payload invoicePayload) string {
+	lines := []string{}
+	seen := map[string]struct{}{}
+
+	normalizeInclusionDetails := func(value string) string {
+		parts := strings.FieldsFunc(value, func(r rune) bool {
+			return r == '\n' || r == '\r'
+		})
+		normalized := make([]string, 0, len(parts))
+		for _, part := range parts {
+			trimmed := strings.TrimSpace(part)
+			if trimmed == "" {
+				continue
+			}
+			normalized = append(normalized, trimmed)
+		}
+		return strings.Join(normalized, ", ")
+	}
+
+	registerSeenLines := func(value string) {
+		for _, part := range strings.Split(value, "\n") {
+			trimmed := strings.TrimSpace(part)
+			if trimmed == "" {
+				continue
+			}
+			seen[trimmed] = struct{}{}
+		}
+	}
+
+	appendLine := func(value string) {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			return
+		}
+		if _, exists := seen[trimmed]; exists {
+			return
+		}
+		seen[trimmed] = struct{}{}
+		lines = append(lines, trimmed)
+	}
+
+	if payload.OrderExtras != nil && strings.TrimSpace(payload.OrderExtras.Notes) != "" {
+		notes := strings.TrimSpace(payload.OrderExtras.Notes)
+		lines = append(lines, notes)
+		registerSeenLines(notes)
+	}
+
+	for _, frame := range payload.Frames {
+		switch strings.TrimSpace(frame.Inclusions) {
+		case "Buttonhole":
+			appendLine("Include: Buttonhole")
+		case "Yes":
+			if details := normalizeInclusionDetails(frame.SpecialNotes); details != "" {
+				appendLine(fmt.Sprintf("Include: %s", details))
+			}
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDataURI string, showFooter bool) invoiceViewModel {
@@ -441,11 +513,6 @@ func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDat
 		address = "-"
 	}
 
-	notes := ""
-	if payload.OrderExtras != nil && strings.TrimSpace(payload.OrderExtras.Notes) != "" {
-		notes = strings.TrimSpace(payload.OrderExtras.Notes)
-	}
-
 	occasionDate := formatDate(string(payload.Order.OccasionDate))
 
 	return invoiceViewModel{
@@ -457,7 +524,7 @@ func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDat
 		FooterDataURI: strings.TrimSpace(footerDataURI),
 		ShowFooter:    showFooter,
 		Rows:          buildInvoiceRows(payload),
-		Notes:         notes,
+		Notes:         buildInvoiceNotes(payload),
 		SubTotal:      formatMoney(payload.Totals.SubTotal),
 		VatTotal:      formatMoney(payload.Totals.VatTotal),
 		GrandTotal:    formatMoney(payload.Totals.GrandTotal),

@@ -11,6 +11,8 @@ import {
   TextArea,
 } from "@radix-ui/themes";
 
+import { formatDateTime } from "@/utils";
+
 import type {
   EmailActionConfig,
   EmailActionStatus,
@@ -37,6 +39,78 @@ const statusColor = (status?: string) => {
   if (status === "failed") return "red";
   if (status === "attempted") return "yellow";
   return "gray";
+};
+
+const statusLabel = (status?: string) => {
+  if (status === "sent") return "Sent";
+  if (status === "failed") return "Failed";
+  if (status === "attempted") return "Attempted";
+  return "Logged";
+};
+
+const getEmailActionLabel = (log: EmailLogEntry) => {
+  const emailType = log.emailType?.trim();
+  const eventType = log.eventType?.trim();
+
+  if (
+    eventType === "bouquet_recommendation" ||
+    emailType === "recommendation_bouquet"
+  ) {
+    return "Recommendation email";
+  }
+
+  if (eventType === "invoice" || emailType === "invoice") {
+    return "Invoice email";
+  }
+
+  if (eventType === "delivery_collect" || emailType === "delivery_collect") {
+    return "Ready for collection/delivery email";
+  }
+
+  if (emailType === "recommendation_paperweight") {
+    return "Paperweight recommendation email";
+  }
+
+  if (eventType === "status_update") {
+    return "Status update email";
+  }
+
+  if (eventType === "comment") {
+    return "Comment email";
+  }
+
+  return "Email";
+};
+
+const getRecipientLabel = (log: EmailLogEntry) => {
+  const toName = log.toName?.trim();
+  const toEmail = log.toEmail?.trim();
+
+  if (toName && toEmail) {
+    return `${toName} <${toEmail}>`;
+  }
+
+  return toName || toEmail || "";
+};
+
+const looksLikePocketBaseId = (value: string) => /^[a-z0-9]{15}$/i.test(value);
+
+const getSentByLabel = (log: EmailLogEntry) => {
+  const expandedUser = log.expand?.sentBy;
+  const expandedName = expandedUser?.name?.trim();
+  const expandedEmail = expandedUser?.email?.trim();
+
+  if (expandedName && expandedEmail) {
+    return `${expandedName} <${expandedEmail}>`;
+  }
+
+  if (expandedName) return expandedName;
+  if (expandedEmail) return expandedEmail;
+
+  const sentBy = log.sentBy?.trim();
+  if (!sentBy || looksLikePocketBaseId(sentBy)) return "";
+
+  return sentBy;
 };
 
 const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
@@ -187,46 +261,64 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
               </Text>
             ) : (
               <Flex direction="column" gap="2">
-                {logs.map((log) => (
-                  <Box
-                    key={log.id}
-                    style={{
-                      border: "1px solid var(--gray-a5)",
-                      borderRadius: 8,
-                      padding: 10,
-                    }}
-                  >
-                    <Flex align="center" gap="2" wrap="wrap">
-                      <Badge color={statusColor(log.status)} variant="soft">
-                        {log.status ?? "unknown"}
-                      </Badge>
-                      <Text size="2">
-                        {log.emailType || "email"}
-                        {log.eventType ? ` / ${log.eventType}` : ""}
-                      </Text>
-                    </Flex>
-                    {log.subject ? (
-                      <Text size="2" color="gray">
-                        Subject: {log.subject}
-                      </Text>
-                    ) : null}
-                    {log.sentAt ? (
-                      <Text size="2" color="gray">
-                        Sent: {log.sentAt}
-                      </Text>
-                    ) : null}
-                    {log.sentBy ? (
-                      <Text size="2" color="gray">
-                        By: {log.sentBy}
-                      </Text>
-                    ) : null}
-                    {log.error ? (
-                      <Text size="2" color="red">
-                        Error: {log.error}
-                      </Text>
-                    ) : null}
-                  </Box>
-                ))}
+                {logs.map((log) => {
+                  const recipientLabel = getRecipientLabel(log);
+                  const sentByLabel = getSentByLabel(log);
+
+                  return (
+                    <Box
+                      key={log.id}
+                      style={{
+                        border: "1px solid var(--gray-a5)",
+                        borderRadius: 8,
+                        padding: 10,
+                      }}
+                    >
+                      <Flex align="center" justify="between" gap="2" wrap="wrap">
+                        <Flex align="center" gap="2" wrap="wrap">
+                          <Badge color={statusColor(log.status)} variant="soft">
+                            {statusLabel(log.status)}
+                          </Badge>
+                          <Text size="2" weight="medium">
+                            {getEmailActionLabel(log)}
+                          </Text>
+                        </Flex>
+                        {log.sentAt ? (
+                          <Text size="1" color="gray">
+                            {formatDateTime(log.sentAt)}
+                          </Text>
+                        ) : null}
+                      </Flex>
+                      <Flex direction="column" gap="1" mt="1">
+                        {recipientLabel ? (
+                          <Text size="2" color="gray">
+                            To: {recipientLabel}
+                          </Text>
+                        ) : null}
+                        {log.subject ? (
+                          <Text size="2" color="gray">
+                            Subject: {log.subject}
+                          </Text>
+                        ) : null}
+                        {log.eventNote?.trim() ? (
+                          <Text size="2" color="gray">
+                            Note: {log.eventNote.trim()}
+                          </Text>
+                        ) : null}
+                        {sentByLabel ? (
+                          <Text size="2" color="gray">
+                            Sent by: {sentByLabel}
+                          </Text>
+                        ) : null}
+                        {log.error ? (
+                          <Text size="2" color="red">
+                            Error: {log.error}
+                          </Text>
+                        ) : null}
+                      </Flex>
+                    </Box>
+                  );
+                })}
               </Flex>
             )}
           </Box>

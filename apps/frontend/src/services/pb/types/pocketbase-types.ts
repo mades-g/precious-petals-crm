@@ -235,10 +235,12 @@ export type OrdersPaymentStatusOptions =
   | "final_balance_paid";
 
 export type OrdersOrderStatusOptions =
+  | "draft"
+  | "to_choose"
+  | "chosen"
   | "in_progress"
   | "ready"
-  | "delivered"
-  | "collected"
+  | "left_the_studio"
   | "cancelled";
 
 export type OrdersRecord = {

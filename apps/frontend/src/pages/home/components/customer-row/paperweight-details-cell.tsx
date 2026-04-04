@@ -15,9 +15,8 @@ export const PaperweightDetailsCell: FC<{
   const qtyLabel =
     quantity === 1 ? "1 paperweight" : `${quantity} paperweights`;
 
-  // Make meta line consistent with frame meta style
   const meta = [
-    formatCurrency(price),
+    typeof price === "number" ? `Total: ${formatCurrency(price)}` : null,
     typeof paperweightReceived === "boolean"
       ? `Received: ${paperweightReceived ? "Yes" : "No"}`
       : null,

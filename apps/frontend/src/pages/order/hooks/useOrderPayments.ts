@@ -11,6 +11,7 @@ import { COLLECTIONS } from "@/services/pb/constants";
 import type {
   OrderPaymentsPaymentTypeOptions,
   OrdersPaymentStatusOptions,
+  OrdersOrderStatusOptions,
   Update,
 } from "@/services/pb/types";
 
@@ -41,45 +42,73 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
     queryClient.invalidateQueries({ queryKey: ["customers"] });
   };
 
+  const updateOrderAfterPayment = async (payload: {
+    paymentType: OrderPaymentsPaymentTypeOptions;
+    requiredBy?: string;
+    artistHours?: number;
+    currentOrderStatus?: OrdersOrderStatusOptions;
+  }) => {
+    if (!orderId) {
+      throw new Error("Missing order ID");
+    }
+
+    const updatePayload: Update<"orders"> = {};
+    const nextPaymentStatus = PAYMENT_STATUS_BY_TYPE[payload.paymentType];
+    if (nextPaymentStatus) {
+      updatePayload.payment_status = nextPaymentStatus;
+    }
+
+    if (
+      payload.paymentType === "second_deposit" &&
+      (payload.currentOrderStatus === "draft" ||
+        payload.currentOrderStatus === "to_choose")
+    ) {
+      updatePayload.orderStatus = "chosen";
+    }
+
+    if (
+      payload.paymentType === "second_deposit" &&
+      payload.requiredBy &&
+      payload.requiredBy.trim() !== ""
+    ) {
+      updatePayload.requiredBy = payload.requiredBy.trim();
+    }
+
+    if (
+      payload.paymentType === "second_deposit" &&
+      typeof payload.artistHours === "number"
+    ) {
+      updatePayload.artistHours = payload.artistHours;
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return;
+    }
+
+    await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
+  };
+
   const { mutateAsync: addPayment, isPending: isSavingPayment } = useMutation({
     mutationFn: async (
       payload: CreateOrderPaymentDraft & {
         requiredBy?: string;
         artistHours?: number;
+        currentOrderStatus?: OrdersOrderStatusOptions;
       },
     ) => {
       if (!orderId) {
         throw new Error("Missing order ID");
       }
 
-      const { requiredBy, artistHours, ...paymentPayload } = payload;
+      const { requiredBy, artistHours, currentOrderStatus, ...paymentPayload } =
+        payload;
       const payment = await createOrderPayment({ ...paymentPayload, orderId });
-      const nextStatus = PAYMENT_STATUS_BY_TYPE[payload.paymentType];
-      if (nextStatus) {
-        const updatePayload: Update<"orders"> = {
-          payment_status: nextStatus,
-        };
-        await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
-      }
-      if (
-        payload.paymentType === "second_deposit" &&
-        requiredBy &&
-        requiredBy.trim() !== ""
-      ) {
-        const updatePayload: Update<"orders"> = {
-          requiredBy: requiredBy.trim(),
-        };
-        await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
-      }
-      if (
-        payload.paymentType === "second_deposit" &&
-        typeof artistHours === "number"
-      ) {
-        const updatePayload: Update<"orders"> = {
-          artistHours,
-        };
-        await pb.collection(COLLECTIONS.ORDERS).update(orderId, updatePayload);
-      }
+      await updateOrderAfterPayment({
+        paymentType: payload.paymentType,
+        requiredBy,
+        artistHours,
+        currentOrderStatus,
+      });
 
       return payment;
     },
@@ -93,36 +122,25 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
         data: CreateOrderPaymentDraft & {
           requiredBy?: string;
           artistHours?: number;
+          currentOrderStatus?: OrdersOrderStatusOptions;
         };
       }) => {
         if (!orderId) {
           throw new Error("Missing order ID");
         }
-        const { requiredBy, artistHours, ...paymentData } = payload.data;
+        const {
+          requiredBy,
+          artistHours,
+          currentOrderStatus,
+          ...paymentData
+        } = payload.data;
         const updated = await updateOrderPayment(payload.id, paymentData);
-        if (
-          payload.data.paymentType === "second_deposit" &&
-          requiredBy &&
-          requiredBy.trim() !== ""
-        ) {
-          const updatePayload: Update<"orders"> = {
-            requiredBy: requiredBy.trim(),
-          };
-          await pb
-            .collection(COLLECTIONS.ORDERS)
-            .update(orderId, updatePayload);
-        }
-        if (
-          payload.data.paymentType === "second_deposit" &&
-          typeof artistHours === "number"
-        ) {
-          const updatePayload: Update<"orders"> = {
-            artistHours,
-          };
-          await pb
-            .collection(COLLECTIONS.ORDERS)
-            .update(orderId, updatePayload);
-        }
+        await updateOrderAfterPayment({
+          paymentType: payload.data.paymentType,
+          requiredBy,
+          artistHours,
+          currentOrderStatus,
+        });
         return updated;
       },
       onSuccess: invalidate,

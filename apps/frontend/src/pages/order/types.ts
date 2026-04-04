@@ -16,9 +16,18 @@ export type OrderExtrasDraft = {
   collectionPrice: number | null;
   deliveryQty: number | null;
   deliveryPrice: number | null;
+  recreateButtonholeQty: number | null;
+  recreateButtonholePrice: number | null;
   returnUnusedFlowers: boolean;
   returnUnusedFlowersPrice: number | null;
   notes: string;
+};
+
+export type FrameGlassDraft = {
+  frameId: string;
+  label: string;
+  clearviewEnabled: boolean;
+  price: number | null;
 };
 
 export type StatusControl<T extends string> = {
@@ -96,26 +105,37 @@ export type EmailLogEntry = {
   sentAt?: string;
   error?: string;
   sentBy?: string;
+  toEmail?: string;
+  toName?: string;
+  eventNote?: string;
+  templateKey?: string;
+  expand?: {
+    sentBy?: {
+      id?: string;
+      email?: string;
+      name?: string;
+    };
+  };
 };
 
 export const EMAIL_ACTIONS: EmailActionConfig[] = [
   {
+    key: "recommendation",
+    label: "Send recommendation",
+    description: "Send recommendations to customer.",
+    endpoint: "recommendation",
+    emailType: "recommendation_bouquet",
+    eventType: "bouquet_recommendation",
+    templateKey: "email.recommendation",
+  },
+  {
     key: "invoice",
-    label: "Send SSD invoice",
+    label: "Send invoice",
     description: "Email the latest invoice PDF to the customer.",
     endpoint: "invoice",
     emailType: "invoice",
     eventType: "invoice",
     templateKey: "email.invoice",
-  },
-  {
-    key: "recommendation",
-    label: "Send recommendation",
-    description: "Send the bouquet recommendation email.",
-    endpoint: "recommendation",
-    emailType: "recommendation_bouquet",
-    eventType: "bouquet_recommendation",
-    templateKey: "email.recommendation",
   },
   {
     key: "delivery_collect",

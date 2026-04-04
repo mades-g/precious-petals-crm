@@ -48,16 +48,11 @@ export const FrameDetailsCell: FC<{
 
   // Mount
   if (mountDetail || (typeof mountPrice === "number" && mountPrice > 0)) {
-    lines.push(formatAddon("Mount", mountDetail, mountPrice));
+    lines.push(formatAddon("Additional Mount", mountDetail, mountPrice));
   }
 
   if (inclusions === "Buttonhole") {
-    const mountIndex = lines.findIndex((line) => line.startsWith("Mount"));
-    if (mountIndex >= 0) {
-      lines[mountIndex] = `${lines[mountIndex]} · Buttonhole`;
-    } else {
-      lines.push("Buttonhole");
-    }
+    lines.push("Buttonhole");
   }
 
   // Engraving

@@ -42,31 +42,33 @@ const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {
 
   return (
     <Flex gap="3" direction="column" justify="start">
-      <Flex gap="3" justify="between" direction="row">
+      {!hasPaperweight ? (
         <Flex justify="between" align="center" gap="2" width="100%">
-          {!hasPaperweight && (
-            <Text size="2" color="gray">
-              No paperweight will be included with this order. Click{" "}
-              <Text as="span" weight="bold">
-                “Add paperweight”
-              </Text>{" "}
-              if you would like to include one.
-            </Text>
-          )}
+          <Text size="2" color="gray">
+            No paperweight will be included with this order. Click{" "}
+            <Text as="span" weight="bold">
+              “Add paperweight”
+            </Text>{" "}
+            if you would like to include one.
+          </Text>
           <Button type="button" size="1" onClick={handleTogglePaperweight}>
-            {hasPaperweight ? "Remove" : "Add"} Paperweight
+            Add Paperweight
           </Button>
         </Flex>
+      ) : (
+        <Flex gap="3" justify="between" align="start" wrap="wrap">
+          <Button type="button" size="1" onClick={handleTogglePaperweight}>
+            Remove Paperweight
+          </Button>
 
-        {hasPaperweight && (
-          <>
-            <Box>
+          <Flex gap="3" align="start" justify="end" wrap="wrap">
+            <Box style={{ width: 220 }}>
               <Form.Field
                 name="paperweightQuantity"
                 className={formStyles.field}
               >
                 <Form.Label className={formStyles.label} asChild>
-                  <Text>
+                  <Text style={{ whiteSpace: "nowrap" }}>
                     <Text color="red">*</Text> Quantity
                   </Text>
                 </Form.Label>
@@ -75,6 +77,7 @@ const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {
                     type="number"
                     min="0"
                     step="1"
+                    style={{ width: "100%" }}
                     {...register("paperweightQuantity", {
                       valueAsNumber: true,
                       required: "Quantity is required",
@@ -90,11 +93,11 @@ const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {
               </Form.Field>
             </Box>
 
-            <Box>
+            <Box style={{ width: 220 }}>
               <Form.Field name="paperweightPrice" className={formStyles.field}>
                 <Form.Label className={formStyles.label} asChild>
-                  <Text>
-                    <Text color="red">*</Text> Price (£)
+                  <Text style={{ whiteSpace: "nowrap" }}>
+                    <Text color="red">*</Text> Total price (£)
                   </Text>
                 </Form.Label>
                 <Form.Control asChild>
@@ -103,9 +106,10 @@ const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {
                     min="0"
                     step="0.01"
                     className={formStyles.input}
+                    style={{ width: "100%" }}
                     {...register("paperweightPrice", {
                       valueAsNumber: true,
-                      required: "Price is required",
+                      required: "Total price is required",
                     })}
                   />
                 </Form.Control>
@@ -116,9 +120,9 @@ const PaperWeightData: FC<PaperWeightDataProps> = ({ mode }) => {
                 )}
               </Form.Field>
             </Box>
-          </>
-        )}
-      </Flex>
+          </Flex>
+        </Flex>
+      )}
       {mode === "edit" && hasPaperweight && (
         <Flex align="start" justify="center" mb="3">
           <Form.Field name="paperweightReceived" className={formStyles.field}>

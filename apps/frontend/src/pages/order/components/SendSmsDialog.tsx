@@ -6,13 +6,11 @@ import {
   Flex,
   Grid,
   Heading,
-  IconButton,
   Select,
   Text,
   TextArea,
   TextField,
 } from "@radix-ui/themes";
-import { EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons";
 
 import type { SmsType } from "@/api/send-sms";
 
@@ -193,18 +191,14 @@ const SendSmsDialog: FC<SendSmsDialogProps> = ({
                 <Text size="1" color="gray">
                   {message.length} chars · {segments} segments
                 </Text>
-                <IconButton
+                <Button
                   size="1"
                   variant="soft"
                   onClick={() => setIsPreview((prev) => !prev)}
                   title={isPreview ? "Edit message" : "Preview message"}
                 >
-                  {isPreview ? (
-                    <EyeClosedIcon width="14" height="14" />
-                  ) : (
-                    <EyeOpenIcon width="14" height="14" />
-                  )}
-                </IconButton>
+                  {isPreview ? "Edit" : "Preview"}
+                </Button>
               </Flex>
             </Flex>
             {isPreview ? (

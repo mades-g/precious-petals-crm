@@ -14,11 +14,12 @@ import {
 import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 
-import type { OrderExtrasDraft } from "../types";
+import type { FrameGlassDraft, OrderExtrasDraft } from "../types";
 import orderPageStyles from "../order.module.css";
 
 export type OrderExtrasAccordionProps = {
   orderExtras: OrderExtrasDraft;
+  frameGlassDrafts: FrameGlassDraft[];
   summary: string[];
   open: boolean;
   onOpenChange: (next: boolean) => void;
@@ -26,15 +27,21 @@ export type OrderExtrasAccordionProps = {
     key: keyof OrderExtrasDraft,
     value: OrderExtrasDraft[keyof OrderExtrasDraft],
   ) => void;
+  onUpdateFrameGlass: (
+    frameId: string,
+    changes: Partial<Pick<FrameGlassDraft, "clearviewEnabled" | "price">>,
+  ) => void;
   onSave: () => void;
   isSaving: boolean;
+  error?: string | null;
 };
 
 const parseNumberInput = (value: string) => {
   const trimmed = value.trim();
   if (trimmed === "") return null;
   const parsed = Number(trimmed);
-  return Number.isNaN(parsed) ? null : parsed;
+  if (Number.isNaN(parsed)) return null;
+  return parsed < 0 ? 0 : parsed;
 };
 
 const orderExtrasRows: Array<{
@@ -64,6 +71,12 @@ const orderExtrasRows: Array<{
       priceKey: "deliveryPrice",
     },
     {
+      id: "recreate-buttonhole",
+      label: "Recreate buttonhole",
+      qtyKey: "recreateButtonholeQty",
+      priceKey: "recreateButtonholePrice",
+    },
+    {
       id: "return-unused-flowers",
       label: "Return unused flowers",
       toggleKey: "returnUnusedFlowers",
@@ -73,12 +86,15 @@ const orderExtrasRows: Array<{
 
 const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
   orderExtras,
+  frameGlassDrafts,
   summary,
   open,
   onOpenChange,
   onUpdateField,
+  onUpdateFrameGlass,
   onSave,
   isSaving,
+  error,
 }) => {
   return (
     <Accordion.Root
@@ -135,53 +151,41 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
                   <Table.Row>
                     <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
                     <Table.ColumnHeaderCell>Y / N</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
                     <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
                   {orderExtrasRows.map((row) => {
+                    const qtyValue = row.qtyKey ? orderExtras[row.qtyKey] : null;
                     const isEnabled = row.toggleKey
                       ? Boolean(orderExtras[row.toggleKey])
-                      : true;
+                      : row.qtyKey
+                        ? typeof qtyValue === "number" && qtyValue > 0
+                        : row.priceKey
+                          ? orderExtras[row.priceKey] != null
+                          : true;
 
                     return (
                       <Table.Row key={row.id}>
                         <Table.Cell>{row.label}</Table.Cell>
                         <Table.Cell>
-                          {row.toggleKey ? (
-                            <Checkbox
-                              checked={Boolean(orderExtras[row.toggleKey])}
-                              onCheckedChange={(checked) => {
-                                onUpdateField(row.toggleKey!, Boolean(checked));
-                                if (!checked) {
-                                  if (row.qtyKey) onUpdateField(row.qtyKey, null);
-                                  if (row.priceKey) onUpdateField(row.priceKey, null);
-                                }
-                              }}
-                            />
-                          ) : null}
-                        </Table.Cell>
-                        <Table.Cell>
-                          {row.qtyKey ? (
-                            <TextField.Root
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={
-                                orderExtras[row.qtyKey] == null
-                                  ? ""
-                                  : String(orderExtras[row.qtyKey])
+                          <Checkbox
+                            checked={isEnabled}
+                            onCheckedChange={(checked) => {
+                              const enabled = Boolean(checked);
+
+                              if (row.toggleKey) {
+                                onUpdateField(row.toggleKey, enabled);
+                              } else if (row.qtyKey) {
+                                onUpdateField(row.qtyKey, enabled ? 1 : null);
                               }
-                              onChange={(event) =>
-                                onUpdateField(
-                                  row.qtyKey!,
-                                  parseNumberInput(event.target.value),
-                                )
+
+                              if (!enabled) {
+                                if (row.qtyKey) onUpdateField(row.qtyKey, null);
+                                if (row.priceKey) onUpdateField(row.priceKey, null);
                               }
-                              disabled={!isEnabled}
-                            />
-                          ) : null}
+                            }}
+                          />
                         </Table.Cell>
                         <Table.Cell>
                           {row.priceKey ? (
@@ -209,6 +213,69 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
                   })}
                 </Table.Body>
               </Table.Root>
+
+              {frameGlassDrafts.length > 0 ? (
+                <Box>
+                  <Flex direction="column" gap="1" mb="2">
+                    <Heading size="3">Glass upgrades</Heading>
+                    <Text size="1" color="gray">
+                      Conservation glass is the default. Enable Clearview UV
+                      glass only where needed.
+                    </Text>
+                  </Flex>
+                  <Table.Root variant="surface">
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.ColumnHeaderCell>Bouquet</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell>
+                          Clearview UV glass
+                        </Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {frameGlassDrafts.map((draft) => (
+                        <Table.Row key={draft.frameId}>
+                          <Table.Cell>{draft.label}</Table.Cell>
+                          <Table.Cell>
+                            <Checkbox
+                              checked={draft.clearviewEnabled}
+                              onCheckedChange={(checked) =>
+                                onUpdateFrameGlass(draft.frameId, {
+                                  clearviewEnabled: Boolean(checked),
+                                  ...(checked ? {} : { price: null }),
+                                })
+                              }
+                            />
+                          </Table.Cell>
+                          <Table.Cell>
+                            <TextField.Root
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={
+                                draft.price == null ? "" : String(draft.price)
+                              }
+                              onChange={(event) =>
+                                onUpdateFrameGlass(draft.frameId, {
+                                  price: parseNumberInput(event.target.value),
+                                })
+                              }
+                              disabled={!draft.clearviewEnabled}
+                            />
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
+                    </Table.Body>
+                  </Table.Root>
+                </Box>
+              ) : null}
+
+              {error ? (
+                <Text size="2" color="red">
+                  {error}
+                </Text>
+              ) : null}
 
               <Box>
                 <Text size="2" weight="medium" mb="1">

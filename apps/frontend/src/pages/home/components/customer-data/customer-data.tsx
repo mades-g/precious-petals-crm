@@ -12,12 +12,13 @@ import {
 } from "@radix-ui/themes";
 import { useFormContext, Controller } from "react-hook-form";
 import { DayPicker } from "react-day-picker";
+import { enGB } from "react-day-picker/locale";
 
 import {
   CUSTOMERS_HOW_RECOMMENDED_OPTIONS,
   CUSTOMERS_TITLE_OPTIONS,
 } from "@/services/pb/constants";
-import { formatDate } from "@/utils";
+import { formatDate, parseDateOnly, toDateOnlyValue } from "@/utils";
 
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
 import formStyles from "../../form.module.css";
@@ -502,14 +503,13 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                     </Popover.Trigger>
                     <Popover.Content>
                       <DayPicker
+                        locale={enGB}
                         mode="single"
                         selected={
-                          field.value ? new Date(field.value) : undefined
+                          field.value ? parseDateOnly(field.value) : undefined
                         }
                         onSelect={(date) => {
-                          const iso = date
-                            ? date.toISOString().slice(0, 10)
-                            : "";
+                          const iso = date ? toDateOnlyValue(date) : "";
                           field.onChange(iso);
                         }}
                       />

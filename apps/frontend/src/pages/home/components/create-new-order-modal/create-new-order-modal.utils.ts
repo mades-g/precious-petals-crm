@@ -1,4 +1,5 @@
 import { formatSnakeCase } from "@/utils";
+import { DEFAULT_FRAME_GLASS_TYPE } from "@/services/pb/constants";
 
 import type { NormalisedCustomer } from "@/api/get-customers";
 
@@ -16,6 +17,9 @@ export const getModalTitle = (
   let titlePart = "Create new";
 
   if (mode === "edit" && currentCustomerForm) {
+    if (formStage === "customer_data") {
+      titlePart = "Edit existing";
+    }
     if (
       formStage === "paperweight_data" &&
       currentCustomerForm.hasPaperweight
@@ -78,9 +82,10 @@ export const buildCustomerFormDefaults = (
         mountPrice: extras?.mountPrice ?? null,
         glassEngraving: frameOrder.glassEngraving ?? "",
         glassEngravingPrice: extras?.glassEngravingPrice ?? null,
-        glassType: frameOrder.glassType ?? "",
+        glassType: frameOrder.glassType ?? DEFAULT_FRAME_GLASS_TYPE,
         glassPrice: extras?.glassPrice ?? null,
         inclusions: frameOrder.inclusions ?? "",
+        specialNotes: frameOrder.specialNotes ?? "",
         mountColour: frameOrder.mountColour,
       };
     }),

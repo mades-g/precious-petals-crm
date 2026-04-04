@@ -13,10 +13,11 @@ import {
 } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
 import { DayPicker } from "react-day-picker";
+import { enGB } from "react-day-picker/locale";
 
 import { getCustomers, type GetCustomersParams } from "@/api/get-customers";
 import { useAuth } from "@/auth/hooks/use-auth";
-import { formatDate } from "@/utils";
+import { formatDate, parseDateOnly, toDateOnlyValue } from "@/utils";
 
 import CustomerTable from "./components/customer-table/customer-table";
 import ExportOrdersModal from "./components/export-orders-modal/export-orders-modal";
@@ -114,8 +115,7 @@ const Home = () => {
    *  - Create wrapper component for each search type
    */
   return (
-    <Flex mx="auto" pt="4">
-      <Box maxWidth="90vw" minWidth="90vw">
+    <Box width="100%">
         <Card>
           <Flex gap="2" direction="column">
             <Flex gap="9">
@@ -244,14 +244,15 @@ const Home = () => {
 
                         <Popover.Content>
                           <DayPicker
+                            locale={enGB}
                             mode="single"
                             selected={
-                              occasionDate ? new Date(occasionDate) : undefined
+                              occasionDate
+                                ? parseDateOnly(occasionDate)
+                                : undefined
                             }
                             onSelect={(date) => {
-                              const iso = date
-                                ? date.toISOString().slice(0, 10)
-                                : "";
+                              const iso = date ? toDateOnlyValue(date) : "";
                               setFilters((prev) => ({
                                 ...prev,
                                 occasionDate: iso,
@@ -319,13 +320,12 @@ const Home = () => {
             )}
           </Flex>
         </Card>
-      </Box>
       <ExportOrdersModal
         open={isExportOpen}
         onOpenChange={setIsExportOpen}
         canExport={isAuthed}
       />
-    </Flex>
+    </Box>
   );
 };
 

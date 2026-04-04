@@ -1,64 +1,57 @@
 import { formatCurrency } from "@/utils";
-import type { OrderExtrasDraft } from "../types";
+import type { FrameGlassDraft, OrderExtrasDraft } from "../types";
 
-export const buildExtrasSummary = (orderExtras: OrderExtrasDraft): string[] => {
+export const buildExtrasSummary = (
+  orderExtras: OrderExtrasDraft,
+  frameGlassDrafts: FrameGlassDraft[] = [],
+): string[] => {
   const items: string[] = [];
-  const formatQtyPrice = (
-    label: string,
-    qty?: number | null,
-    price?: number | null,
-  ) => {
-    if (!qty || !price || price === 0 || qty === 0) return null;
-    const parts = [label];
-    if (qty != null && qty > 0) parts.push(`Qty ${qty}`);
-    const money = formatCurrency(price);
-    if (money) parts.push(money);
-    return parts.join(" - ");
+  const formatPrice = (label: string, price?: number | null) => {
+    const money =
+      typeof price === "number" ? formatCurrency(price) : undefined;
+    return money ? `${label} - ${money}` : label;
   };
 
-  if (
-    orderExtras.replacementFlowers ||
-    (orderExtras.replacementFlowersQty &&
-      orderExtras.replacementFlowersQty > 0) ||
-    (orderExtras.replacementFlowersPrice &&
-      orderExtras.replacementFlowersPrice > 0)
-  ) {
+  if (orderExtras.replacementFlowers) {
     items.push(
-      formatQtyPrice(
-        "Replacement flowers",
-        orderExtras.replacementFlowersQty,
-        orderExtras.replacementFlowersPrice,
-      ) || "Replacement flowers",
+      formatPrice("Replacement flowers", orderExtras.replacementFlowersPrice),
     );
   }
 
-  const collection = formatQtyPrice(
-    "Collection",
-    orderExtras.collectionQty,
-    orderExtras.collectionPrice,
-  );
-  if (collection) items.push(collection);
+  if (orderExtras.collectionQty != null && orderExtras.collectionQty > 0) {
+    items.push(formatPrice("Collection", orderExtras.collectionPrice));
+  }
 
-  const delivery = formatQtyPrice(
-    "Delivery",
-    orderExtras.deliveryQty,
-    orderExtras.deliveryPrice,
-  );
-  if (delivery) items.push(delivery);
+  if (orderExtras.deliveryQty != null && orderExtras.deliveryQty > 0) {
+    items.push(formatPrice("Delivery", orderExtras.deliveryPrice));
+  }
 
   if (
-    orderExtras.returnUnusedFlowers ||
-    (orderExtras.returnUnusedFlowersPrice &&
-      orderExtras.returnUnusedFlowersPrice > 0)
+    orderExtras.recreateButtonholeQty != null &&
+    orderExtras.recreateButtonholeQty > 0
   ) {
-    const money =
-      orderExtras.returnUnusedFlowersPrice != null
-        ? formatCurrency(orderExtras.returnUnusedFlowersPrice)
-        : undefined;
-    const returnUnused = money
-      ? `Return unused flowers - ${money}`
-      : "Return unused flowers";
-    items.push(returnUnused);
+    items.push(
+      formatPrice("Recreate buttonhole", orderExtras.recreateButtonholePrice),
+    );
+  }
+
+  frameGlassDrafts.forEach((draft) => {
+    if (!draft.clearviewEnabled) return;
+    const money = formatCurrency(draft.price ?? undefined);
+    items.push(
+      money
+        ? `${draft.label} - Clearview UV glass - ${money}`
+        : `${draft.label} - Clearview UV glass`,
+    );
+  });
+
+  if (orderExtras.returnUnusedFlowers) {
+    items.push(
+      formatPrice(
+        "Return unused flowers",
+        orderExtras.returnUnusedFlowersPrice,
+      ),
+    );
   }
 
   const trimmedNotes = orderExtras.notes.trim();

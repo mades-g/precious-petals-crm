@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { pb } from "@/services/pb/client";
+import { COLLECTIONS } from "@/services/pb/constants";
 import {
   postEmailInvoice,
   postEmailRecommendation,
@@ -12,6 +14,7 @@ import type {
   OrderDetails,
   OrderExtrasDraft,
   OrderFrame,
+  OrderStatusDraft,
   OrderPaperweight,
   Totals,
 } from "../types";
@@ -20,6 +23,7 @@ import type { NormalisedCustomer } from "@/api/get-customers";
 export type UseEmailActionsInput = {
   customer: NormalisedCustomer | null | undefined;
   order: OrderDetails | null | undefined;
+  currentOrderStatus: OrderStatusDraft;
   frames: OrderFrame[];
   paperweight: OrderPaperweight;
   extras: OrderExtrasDraft;
@@ -34,12 +38,14 @@ const getErrorMessage = (err: unknown) => {
 export const useEmailActions = ({
   customer,
   order,
+  currentOrderStatus,
   frames,
   paperweight,
   extras,
   totals,
 }: UseEmailActionsInput) => {
   const [status, setStatus] = useState<EmailActionStatus | null>(null);
+  const queryClient = useQueryClient();
 
   const canSendEmails = !!pb.authStore.token && typeof pb.baseUrl === "string";
 
@@ -84,6 +90,22 @@ export const useEmailActions = ({
           method: "POST",
           body: payload,
         });
+      }
+
+      if (
+        action.endpoint === "recommendation" &&
+        order?.orderId &&
+        currentOrderStatus === "draft"
+      ) {
+        await pb.collection(COLLECTIONS.ORDERS).update(order.orderId, {
+          orderStatus: "to_choose",
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      if (order?.orderId) {
+        queryClient.invalidateQueries({ queryKey: ["customer", order.orderId] });
+        queryClient.invalidateQueries({ queryKey: ["email_logs", order.orderId] });
       }
 
       setStatus({

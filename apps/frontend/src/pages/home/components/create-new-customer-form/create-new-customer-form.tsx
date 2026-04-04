@@ -1,5 +1,5 @@
 import * as Form from "@radix-ui/react-form";
-import { type FC, type ReactNode } from "react";
+import { type FC, type ReactNode, useEffect, useMemo } from "react";
 import { useForm, FormProvider, type SubmitHandler } from "react-hook-form";
 
 import type {
@@ -30,6 +30,7 @@ export type BouquetItemFormValues = {
   glassType: OrderFrameItemsGlassTypeOptions | "";
   glassPrice: number | null;
   inclusions: OrderFrameItemsInclusionsOptions | "";
+  specialNotes: string;
 };
 
 // TODO: Create a type for each respective collection ID
@@ -70,6 +71,7 @@ type CreateNewCustomerFormProps = {
   formId: string;
   onValidSubmit: SubmitHandler<CreateOrderFormValues>;
   defaultValues?: Partial<CreateOrderFormValues>;
+  isOpen?: boolean;
 };
 
 const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
@@ -77,21 +79,33 @@ const CreateNewCustomerForm: FC<CreateNewCustomerFormProps> = ({
   formId,
   onValidSubmit,
   defaultValues,
+  isOpen = false,
 }) => {
+  const mergedDefaultValues = useMemo(
+    () =>
+      ({
+        bouquets: [],
+        hasPaperweight: false,
+        paperweightQuantity: null,
+        paperweightPrice: null,
+        deliverySameAsBilling: true,
+        paperweightReceived: false,
+        ...defaultValues,
+      }) as CreateOrderFormValues,
+    [defaultValues],
+  );
+
   const methods = useForm<CreateOrderFormValues>({
     mode: "onBlur",
-    defaultValues: {
-      bouquets: [],
-      hasPaperweight: false,
-      paperweightQuantity: null,
-      paperweightPrice: null,
-      deliverySameAsBilling: true,
-      paperweightReceived: false,
-      ...defaultValues,
-    } as CreateOrderFormValues,
+    defaultValues: mergedDefaultValues,
   });
 
-  const { handleSubmit } = methods;
+  const { handleSubmit, reset } = methods;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    reset(mergedDefaultValues);
+  }, [isOpen, mergedDefaultValues, reset]);
 
   return (
     <Form.Root asChild>

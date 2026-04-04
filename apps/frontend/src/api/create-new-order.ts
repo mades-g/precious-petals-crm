@@ -1,6 +1,10 @@
 import type { CreateOrderFormValues } from "@/pages/home/components/create-new-customer-form/create-new-customer-form";
 import { pb } from "@/services/pb/client";
-import { COLLECTIONS } from "@/services/pb/constants";
+import {
+  CLEARVIEW_GLASS_TYPE,
+  COLLECTIONS,
+  DEFAULT_FRAME_GLASS_TYPE,
+} from "@/services/pb/constants";
 import type {
   CustomersResponse,
   OrderFrameItemsResponse,
@@ -28,10 +32,11 @@ export const createNewOrder = async (
   values: CreateOrderFormValues,
 ): Promise<CreateNewOrderResult> => {
   const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
+    const glassType = bq.glassType || DEFAULT_FRAME_GLASS_TYPE;
     const hasRequiredMountPrice =
       bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
     const hasRequiredGlassPrice =
-      bq.glassType !== "Clearview uv glass" ||
+      glassType !== CLEARVIEW_GLASS_TYPE ||
       typeof bq.glassPrice === "number";
 
     return (
@@ -45,7 +50,6 @@ export const createNewOrder = async (
       typeof bq.framePrice === "number" &&
       bq.mountColour &&
       hasRequiredMountPrice &&
-      bq.glassType &&
       hasRequiredGlassPrice
     );
   };
@@ -85,7 +89,7 @@ export const createNewOrder = async (
     ...mapOrderAddressesToPayload(values),
     notes: "",
     payment_status: "waiting_first_deposit",
-    orderStatus: "in_progress" as const,
+    orderStatus: "draft" as const,
     frameOrderId: frameItems.map((fi) => fi.id),
     paperweightOrderId: paperweightItem ? paperweightItem.id : undefined,
   };

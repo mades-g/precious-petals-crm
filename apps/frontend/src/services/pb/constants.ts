@@ -68,6 +68,11 @@ export const FRAME_MOUNT_COLOUR_OPTIONS: OrderFrameItemsFrameMountColourOptions[
     "Artist design",
   ];
 
+// to add Special frame see notes
+
+// notes
+// to take off
+// speckled gold.  speckled silver brushed silver
 export const FRAME_TYPE_OPTIONS: OrderFrameItemsFrameTypeOptions[] = [
   "Black",
   "Dark wood gold line",
@@ -101,10 +106,11 @@ export const FRAME_LAYOUT_OPTIONS: OrderFrameItemsLayoutOptions[] = [
   "Other",
 ];
 
-export const FRAME_GLASS_TYPE_OPTIONS: OrderFrameItemsGlassTypeOptions[] = [
-  "Clearview uv glass",
-  "Conservation glass",
-];
+export const CLEARVIEW_GLASS_TYPE: OrderFrameItemsGlassTypeOptions =
+  "Clearview uv glass";
+
+export const DEFAULT_FRAME_GLASS_TYPE: OrderFrameItemsGlassTypeOptions =
+  "Conservation glass";
 
 export const FRAME_INCLUSIONS_OPTIONS: OrderFrameItemsInclusionsOptions[] = [
   "Yes",
@@ -125,9 +131,11 @@ export const ORDER_PAYMENT_STATUS_OPTIONS: OrdersPaymentStatusOptions[] = [
 ];
 
 export const ORDER_STATUS_OPTIONS: OrdersOrderStatusOptions[] = [
+  "draft",
+  "to_choose",
+  "chosen",
   "in_progress",
-  "cancelled",
   "ready",
-  "delivered",
-  "collected",
+  "left_the_studio",
+  "cancelled",
 ];

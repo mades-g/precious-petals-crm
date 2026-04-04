@@ -27,7 +27,11 @@ const OrderHeader: FC<OrderHeaderProps> = ({
         </Button>
         <Heading size="4">Order {orderLabel}</Heading>
         {customerName ? (
-          <Text size="2" color="gray">
+          <Text
+            size="4"
+            weight="medium"
+            style={{ color: "var(--gray-12)", lineHeight: 1.15 }}
+          >
             {customerName}
           </Text>
         ) : null}

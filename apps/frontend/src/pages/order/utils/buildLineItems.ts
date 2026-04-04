@@ -1,5 +1,27 @@
 import type { LineItem, OrderFrame, OrderPaperweight } from "../types";
 
+const formatLineItemFrameSize = (
+  recommendedSize?: string | null,
+  measuredSize?: string | null,
+) => {
+  let value = recommendedSize?.trim() || measuredSize?.trim() || "";
+  if (!value) return null;
+
+  value = value.replaceAll('"', "");
+  value = value.replace(/\s*[xX]\s*/g, " x ");
+  value = value.replace(/\s+/g, " ").trim();
+
+  if (/inch(es)?/i.test(value)) {
+    return value;
+  }
+
+  if (/\bin$/i.test(value)) {
+    return value.replace(/\bin$/i, "inches").trim();
+  }
+
+  return `${value} inches`;
+};
+
 export const buildLineItems = (
   frames: OrderFrame[],
   paperweight: OrderPaperweight,
@@ -8,11 +30,14 @@ export const buildLineItems = (
 
   frames.forEach((frame, index) => {
     const mountColour = frame.mountColour ?? null;
+    const size = formatLineItemFrameSize(
+      frame.recommendedSize,
+      frame.measuredSize,
+    );
 
     const descParts = [
       "Picture",
-      frame.recommendedSize,
-      frame.layout,
+      size,
       frame.frameType,
       frame.preservationType,
       frame.glassType === "Conservation glass" ? frame.glassType : null,
@@ -36,11 +61,11 @@ export const buildLineItems = (
     const extras = frame.extras ?? null;
 
     if (typeof extras?.mountPrice === "number" && extras.mountPrice > 0) {
-      const mountSuffix =
-        frame.inclusions === "Buttonhole" ? " - Buttonhole" : "";
       items.push({
         id: `${baseId}-mount`,
-        description: `${mountColour ? `Mount - ${mountColour}` : "Mount"}${mountSuffix}`,
+        description: mountColour
+          ? `Additional Mount - ${mountColour}`
+          : "Additional Mount",
         qty: 1,
         unitPrice: extras.mountPrice,
         total: extras.mountPrice,

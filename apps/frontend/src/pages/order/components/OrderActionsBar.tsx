@@ -1,6 +1,5 @@
 import type { FC } from "react";
 import {
-  Badge,
   Button,
   Card,
   DropdownMenu,
@@ -21,6 +20,38 @@ import type {
 import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
 import InlineToggle from "./InlineToggle";
 
+type PillColor =
+  | "gray"
+  | "green"
+  | "yellow"
+  | "red"
+  | "blue"
+  | "orange"
+  | "cyan";
+
+const pillStyle = (color: PillColor) =>
+  ({
+    minHeight: 32,
+    padding: "0 12px",
+    borderRadius: 6,
+    backgroundColor: `var(--${color}-a3)`,
+    color: `var(--${color}-11)`,
+    whiteSpace: "nowrap",
+  }) as const;
+
+const InfoPill: FC<{
+  color: PillColor;
+  label: string;
+  value: string;
+}> = ({ color, label, value }) => (
+  <Flex align="center" gap="1" style={pillStyle(color)}>
+    <Text size="2" weight="bold">
+      {label}
+    </Text>
+    <Text size="2">{value}</Text>
+  </Flex>
+);
+
 export type OrderActionsBarProps = {
   created?: string | null;
   occasionDate?: string | null;
@@ -28,6 +59,7 @@ export type OrderActionsBarProps = {
   orderStatus: OrdersOrderStatusOptions;
   paymentStatus: OrdersPaymentStatusOptions;
   onPreviewInvoice: () => void;
+  previewDisabled?: boolean;
   onOpenEmailActions: () => void;
   onOpenSms: () => void;
   onOpenSmsLogs: () => void;
@@ -40,12 +72,17 @@ export type OrderActionsBarProps = {
   onDelete: () => void;
   isDeleting: boolean;
   showDelete: boolean;
+  showCompletion?: boolean;
   showFrameCompletion?: boolean;
+  showPaperweightCompletion?: boolean;
   artworkComplete?: boolean;
   framingComplete?: boolean;
+  paperweightReceived?: boolean;
   onToggleArtworkComplete?: (next: boolean) => void;
   onToggleFramingComplete?: (next: boolean) => void;
+  onTogglePaperweightReceived?: (next: boolean) => void;
   isSavingCompletion?: boolean;
+  isSavingPaperweight?: boolean;
 };
 
 const OrderActionsBar: FC<OrderActionsBarProps> = ({
@@ -55,6 +92,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   orderStatus,
   paymentStatus,
   onPreviewInvoice,
+  previewDisabled,
   onOpenEmailActions,
   onOpenSms,
   onOpenSmsLogs,
@@ -67,12 +105,17 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   onDelete,
   isDeleting,
   showDelete,
+  showCompletion,
   showFrameCompletion,
+  showPaperweightCompletion,
   artworkComplete,
   framingComplete,
+  paperweightReceived,
   onToggleArtworkComplete,
   onToggleFramingComplete,
+  onTogglePaperweightReceived,
   isSavingCompletion,
+  isSavingPaperweight,
 }) => {
   const menuAction =
     (disabled: boolean | undefined, action: () => void) => (event: Event) => {
@@ -89,31 +132,39 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
         <Flex justify="between" align="center" wrap="wrap" gap="3">
           <Flex gap="2" wrap="wrap" align="center">
             {created ? (
-              <Badge variant="soft" color="gray">
-                <Text weight="bold">Created:</Text> {formatDate(created)}
-              </Badge>
+              <InfoPill
+                color="gray"
+                label="Created:"
+                value={formatDate(created)}
+              />
             ) : null}
             {occasionDate ? (
-              <Badge variant="soft" color="gray">
-                <Text weight="bold">Occasion:</Text> {formatDate(occasionDate)}
-              </Badge>
+              <InfoPill
+                color="gray"
+                label="Occasion:"
+                value={formatDate(occasionDate)}
+              />
             ) : null}
+            <InfoPill
+              color={getOrderStatusColor(orderStatus)}
+              label="Order status:"
+              value={formatSnakeCase(orderStatus)}
+            />
+            <InfoPill
+              color={getPaymentStatusColor(paymentStatus)}
+              label="Payment status:"
+              value={formatSnakeCase(paymentStatus)}
+            />
             {requiredBy ? (
-              <Badge variant="soft" color="orange">
-                <Text weight="bold">Required by:</Text> {requiredBy}
-              </Badge>
+              <InfoPill color="orange" label="Required by:" value={requiredBy} />
             ) : null}
           </Flex>
           <Flex gap="2" align="center" wrap="wrap">
-            <Badge variant="soft" color={getOrderStatusColor(orderStatus)}>
-              <Text weight="bold">Order status:</Text>{" "}
-              {formatSnakeCase(orderStatus)}
-            </Badge>
-            <Badge variant="soft" color={getPaymentStatusColor(paymentStatus)}>
-              <Text weight="bold">Payment status:</Text>{" "}
-              {formatSnakeCase(paymentStatus)}
-            </Badge>
-            <Button variant="soft" onClick={onPreviewInvoice}>
+            <Button
+              variant="outline"
+              onClick={onPreviewInvoice}
+              disabled={previewDisabled}
+            >
               Preview invoice
             </Button>
             <DropdownMenu.Root>
@@ -186,23 +237,35 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
             {statusHelperText}
           </Text>
         ) : null}
-        {showFrameCompletion ? (
+        {showCompletion ? (
           <Flex gap="3" align="center" wrap="wrap">
             <Text size="2" weight="bold">
               Completion:
             </Text>
-            <InlineToggle
-              label="Artwork complete"
-              checked={Boolean(artworkComplete)}
-              onChange={(next) => onToggleArtworkComplete?.(next)}
-              disabled={isSavingCompletion}
-            />
-            <InlineToggle
-              label="Framing complete"
-              checked={Boolean(framingComplete)}
-              onChange={(next) => onToggleFramingComplete?.(next)}
-              disabled={isSavingCompletion}
-            />
+            {showFrameCompletion ? (
+              <>
+                <InlineToggle
+                  label="Artwork complete"
+                  checked={Boolean(artworkComplete)}
+                  onChange={(next) => onToggleArtworkComplete?.(next)}
+                  disabled={isSavingCompletion}
+                />
+                <InlineToggle
+                  label="Framing complete"
+                  checked={Boolean(framingComplete)}
+                  onChange={(next) => onToggleFramingComplete?.(next)}
+                  disabled={isSavingCompletion}
+                />
+              </>
+            ) : null}
+            {showPaperweightCompletion ? (
+              <InlineToggle
+                label="Paperweight received"
+                checked={Boolean(paperweightReceived)}
+                onChange={(next) => onTogglePaperweightReceived?.(next)}
+                disabled={isSavingPaperweight}
+              />
+            ) : null}
           </Flex>
         ) : null}
       </Flex>

@@ -16,18 +16,21 @@ const FrameItemActions: FC<FrameItemActionsProps> = ({
   disabled,
 }) => {
   return (
-    <Flex direction="column" gap="2" align="start">
-      <Button
-        size="1"
-        variant="soft"
-        onClick={() => {
-          if (disabled) return;
-          onEdit();
-        }}
-        disabled={disabled}
-      >
-        Frame options
-      </Button>
+    <Flex direction="column" gap="2" align="start" style={{ width: "100%" }}>
+      <Flex width="100%" justify="end">
+        <Button
+          size="2"
+          variant="solid"
+          onClick={() => {
+            if (disabled) return;
+            onEdit();
+          }}
+          disabled={disabled}
+          style={{ minWidth: 170, justifyContent: "center" }}
+        >
+          Frame options
+        </Button>
+      </Flex>
       {frame.layout ? (
         <Badge variant="soft" color="cyan">
           Layout: {frame.layout}

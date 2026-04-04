@@ -1,5 +1,9 @@
 import { pb } from "@/services/pb/client";
-import { COLLECTIONS } from "@/services/pb/constants";
+import {
+  CLEARVIEW_GLASS_TYPE,
+  COLLECTIONS,
+  DEFAULT_FRAME_GLASS_TYPE,
+} from "@/services/pb/constants";
 import type {
   CustomersHowRecommendedOptions,
   CustomersTitleOptions,
@@ -68,10 +72,11 @@ const editBouquetStage = async ({
   const newBouquets = values.bouquets ?? [];
   const existingBouquets = currentCustomerForm?.bouquets ?? [];
   const isBouquetComplete = (bq: CreateOrderFormValues["bouquets"][number]) => {
+    const glassType = bq.glassType || DEFAULT_FRAME_GLASS_TYPE;
     const hasRequiredMountPrice =
       bq.mountColour === "No Second Mount" || typeof bq.mountPrice === "number";
     const hasRequiredGlassPrice =
-      bq.glassType !== "Clearview uv glass" ||
+      glassType !== CLEARVIEW_GLASS_TYPE ||
       typeof bq.glassPrice === "number";
 
     return (
@@ -85,7 +90,6 @@ const editBouquetStage = async ({
       typeof bq.framePrice === "number" &&
       bq.mountColour &&
       hasRequiredMountPrice &&
-      bq.glassType &&
       hasRequiredGlassPrice
     );
   };
@@ -222,7 +226,7 @@ const editPaperweightStage = async ({
   // ❌ CASE 1: never had paperweight & user didn't enter one
   if (!hadPaperweight && !hasNewPaperweight) {
     return fail(
-      "Please provide paperweight quantity and price before saving this section.",
+      "Please provide paperweight quantity and total price before saving this section.",
     );
   }
 

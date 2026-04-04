@@ -1,22 +1,36 @@
 import { useMemo, useState, type FC } from "react";
+import { Cross2Icon } from "@radix-ui/react-icons";
 import {
   Box,
   Button,
   Card,
   Flex,
   Heading,
+  IconButton,
+  Popover,
   Select,
   Table,
   Text,
   TextField,
 } from "@radix-ui/themes";
+import { DayPicker } from "react-day-picker";
+import { enGB } from "react-day-picker/locale";
 
 import type {
   OrderPaymentsPaymentTypeOptions,
   OrderPaymentsResponse,
 } from "@/services/pb/types";
-import { formatCurrency, formatDate, formatSnakeCase } from "@/utils";
+import {
+  formatCurrency,
+  formatDate,
+  parseDateOnly,
+  formatSnakeCase,
+  todayDateOnly,
+  toDateOnlyValue,
+} from "@/utils";
 import type { CreateOrderPaymentDraft } from "@/api/order-payments";
+
+import "react-day-picker/dist/style.css";
 
 const PAYMENT_TYPE_OPTIONS: OrderPaymentsPaymentTypeOptions[] = [
   "first_deposit",
@@ -25,7 +39,62 @@ const PAYMENT_TYPE_OPTIONS: OrderPaymentsPaymentTypeOptions[] = [
   "other",
 ];
 
-const defaultPaidAt = () => new Date().toISOString().slice(0, 10);
+const defaultPaidAt = () => todayDateOnly();
+
+type PaymentDatePickerProps = {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  size?: "1" | "2";
+  width?: string;
+  allowClear?: boolean;
+};
+
+const PaymentDatePicker: FC<PaymentDatePickerProps> = ({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  size = "2",
+  width = "100%",
+  allowClear,
+}) => (
+  <Flex gap="2" align="center">
+    <Popover.Root>
+      <Popover.Trigger>
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          disabled={disabled}
+          style={{ width }}
+        >
+          {value ? formatDate(value) : placeholder}
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content align="start">
+        <DayPicker
+          locale={enGB}
+          mode="single"
+          selected={value ? parseDateOnly(value) : undefined}
+          onSelect={(date) => onChange(date ? toDateOnlyValue(date) : "")}
+        />
+      </Popover.Content>
+    </Popover.Root>
+    {allowClear && value ? (
+      <IconButton
+        size={size}
+        variant="ghost"
+        type="button"
+        onClick={() => onChange("")}
+        disabled={disabled}
+      >
+        <Cross2Icon height="16" width="16" />
+      </IconButton>
+    ) : null}
+  </Flex>
+);
 
 type OrderPaymentsCardProps = {
   payments: OrderPaymentsResponse[];
@@ -113,6 +182,9 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const requiresNotes = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "other";
 
+  const requiresFirstDeposit = (type: OrderPaymentsPaymentTypeOptions) =>
+    type === "second_deposit" || type === "final_balance";
+
   const requiresRequiredBy = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "second_deposit";
   const requiresArtistHours = (type: OrderPaymentsPaymentTypeOptions) =>
@@ -121,7 +193,34 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const isFinalBalance = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "final_balance";
 
+  const allowsZeroAmount = (type: OrderPaymentsPaymentTypeOptions) =>
+    type === "second_deposit" || type === "final_balance";
+
   const isZeroRemaining = (remaining: number) => Math.abs(remaining) < 0.01;
+
+  const isPaymentTypeDisabled = (
+    type: OrderPaymentsPaymentTypeOptions,
+    options?: {
+      excludeId?: string;
+      currentType?: OrderPaymentsPaymentTypeOptions;
+    },
+  ) => {
+    if (options?.currentType === type) return false;
+    if (type !== "other" && hasDuplicateType(type, options?.excludeId)) {
+      return true;
+    }
+    if (
+      requiresFirstDeposit(type) &&
+      !payments.some(
+        (payment) =>
+          payment.paymentType === "first_deposit" &&
+          payment.id !== options?.excludeId,
+      )
+    ) {
+      return true;
+    }
+    return false;
+  };
 
   const toUkDate = (value: string) => {
     if (!value || !value.includes("-")) return value;
@@ -139,8 +238,12 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
 
   const handleSubmit = async () => {
     const parsedAmount = Number(amount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
       setSubmitError("Enter a valid amount.");
+      return;
+    }
+    if (!allowsZeroAmount(paymentType) && parsedAmount === 0) {
+      setSubmitError("Amount must be greater than 0 for this payment type.");
       return;
     }
     if (maxAllowedForNew != null && parsedAmount > maxAllowedForNew) {
@@ -149,6 +252,12 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     }
     if (hasDuplicateType(paymentType)) {
       setSubmitError("That payment type is already recorded.");
+      return;
+    }
+    if (requiresFirstDeposit(paymentType) && isPaymentTypeDisabled(paymentType)) {
+      setSubmitError(
+        "Record first deposit before adding second deposit or final balance.",
+      );
       return;
     }
     if (
@@ -231,8 +340,12 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
 
   const handleUpdate = async (payment: OrderPaymentsResponse) => {
     const parsedAmount = Number(editAmount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
       setSubmitError("Enter a valid amount.");
+      return;
+    }
+    if (!allowsZeroAmount(editPaymentType) && parsedAmount === 0) {
+      setSubmitError("Amount must be greater than 0 for this payment type.");
       return;
     }
     const maxAllowed = maxAllowedForEdit(payment);
@@ -242,6 +355,19 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     }
     if (hasDuplicateType(editPaymentType, payment.id)) {
       setSubmitError("That payment type is already recorded.");
+      return;
+    }
+    if (
+      requiresFirstDeposit(editPaymentType) &&
+      editPaymentType !== payment.paymentType &&
+      isPaymentTypeDisabled(editPaymentType, {
+        excludeId: payment.id,
+        currentType: payment.paymentType,
+      })
+    ) {
+      setSubmitError(
+        "Record first deposit before adding second deposit or final balance.",
+      );
       return;
     }
     if (
@@ -346,7 +472,11 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   <Select.Trigger disabled={inputsDisabled} />
                   <Select.Content>
                     {PAYMENT_TYPE_OPTIONS.map((option) => (
-                      <Select.Item key={option} value={option}>
+                      <Select.Item
+                        key={option}
+                        value={option}
+                        disabled={isPaymentTypeDisabled(option)}
+                      >
                         {formatSnakeCase(option)}
                       </Select.Item>
                     ))}
@@ -358,12 +488,12 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
               <Text size="1" color="gray">
                 Paid date
               </Text>
-              <TextField.Root
-                type="date"
-                lang="en-GB"
+              <PaymentDatePicker
                 value={paidAt}
-                onChange={(event) => setPaidAt(event.target.value)}
+                onChange={setPaidAt}
+                placeholder="Pick date"
                 disabled={inputsDisabled}
+                width="150px"
               />
             </Box>
             {requiresRequiredBy(paymentType) ? (
@@ -371,12 +501,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 <Text size="1" color="gray">
                   Required by
                 </Text>
-                <TextField.Root
-                  type="date"
-                  lang="en-GB"
+                <PaymentDatePicker
                   value={requiredBy}
-                  onChange={(event) => setRequiredBy(event.target.value)}
+                  onChange={setRequiredBy}
+                  placeholder="Pick date"
                   disabled={inputsDisabled}
+                  width="170px"
+                  allowClear
                 />
               </Box>
             ) : null}
@@ -471,14 +602,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                     <Table.Row key={payment.id}>
                       <Table.Cell>
                         {isEditing ? (
-                          <TextField.Root
-                            type="date"
-                            lang="en-GB"
+                          <PaymentDatePicker
                             value={editPaidAt}
-                            onChange={(event) =>
-                              setEditPaidAt(event.target.value)
-                            }
+                            onChange={setEditPaidAt}
+                            placeholder="Pick date"
                             disabled={inputsDisabled}
+                            size="1"
+                            width="130px"
                           />
                         ) : displayDate ? (
                           formatDate(displayDate)
@@ -504,7 +634,14 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             <Select.Trigger disabled={inputsDisabled} />
                             <Select.Content>
                               {PAYMENT_TYPE_OPTIONS.map((option) => (
-                                <Select.Item key={option} value={option}>
+                                <Select.Item
+                                  key={option}
+                                  value={option}
+                                  disabled={isPaymentTypeDisabled(option, {
+                                    excludeId: payment.id,
+                                    currentType: payment.paymentType,
+                                  })}
+                                >
                                   {formatSnakeCase(option)}
                                 </Select.Item>
                               ))}
@@ -533,14 +670,14 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       </Table.Cell>
                       <Table.Cell>
                         {isEditing && requiresRequiredBy(editPaymentType) ? (
-                          <TextField.Root
-                            type="date"
-                            lang="en-GB"
+                          <PaymentDatePicker
                             value={editRequiredBy}
-                            onChange={(event) =>
-                              setEditRequiredBy(event.target.value)
-                            }
+                            onChange={setEditRequiredBy}
+                            placeholder="Pick date"
                             disabled={inputsDisabled}
+                            size="1"
+                            width="130px"
+                            allowClear
                           />
                         ) : payment.paymentType === "second_deposit" &&
                           orderRequiredBy ? (

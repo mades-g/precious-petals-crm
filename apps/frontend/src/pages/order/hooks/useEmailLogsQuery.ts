@@ -13,6 +13,7 @@ export const useEmailLogsQuery = (orderId?: string) => {
         .getList<EmailLogEntry>(1, 50, {
           filter: `orderId = "${orderId}"`,
           sort: "-sentAt",
+          expand: "sentBy",
         });
       return result.items;
     },

@@ -63,7 +63,7 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const hasOrder = Boolean(orderDetails);
   const paymentStatus = orderDetails?.paymentStatus;
   const isEditDisabled =
-    orderDetails?.orderStatus === "ready" &&
+    orderDetails?.orderStatus === "left_the_studio" &&
     paymentStatus === "final_balance_paid";
   const hasHowRecommended = Boolean(howRecommended);
   const requiredBy = orderDetails?.requiredBy;
@@ -83,8 +83,8 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const paymentIndex = paymentStatus
     ? paymentSequence.indexOf(paymentStatus)
     : -1;
-  const hasFirstPayment =
-    paymentIndex >= paymentSequence.indexOf("first_deposit_paid");
+  const chosenEligible =
+    paymentIndex >= paymentSequence.indexOf("second_deposit_paid");
 
   const hasFrames = Boolean(orderDetails?.frameOrder?.length);
   const framesComplete = orderDetails
@@ -95,28 +95,47 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const paperweightComplete = orderDetails?.paperWeightOrder
     ? Boolean(orderDetails.paperWeightOrder.paperweightReceived)
     : true;
-  const readyEligible = framesComplete && paperweightComplete;
-  const deliveredEligible = paymentStatus === "final_balance_paid";
+  const completionEligible = framesComplete && paperweightComplete;
+  const leftStudioEligible =
+    completionEligible && paymentStatus === "final_balance_paid";
 
   const allowedOrderStatuses: Record<
     OrdersOrderStatusOptions,
     OrdersOrderStatusOptions[]
   > = {
-    in_progress: ["in_progress", "cancelled", "ready"],
+    draft: ["draft", "to_choose", "cancelled"],
+    to_choose: ["draft", "to_choose", "chosen", "cancelled"],
+    chosen: ["draft", "to_choose", "chosen", "in_progress", "cancelled"],
+    in_progress: [
+      "draft",
+      "to_choose",
+      "chosen",
+      "in_progress",
+      "ready",
+      "cancelled",
+    ],
+    ready: [
+      "draft",
+      "to_choose",
+      "chosen",
+      "in_progress",
+      "ready",
+      "left_the_studio",
+      "cancelled",
+    ],
     cancelled: ["cancelled"],
-    ready: ["ready", "in_progress", "cancelled", "delivered", "collected"],
-    delivered: ["delivered"],
-    collected: ["collected"],
+    left_the_studio: ["left_the_studio"],
   };
 
   const isOrderStatusDisabled = (status: OrdersOrderStatusOptions) => {
     if (!orderDetails?.orderStatus) return true;
     if (!allowedOrderStatuses[orderDetails.orderStatus].includes(status))
       return true;
-    if (status === "in_progress") return !hasFirstPayment;
-    if (status === "ready") return !readyEligible;
-    if (status === "delivered" || status === "collected") {
-      return !deliveredEligible;
+    if (status === "chosen") return !chosenEligible;
+    if (status === "in_progress") return !chosenEligible;
+    if (status === "ready") return !completionEligible;
+    if (status === "left_the_studio") {
+      return !leftStudioEligible;
     }
     return false;
   };

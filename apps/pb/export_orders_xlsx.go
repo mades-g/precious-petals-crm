@@ -49,6 +49,15 @@ func (s sentByDisplay) String() string {
 	}
 }
 
+func formatSnakeLabel(value string) string {
+	value = strings.TrimSpace(strings.ReplaceAll(value, "_", " "))
+	if value == "" {
+		return ""
+	}
+
+	return strings.ToUpper(value[:1]) + value[1:]
+}
+
 func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error {
 	query := e.Request.URL.Query()
 	orderId := strings.TrimSpace(query.Get("orderId"))
@@ -416,7 +425,7 @@ func writeProductionOverviewSheet(
 		"Order total (£)",
 		"Balance due (£)",
 		"Order paid on (final balance)",
-		"Delivered / collected",
+		"Left the studio",
 		"Paperweight quantity",
 		"Paperweight received",
 	}
@@ -441,13 +450,6 @@ func writeProductionOverviewSheet(
 			allFramingComplete = order.GetBool("framingComplete")
 		}
 
-		// Delivered / Collected (derived from delivery; collection is home pickup)
-		deliveredCollected := "Collected"
-		deliveryQty := order.GetFloat("deliveryQty")
-		if deliveryQty > 0 {
-			deliveredCollected = "Delivered"
-		}
-
 		orderTotal := calculateOrderTotal(order, frames, pw)
 		payments := paymentsByOrderId[oid]
 		paidTotal := payments.paidTotal
@@ -465,7 +467,7 @@ func writeProductionOverviewSheet(
 		leftValues := []any{
 			customer.name,
 			orderNoById[oid],
-			order.GetString("orderStatus"),
+			formatSnakeLabel(order.GetString("orderStatus")),
 			exportDateDMY(order.GetString("occasionDate")),
 			exportDateDMY(bookingDate),
 			exportDateDMY(requiredBy),
@@ -504,7 +506,7 @@ func writeProductionOverviewSheet(
 			orderTotal,
 			balanceDue,
 			exportDateDMY(paidOn),
-			deliveredCollected,
+			fmtBool(order.GetString("orderStatus") == "left_the_studio"),
 			pwQty,
 			pwReceived,
 		}
@@ -631,6 +633,7 @@ func calculateOrderTotal(order *core.Record, frames []*core.Record, pw *core.Rec
 	extrasTotal += order.GetFloat("replacementFlowersPrice")
 	extrasTotal += order.GetFloat("collectionPrice")
 	extrasTotal += order.GetFloat("deliveryPrice")
+	extrasTotal += order.GetFloat("recreateButtonholePrice")
 	extrasTotal += order.GetFloat("returnUnusedFlowersPrice")
 
 	subTotal := frameTotal + paperweightTotal + extrasTotal
@@ -656,13 +659,6 @@ func getFloatFirst(r *core.Record, keys ...string) float64 {
 		}
 	}
 	return 0
-}
-
-func paperweightUnitPrice(total float64, qty int) float64 {
-	if qty <= 0 {
-		return total
-	}
-	return total / float64(qty)
 }
 
 func paymentDateValue(payment *core.Record) string {
@@ -866,6 +862,8 @@ func writeOrdersSheet(
 		"Collection Price",
 		"Delivery Qty",
 		"Delivery Price",
+		"Recreate Buttonhole Qty",
+		"Recreate Buttonhole Price",
 		"Return Unused Flowers",
 		"Return Unused Flowers Price",
 		"Artist Hours",
@@ -894,6 +892,8 @@ func writeOrdersSheet(
 			exportMoneyNumber(order.GetFloat("collectionPrice")),
 			order.GetFloat("deliveryQty"),
 			exportMoneyNumber(order.GetFloat("deliveryPrice")),
+			order.GetFloat("recreateButtonholeQty"),
+			exportMoneyNumber(order.GetFloat("recreateButtonholePrice")),
 			order.GetBool("returnUnusedFlowers"),
 			exportMoneyNumber(order.GetFloat("returnUnusedFlowersPrice")),
 			order.GetString("artistHours"),
@@ -1045,13 +1045,14 @@ func writePaperweightsSheet(
 		"Customer Email",
 		"Paperweight item ID",
 		"Quantity",
-		"Price",
+		"Total price (£)",
 		"Paperweight received",
 		"Created",
 		"Updated",
 	}
 
 	writeHeaderRow(file, sheet, headers)
+	applyCurrencyColumnStyle(file, sheet, indexOfHeader(headers, "Total price (£)"))
 
 	for i, pw := range paperweights {
 		row := i + 2
@@ -1066,7 +1067,7 @@ func writePaperweightsSheet(
 			customer.email,
 			pw.Id,
 			qty,
-			exportMoneyNumber(paperweightUnitPrice(pw.GetFloat("price"), qty)),
+			exportMoneyNumber(pw.GetFloat("price")),
 			pw.GetBool("paperweightReceived"),
 			exportDateDMY(pw.GetString("created")),
 			exportDateDMY(pw.GetString("updated")),

@@ -9,20 +9,16 @@ import type { LineItem, OrderPaperweight } from "../types";
 export type OrderItemsTableProps = {
   lineItems: LineItem[];
   paperweight: OrderPaperweight;
-  paperweightReceived: boolean;
   onEditFrame: (frameId: string | null | undefined) => void;
   onEditPaperweight: () => void;
-  onTogglePaperweightReceived: (next: boolean) => void;
   isSavingPaperweight: boolean;
 };
 
 const OrderItemsTable: FC<OrderItemsTableProps> = ({
   lineItems,
   paperweight,
-  paperweightReceived,
   onEditFrame,
   onEditPaperweight,
-  onTogglePaperweightReceived,
   isSavingPaperweight,
 }) => {
   const mainItems = lineItems.filter((item) => item.kind !== "extra");
@@ -59,7 +55,7 @@ const OrderItemsTable: FC<OrderItemsTableProps> = ({
             <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Unit price</Table.ColumnHeaderCell>
             <Table.ColumnHeaderCell>Amount</Table.ColumnHeaderCell>
-            <Table.ColumnHeaderCell>Options</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell align="right">Options</Table.ColumnHeaderCell>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -78,7 +74,7 @@ const OrderItemsTable: FC<OrderItemsTableProps> = ({
                   <Table.Cell>{item.qty}</Table.Cell>
                   <Table.Cell>{formatCurrency(item.unitPrice)}</Table.Cell>
                   <Table.Cell>{formatCurrency(item.total)}</Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell align="right">
                     {item.kind === "frame" && item.frame ? (
                       <FrameItemActions
                         frame={item.frame}
@@ -88,8 +84,6 @@ const OrderItemsTable: FC<OrderItemsTableProps> = ({
                     ) : item.kind === "paperweight" ? (
                       <PaperweightItemActions
                         onEdit={onEditPaperweight}
-                        received={paperweightReceived}
-                        onToggleReceived={onTogglePaperweightReceived}
                         disabled={
                           !paperweight?.paperWeightId || isSavingPaperweight
                         }

@@ -1,4 +1,4 @@
-import { useState, type FC } from "react";
+import { useMemo, useState, type FC } from "react";
 import { Box, Dialog, Flex } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -140,6 +140,16 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
     advanceStageIfNeeded();
   };
 
+  const formDefaultValues = useMemo(
+    () =>
+      modalMode === "create"
+        ? { orderNo: nextOrderNo }
+        : currentCustomerForm
+          ? { ...currentCustomerForm }
+          : undefined,
+    [currentCustomerForm, modalMode, nextOrderNo],
+  );
+
   return (
     <Dialog.Root open={isModalOpen}>
       <Dialog.Content
@@ -168,21 +178,20 @@ const CreateNewOrderModal: FC<CreateNewOrderModalProps> = ({
                 Create new customer, frame and/or paperweight order
               </Dialog.Description>
             )}
-            {modalMode === "edit" && currentCustomerForm && (
-              <Dialog.Description size="2" color="gray">
-                {currentCustomerForm.firstName} {currentCustomerForm.surname}
-              </Dialog.Description>
-            )}
+            {modalMode === "edit" &&
+              currentFormStage !== "customer_data" &&
+              currentCustomerForm && (
+                <Dialog.Description size="2" color="gray">
+                  {currentCustomerForm.firstName} {currentCustomerForm.surname}
+                </Dialog.Description>
+              )}
           </Flex>
 
           <CreateNewCustomerForm
             formId={FORM_ID}
             onValidSubmit={handleValidSubmit}
-            defaultValues={
-              modalMode === "create"
-                ? { orderNo: nextOrderNo }
-                : { ...currentCustomerForm }
-            }
+            defaultValues={formDefaultValues}
+            isOpen={isModalOpen}
           >
             {currentFormStage === "customer_data" && (
               <CustomerData nextOrderNo={nextOrderNo} />

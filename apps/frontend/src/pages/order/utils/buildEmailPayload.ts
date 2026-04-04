@@ -19,6 +19,47 @@ export type BuildEmailPayloadInput = {
   emailContext?: EmailContext;
 };
 
+const buildMergedInvoiceNotes = (
+  notes: string,
+  frames: Array<{
+    inclusions?: string;
+    specialNotes?: string;
+  }>,
+) => {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+
+  const normalizeInclusionDetails = (value?: string) =>
+    value
+      ?.split(/\r?\n/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(", ") ?? "";
+
+  const appendLine = (value?: string) => {
+    const trimmed = value?.trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    seen.add(trimmed);
+    lines.push(trimmed);
+  };
+
+  appendLine(notes);
+
+  frames.forEach((frame) => {
+    const inclusions = frame.inclusions?.trim();
+    if (inclusions === "Buttonhole") {
+      appendLine("Include: Buttonhole");
+      return;
+    }
+    const inclusionDetails = normalizeInclusionDetails(frame.specialNotes);
+    if (inclusions === "Yes" && inclusionDetails) {
+      appendLine(`Include: ${inclusionDetails}`);
+    }
+  });
+
+  return lines.join("\n");
+};
+
 export const buildEmailPayload = ({
   customer,
   order,
@@ -28,6 +69,26 @@ export const buildEmailPayload = ({
   totals,
   emailContext,
 }: BuildEmailPayloadInput) => {
+  const invoiceFrames = frames.map((frame) => {
+    const legacyFrame = frame as OrderFrame & { special_notes?: string };
+
+    return {
+      size: frame.measuredSize ?? "",
+      measuredSize: frame.measuredSize ?? "",
+      recommendedSize: frame.recommendedSize ?? "",
+      frameType: frame.frameType ?? "",
+      glassType: frame.glassType ?? "",
+      layout: frame.layout ?? "",
+      preservationType: frame.preservationType ?? "",
+      inclusions: frame.inclusions ?? "",
+      specialNotes: frame.specialNotes ?? legacyFrame.special_notes ?? "",
+      mountColour: frame.mountColour ?? "",
+      glassEngraving: frame.glassEngraving ?? "",
+      price: frame.price,
+      extras: frame.extras,
+    };
+  });
+
   return {
     customer: {
       id: customer?.customerId,
@@ -58,11 +119,13 @@ export const buildEmailPayload = ({
       collectionPrice: extras.collectionPrice,
       deliveryQty: extras.deliveryQty,
       deliveryPrice: extras.deliveryPrice,
+      recreateButtonholeQty: extras.recreateButtonholeQty,
+      recreateButtonholePrice: extras.recreateButtonholePrice,
       returnUnusedFlowers: extras.returnUnusedFlowers,
       returnUnusedFlowersPrice: extras.returnUnusedFlowersPrice,
-      notes: extras.notes,
+      notes: buildMergedInvoiceNotes(extras.notes, invoiceFrames),
     },
-    frames,
+    frames: invoiceFrames,
     paperweight,
     totals,
     emailContext,

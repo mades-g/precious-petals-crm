@@ -5,7 +5,8 @@ import {
   Flex,
   Select,
   Separator,
-  Text,
+    Text,
+  TextArea,
   TextField,
   Button,
   Popover,
@@ -17,16 +18,18 @@ import {
   useWatch,
 } from "react-hook-form";
 import { DayPicker } from "react-day-picker";
+import { enGB } from "react-day-picker/locale";
 
 import {
+  CLEARVIEW_GLASS_TYPE,
+  DEFAULT_FRAME_GLASS_TYPE,
   FRAME_LAYOUT_OPTIONS,
-  FRAME_GLASS_TYPE_OPTIONS,
   FRAME_INCLUSIONS_OPTIONS,
   FRAME_MOUNT_COLOUR_OPTIONS,
   FRAME_PRESERVATION_TYPE_OPTIONS,
   FRAME_TYPE_OPTIONS,
 } from "@/services/pb/constants";
-import { formatDate } from "@/utils";
+import { formatDate, parseDateOnly, toDateOnlyValue } from "@/utils";
 
 import type { CreateOrderFormValues } from "../create-new-customer-form/create-new-customer-form";
 import formStyles from "../../form.module.css";
@@ -55,6 +58,12 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
 
   useEffect(() => {
     bouquetValues?.forEach((bouquet, index) => {
+      if (!bouquet?.glassType) {
+        setValue(`bouquets.${index}.glassType`, DEFAULT_FRAME_GLASS_TYPE, {
+          shouldDirty: false,
+          shouldValidate: false,
+        });
+      }
       if (
         bouquet?.mountColour === "No Second Mount" &&
         bouquet.mountPrice !== null
@@ -65,12 +74,19 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
         });
       }
       if (
-        bouquet?.glassType !== "Clearview uv glass" &&
+        (bouquet?.glassType || DEFAULT_FRAME_GLASS_TYPE) !==
+          CLEARVIEW_GLASS_TYPE &&
         bouquet?.glassPrice !== null
       ) {
         setValue(`bouquets.${index}.glassPrice`, null, {
           shouldDirty: true,
           shouldValidate: true,
+        });
+      }
+      if (bouquet?.inclusions !== "Yes" && bouquet?.specialNotes) {
+        setValue(`bouquets.${index}.specialNotes`, "", {
+          shouldDirty: true,
+          shouldValidate: false,
         });
       }
     });
@@ -110,9 +126,10 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                 mountPrice: null,
                 glassEngraving: "",
                 glassEngravingPrice: null,
-                glassType: "",
+                glassType: DEFAULT_FRAME_GLASS_TYPE,
                 glassPrice: null,
                 inclusions: "",
+                specialNotes: "",
               })
             }
           >
@@ -133,9 +150,9 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
         const isNoSecondMount = mountColour === "No Second Mount";
         const glassEngravingValue =
           bouquetValues?.[index]?.glassEngraving ?? "";
-        const glassTypeValue = bouquetValues?.[index]?.glassType ?? "";
         const engravingPriceRequired = Boolean(glassEngravingValue.trim());
-        const glassPriceRequired = glassTypeValue === "Clearview uv glass";
+        const inclusions = bouquetValues?.[index]?.inclusions ?? "";
+        const showInclusionDetails = inclusions === "Yes";
         return (
           <Box
             key={field.id}
@@ -351,15 +368,16 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                             </Popover.Trigger>
                             <Popover.Content>
                               <DayPicker
+                                locale={enGB}
                                 mode="single"
                                 selected={
                                   field.value
-                                    ? new Date(field.value)
+                                    ? parseDateOnly(field.value)
                                     : undefined
                                 }
                                 onSelect={(date) => {
                                   const iso = date
-                                    ? date.toISOString().slice(0, 10)
+                                    ? toDateOnlyValue(date)
                                     : "";
                                   field.onChange(iso || undefined);
                                 }}
@@ -514,30 +532,28 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                   </Form.Field>
                 </Box>
               </Flex>
+              <Separator orientation="horizontal" size="4" />
               <Flex gap="3" justify="between" direction="row" wrap="wrap">
                 <Box minWidth="250px">
                   <Form.Field
-                    name={`${prefix}.glassType`}
+                    name={`${prefix}.inclusions`}
                     className={formStyles.field}
                   >
                     <Form.Label className={formStyles.label} asChild>
-                      <Text>
-                        <Text color="red">*</Text> Glass type
-                      </Text>
+                      <Text>Inclusions</Text>
                     </Form.Label>
                     <Form.Control asChild>
                       <Controller
                         control={control}
-                        name={`${prefix}.glassType`}
-                        rules={{ required: "Glass type is required" }}
+                        name={`${prefix}.inclusions`}
                         render={({ field }) => (
                           <Select.Root
                             value={field.value || ""}
                             onValueChange={field.onChange}
                           >
-                            <Select.Trigger placeholder="Glass type" />
+                            <Select.Trigger placeholder="Inclusions" />
                             <Select.Content>
-                              {FRAME_GLASS_TYPE_OPTIONS.map((opt) => (
+                              {FRAME_INCLUSIONS_OPTIONS.map((opt) => (
                                 <Select.Item key={opt} value={opt}>
                                   {opt}
                                 </Select.Item>
@@ -547,41 +563,30 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                         )}
                       />
                     </Form.Control>
-                    {bouquetErrors?.glassType && (
-                      <Text size="1" color="red">
-                        {bouquetErrors.glassType.message as string}
-                      </Text>
-                    )}
                   </Form.Field>
                 </Box>
-                <Box>
-                  <Form.Field name={`${prefix}.glassPrice`}>
-                    <Form.Label className={formStyles.label} asChild>
-                      <Text>Glass price (£)</Text>
-                    </Form.Label>
-                    <Form.Control asChild>
-                      <TextField.Root
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        disabled={!glassPriceRequired}
-                        {...register(`${prefix}.glassPrice`, {
-                          valueAsNumber: true,
-                          required: glassPriceRequired ? "Required" : undefined,
-                        })}
-                      />
-                    </Form.Control>
-                    {bouquetErrors?.glassPrice && (
-                      <Text size="1" color="red">
-                        {bouquetErrors.glassPrice.message as string}
-                      </Text>
-                    )}
-                  </Form.Field>
-                </Box>
+                {showInclusionDetails ? (
+                  <Box flexGrow="1" minWidth="300px">
+                    <Form.Field
+                      name={`${prefix}.specialNotes`}
+                      className={formStyles.field}
+                    >
+                      <Form.Label className={formStyles.label} asChild>
+                        <Text>Include</Text>
+                      </Form.Label>
+                      <Form.Control asChild>
+                        <TextArea
+                          {...register(`${prefix}.specialNotes`)}
+                          placeholder="List of inclusions"
+                          rows={3}
+                        />
+                      </Form.Control>
+                    </Form.Field>
+                  </Box>
+                ) : null}
               </Flex>
               {mode === "edit" && (
                 <>
-                  <Separator orientation="horizontal" size="4" />
                   <Flex gap="3" justify="between" direction="row" wrap="wrap">
                     <Box minWidth="250px">
                       <Form.Field
@@ -626,39 +631,6 @@ const BouquetData: FC<BouquetDataProps> = ({ mode, selectedBouquetId }) => {
                             }
                           </Text>
                         )}
-                      </Form.Field>
-                    </Box>
-                  </Flex>
-                  <Flex gap="3" justify="between" direction="row" wrap="wrap">
-                    <Box minWidth="250px">
-                      <Form.Field
-                        name={`${prefix}.inclusions`}
-                        className={formStyles.field}
-                      >
-                        <Form.Label className={formStyles.label} asChild>
-                          <Text>Inclusions</Text>
-                        </Form.Label>
-                        <Form.Control asChild>
-                          <Controller
-                            control={control}
-                            name={`${prefix}.inclusions`}
-                            render={({ field }) => (
-                              <Select.Root
-                                value={field.value || ""}
-                                onValueChange={field.onChange}
-                              >
-                                <Select.Trigger placeholder="Inclusions" />
-                                <Select.Content>
-                                  {FRAME_INCLUSIONS_OPTIONS.map((opt) => (
-                                    <Select.Item key={opt} value={opt}>
-                                      {opt}
-                                    </Select.Item>
-                                  ))}
-                                </Select.Content>
-                              </Select.Root>
-                            )}
-                          />
-                        </Form.Control>
                       </Form.Field>
                     </Box>
                   </Flex>
