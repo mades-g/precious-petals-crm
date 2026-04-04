@@ -3,22 +3,48 @@ import {
   Badge,
   Box,
   Button,
-  Code,
   Dialog,
   Flex,
   Heading,
-  Table,
+  Separator,
   Text,
 } from "@radix-ui/themes";
 import { useQuery } from "@tanstack/react-query";
 
 import { getSmsLogs, type SmsLogItem } from "@/api/get-sms-logs";
-import { formatDate, formatSnakeCase } from "@/utils";
+import { formatDateTime, formatSnakeCase } from "@/utils";
 
 const statusColor = (status?: string) => {
   if (status === "sent") return "green";
   if (status === "failed") return "red";
   return "gray";
+};
+
+const statusLabel = (status?: string) => {
+  if (status === "sent") return "Sent";
+  if (status === "failed") return "Failed";
+  return "Logged";
+};
+
+const smsTypeLabel = (type?: string) => {
+  switch (type) {
+    case "chase_to_choose":
+      return "Chase to choose";
+    case "order_ready":
+      return "Order ready";
+    case "invite_to_pay_final_balance":
+      return "Invite to pay final balance";
+    case "custom":
+      return "Custom message";
+    case "deposit_reminder":
+      return "Deposit reminder";
+    case "paperweight_received":
+      return "Paperweight received";
+    case "framing_complete":
+      return "Framing complete";
+    default:
+      return formatSnakeCase(type);
+  }
 };
 
 export type SmsLogDrawerProps = {
@@ -39,7 +65,7 @@ const SmsLogDrawer: FC<SmsLogDrawerProps> = ({ open, onOpenChange, order }) => {
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Content style={{ width: 720, maxWidth: "95vw" }}>
+      <Dialog.Content style={{ width: 760, maxWidth: "95vw" }}>
         <Flex direction="column" gap="3">
           <Flex align="center" justify="between">
             <Heading size="4">
@@ -63,55 +89,66 @@ const SmsLogDrawer: FC<SmsLogDrawerProps> = ({ open, onOpenChange, order }) => {
               No SMS sent for this order yet.
             </Text>
           ) : (
-            <Table.Root>
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>Sent</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Type</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>To</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Message</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {logs.map((log: SmsLogItem) => (
-                  <Table.Row key={log.id}>
-                    <Table.Cell>
-                      {log.sentAt ? formatDate(log.sentAt) : "-"}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Code size="1" variant="outline">
-                        {formatSnakeCase(log.type)}
-                      </Code>
-                    </Table.Cell>
-                    <Table.Cell>{log.toNumber}</Table.Cell>
-                    <Table.Cell>
+            <Flex direction="column" gap="2">
+              {logs.map((log: SmsLogItem) => (
+                <Box
+                  key={log.id}
+                  style={{
+                    border: "1px solid var(--gray-a5)",
+                    borderRadius: 10,
+                    padding: 12,
+                  }}
+                >
+                  <Flex align="center" justify="between" gap="2" wrap="wrap">
+                    <Flex align="center" gap="2" wrap="wrap">
                       <Badge color={statusColor(log.status)} variant="soft">
-                        {log.status}
+                        {statusLabel(log.status)}
                       </Badge>
-                      {log.status === "failed" && log.error ? (
-                        <Text size="1" color="red" mt="1">
-                          {log.error}
-                        </Text>
-                      ) : null}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Box
-                        style={{
-                          maxWidth: 280,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                        title={log.body}
-                      >
-                        {log.body}
-                      </Box>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
+                      <Text size="2" weight="medium">
+                        {smsTypeLabel(log.type)}
+                      </Text>
+                    </Flex>
+                    <Text size="1" color="gray">
+                      {log.sentAt ? formatDateTime(log.sentAt) : "-"}
+                    </Text>
+                  </Flex>
+
+                  <Flex direction="column" gap="1" mt="2">
+                    <Text size="2" color="gray">
+                      To: {log.toNumber}
+                    </Text>
+                    <Text size="2" color="gray">
+                      Sender: {log.sender}
+                    </Text>
+                    {log.error ? (
+                      <Text size="2" color="red">
+                        Error: {log.error}
+                      </Text>
+                    ) : null}
+                  </Flex>
+
+                  <Separator size="4" my="2" />
+
+                  <Box>
+                    <Text size="1" color="gray">
+                      Message
+                    </Text>
+                    <Box
+                      mt="1"
+                      style={{
+                        background: "var(--gray-a2)",
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <Text size="2">{log.body}</Text>
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Flex>
           )}
         </Flex>
       </Dialog.Content>

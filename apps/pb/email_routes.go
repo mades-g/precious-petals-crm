@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"strings"
@@ -46,15 +45,20 @@ func buildOrderSubject(payload invoicePayload) string {
 	if bookingName == "" {
 		bookingName = strings.TrimSpace(payload.Customer.Surname)
 	}
-	orderNo := formatInvoiceNo(payload.Order.OrderNo.Float64())
-	if orderNo == "-" {
-		orderNo = strings.TrimSpace(payload.Order.OrderID)
-	}
+	orderNo := buildOrderReference(payload)
 	orderNo = strings.TrimSpace(orderNo)
 	if orderNo == "" {
 		orderNo = "Order"
 	}
 	return fmt.Sprintf("%s %s - Your flower preservation", bookingName, orderNo)
+}
+
+func buildOrderReference(payload invoicePayload) string {
+	orderRef := formatInvoiceNo(payload.Order.OrderNo.Float64())
+	if orderRef == "-" {
+		orderRef = strings.TrimSpace(payload.Order.OrderID)
+	}
+	return strings.TrimSpace(orderRef)
 }
 
 func registerEmailRoutes(
@@ -153,6 +157,7 @@ func registerEmailRoutes(
 		emailView.Order.InvoiceNo = formatInvoiceNo(payload.Order.OrderNo.Float64())
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.invoice.html", map[string]any{
+			"logoDataURI": logoDataURI,
 			"customer": map[string]any{
 				"title":   emailView.Customer.Title,
 				"surname": emailView.Customer.Surname,
@@ -173,13 +178,13 @@ func registerEmailRoutes(
 		}
 
 		textBody := fmt.Sprintf(
-			"Dear %s %s\n\nReference: Name: %s, Occasion Date: %s, Estimated Completion Date: %s, Invoice: %s\n\nPlease see attached your final invoice which details your display choices, the payments that you have made and the outstanding balance, which is due one month before completion, this will enable us to meet the estimated completion date.\n\nWe kindly request that you read through the details on your invoice and get in touch as soon as possible if you need to amend anything.\n\nKind Regards\nThe Precious Petals Team\n",
+			"Dear %s %s\n\nReference: Name: %s\nOccasion Date: %s\nInvoice: %s\n\nEstimated Completion Date: %s\nPlease see attached your final invoice which details your display choices, the payments that you have made and the outstanding balance, which is due one month before completion, this will enable us to meet the estimated completion date.\n\nWe kindly request that you read through the details on your invoice and get in touch as soon as possible if you need to amend anything.\n\nKind Regards,\nThe Precious Petals Team\n\nhttps://www.preciouspetals.co.uk\n01256 882422\nStudio Opening hours\nMon - Thurs 9-5\nFri - Sat 9.30-12.30\n",
 			emailView.Customer.Title,
 			emailView.Customer.Surname,
 			emailView.Customer.Surname,
 			emailView.Order.OccasionDate,
-			emailView.Order.RequiredBy,
 			emailView.Order.InvoiceNo,
+			emailView.Order.RequiredBy,
 		)
 
 		req := ResendEmailRequest{
@@ -196,9 +201,6 @@ func registerEmailRoutes(
 				},
 			},
 		}
-
-		// MISSING BEFORE: actually add the CID inline footer attachment
-		addCidFooter(&req, footerPngBytes)
 
 		idemKey := ""
 		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
@@ -280,14 +282,12 @@ func registerEmailRoutes(
 
 		occasionDate := formatDate(string(payload.Order.OccasionDate))
 
-		ref := strings.TrimSpace(payload.Order.OrderID)
-		if ref == "" {
-			ref = formatInvoiceNo(payload.Order.OrderNo.Float64())
-		}
+		ref := buildOrderReference(payload)
 
-		recoTableHTML, frameCount := buildRecommendationNarrativeHTMLFromPayload(payload)
+		recommendationFrames, _ := buildRecommendationEmailContentFromPayload(payload)
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.recommendation.html", map[string]any{
+			"logoDataURI": logoDataURI,
 			"customer": map[string]any{
 				"title":   strings.TrimSpace(payload.Customer.Title),
 				"surname": strings.TrimSpace(payload.Customer.Surname),
@@ -300,20 +300,22 @@ func registerEmailRoutes(
 				"jotform":     "https://eu.jotform.com/PPetals/order-form",
 				"frameStyles": "https://www.preciouspetals.co.uk/framestyles",
 				"terms":       "https://www.preciouspetals.co.uk/terms",
+				"website":     "https://www.preciouspetals.co.uk",
+			},
+			"recommendation": map[string]any{
+				"frames": recommendationFrames,
 			},
 			"suggestions": map[string]any{
 				"sideProfileUpsizePrice": "£50.00",
 			},
-			"recommendation": map[string]any{
-				"frames":      make([]any, frameCount),
-				"tableHtml":   template.HTML(recoTableHTML),
-				"framesTotal": "",
-				"portalTotal": "",
+			"contact": map[string]any{
+				"phone": "01256 882422",
+				"email": "enquiries@preciouspetals.co.uk",
 			},
 			"brand": map[string]any{
 				"name":    "Precious Petals",
 				"tagline": "Flower Preservation Specialists",
-				"phone":   "0191 000 0000",
+				"phone":   "01256 882422",
 				"website": "https://www.preciouspetals.co.uk",
 			},
 		})
@@ -326,14 +328,11 @@ func registerEmailRoutes(
 			})
 		}
 
-		textBody := fmt.Sprintf(
-			"Dear %s %s\n\nReference: Name: %s  Occasion Date: %s  %s\n\nWe are delighted to have been asked to preserve your flowers. They have been photographed, measured and the preservation process has begun.\n\nThe next step is for you to complete our order form:\n%s\n\nKind Regards\nThe Precious Petals Team\n",
-			strings.TrimSpace(payload.Customer.Title),
-			strings.TrimSpace(payload.Customer.Surname),
-			strings.TrimSpace(payload.Customer.Surname),
+		textBody := buildRecommendationTextBody(
+			payload,
 			occasionDate,
 			ref,
-			"https://eu.jotform.com/PPetals/order-form",
+			recommendationFrames,
 		)
 
 		req := ResendEmailRequest{
@@ -342,9 +341,6 @@ func registerEmailRoutes(
 			HTML:    emailHTML,
 			Text:    textBody,
 		}
-
-		// MISSING BEFORE: actually add the CID inline footer attachment
-		addCidFooter(&req, footerPngBytes)
 
 		idemKey := ""
 		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
@@ -424,6 +420,7 @@ func registerEmailRoutes(
 		}
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.delivery_collect.html", map[string]any{
+			"logoDataURI": logoDataURI,
 			"order": map[string]any{
 				"orderNo": orderNo,
 			},
@@ -448,8 +445,6 @@ func registerEmailRoutes(
 			HTML:    emailHTML,
 			Text:    textBody,
 		}
-
-		addCidFooter(&req, footerPngBytes)
 
 		idemKey := ""
 		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
@@ -495,35 +490,47 @@ func formatGBP(v float64) string {
 	return fmt.Sprintf("£%.2f", v)
 }
 
-func htmlEscape(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, `"`, "&quot;")
-	s = strings.ReplaceAll(s, "'", "&#39;")
-	return s
+type recommendationEmailFrame struct {
+	DisplayDescription  string
+	Size                string
+	Layout              string
+	FrameType           string
+	MainPrice           string
+	GlassType           string
+	HasAdditionalMount  bool
+	AdditionalMount     string
+	TotalPrice          string
+	HasGlassEngraving   bool
+	GlassEngravingLabel string
+	GlassEngravingPrice string
 }
 
-func buildRecommendationNarrativeHTMLFromPayload(payload invoicePayload) (string, int) {
+type recommendationEmailPaperweight struct {
+	Quantity   string
+	TotalPrice string
+}
+
+func buildRecommendationEmailContentFromPayload(payload invoicePayload) ([]recommendationEmailFrame, *recommendationEmailPaperweight) {
 	frames := payload.Frames
 	if len(frames) == 0 {
-		return "<p><em>No frame recommendations found.</em></p>", 0
+		return nil, buildRecommendationPaperweight(payload)
 	}
 
-	paragraphs := make([]string, 0, len(frames))
-	for i, f := range frames {
+	recommendations := make([]recommendationEmailFrame, 0, len(frames))
+	for _, f := range frames {
 		mountPrice, engravingPrice, glassPrice, framePrice := extractFrameExtras(f.Extras)
-		size := formatFrameSizeFromPayloadFrame(f.RecommendedSize, f.MeasuredSize, f.Size)
+		size := formatRecommendationSizeLabel(
+			formatFrameSizeFromPayloadFrame(f.RecommendedSize, f.MeasuredSize, f.Size),
+		)
 		mount := strings.TrimSpace(f.MountColour)
 		if mount == "" || mount == "No Second Mount" {
 			mount = "-"
 		}
-		layout := strings.TrimSpace(f.Layout)
-		frameType := strings.TrimSpace(f.FrameType)
-		glassType := strings.TrimSpace(f.GlassType)
-		preservation := strings.TrimSpace(f.PreservationType)
-		if preservation == "" {
-			preservation = strings.TrimSpace(f.Inclusions)
+		layout := formatRecommendationLabel(f.Layout)
+		frameType := formatRecommendationLabel(f.FrameType)
+		glassType := formatRecommendationLabel(f.GlassType)
+		if glassType == "" {
+			glassType = "conservation glass"
 		}
 
 		basePrice := floatFromNumber(f.Price)
@@ -536,80 +543,66 @@ func buildRecommendationNarrativeHTMLFromPayload(payload invoicePayload) (string
 			basePrice = 0
 		}
 
-		mainParts := []string{}
-		if size != "" {
-			mainParts = append(mainParts, size)
-		}
-		if layout != "" {
-			mainParts = append(mainParts, layout)
-		}
-		if frameType != "" {
-			mainParts = append(mainParts, frameType)
-		}
-		frameDescriptor := strings.Join(mainParts, " ")
-		if frameDescriptor == "" {
-			frameDescriptor = fmt.Sprintf("frame %d", i+1)
+		recommendation := recommendationEmailFrame{
+			DisplayDescription: strings.TrimSpace(strings.Join([]string{size, layout}, " ")),
+			Size:               size,
+			Layout:             layout,
+			FrameType:          frameType,
+			MainPrice:          formatGBP(basePrice),
+			GlassType:          glassType,
 		}
 
-		glassSegment := "conservation glass"
-		if glassType != "" {
-			glassSegment = glassType
-		}
-		singleMount := "a single mount"
-		if mount == "-" {
-			singleMount = "a single mount"
-		}
-		preservationSegment := ""
-		if preservation != "" {
-			preservationSegment = fmt.Sprintf(" with %s preservation", preservation)
-		}
-
-		mainSentence := fmt.Sprintf(
-			"We would like to suggest that a %s display%s would look lovely with your bridal flowers. The price of this is %s to include the frame with %s and %s.",
-			htmlEscape(frameDescriptor),
-			htmlEscape(preservationSegment),
-			formatGBP(basePrice),
-			htmlEscape(glassSegment),
-			singleMount,
-		)
-
-		additionalSentence := ""
 		if mount != "-" && mountPrice.Float64() != nil && *mountPrice.Float64() > 0 {
-			additionalSentence = fmt.Sprintf(
-				" An additional %s mount would also complement the flowers which would be %s.",
-				htmlEscape(mount),
-				formatGBP(floatFromNumber(mountPrice)),
-			)
+			recommendation.HasAdditionalMount = true
+			recommendation.AdditionalMount = formatRecommendationLabel(mount)
+			recommendation.TotalPrice = formatGBP(basePrice + floatFromNumber(mountPrice))
 		}
 
-		engravingSentence := ""
 		if engravingPrice.Float64() != nil && *engravingPrice.Float64() > 0 {
 			engravingText := strings.TrimSpace(f.GlassEngraving)
 			engravingLabel := "Glass engraving"
 			if engravingText != "" {
 				engravingLabel = fmt.Sprintf("Glass engraving - \"%s\"", engravingText)
 			}
-			engravingSentence = fmt.Sprintf(
-				" %s would be %s.",
-				htmlEscape(engravingLabel),
-				formatGBP(floatFromNumber(engravingPrice)),
-			)
+			recommendation.HasGlassEngraving = true
+			recommendation.GlassEngravingLabel = engravingLabel
+			recommendation.GlassEngravingPrice = formatGBP(floatFromNumber(engravingPrice))
 		}
 
-		paragraphs = append(paragraphs, fmt.Sprintf("<p>%s%s%s</p>", mainSentence, additionalSentence, engravingSentence))
+		recommendations = append(recommendations, recommendation)
 	}
 
-	if pw := payload.GetPaperweight(); pw != nil && pw.Price.Float64() != nil {
-		qty := 1.0
-		if pw.Quantity.Float64() != nil && *pw.Quantity.Float64() > 0 {
-			qty = *pw.Quantity.Float64()
-		}
-		total := *pw.Price.Float64()
-		pwSentence := fmt.Sprintf("We also recommend a Paperweight (Quantity: %.0f) for %s.", qty, formatGBP(total))
-		paragraphs = append(paragraphs, fmt.Sprintf("<p>%s</p>", pwSentence))
+	return recommendations, buildRecommendationPaperweight(payload)
+}
+
+func buildRecommendationPaperweight(payload invoicePayload) *recommendationEmailPaperweight {
+	pw := payload.GetPaperweight()
+	if pw == nil || pw.Price.Float64() == nil {
+		return nil
 	}
 
-	return strings.Join(paragraphs, "\n"), len(frames)
+	qty := 1.0
+	if pw.Quantity.Float64() != nil && *pw.Quantity.Float64() > 0 {
+		qty = *pw.Quantity.Float64()
+	}
+
+	return &recommendationEmailPaperweight{
+		Quantity:   fmt.Sprintf("%.0f", qty),
+		TotalPrice: formatGBP(*pw.Price.Float64()),
+	}
+}
+
+func formatRecommendationLabel(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+
+	normalized := strings.ReplaceAll(trimmed, "Hand tied", "hand-tied")
+	normalized = strings.ReplaceAll(normalized, "Hand Tied", "hand-tied")
+	normalized = strings.ReplaceAll(normalized, "Birds eye", "birds eye")
+
+	return strings.ToLower(normalized[:1]) + normalized[1:]
 }
 
 func formatFrameSizeFromPayloadFrame(recommendedSize, measuredSize, size string) string {
@@ -620,6 +613,110 @@ func formatFrameSizeFromPayloadFrame(recommendedSize, measuredSize, size string)
 		return strings.TrimSpace(measuredSize)
 	}
 	return strings.TrimSpace(size)
+}
+
+func formatRecommendationSizeLabel(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+
+	normalized := strings.ReplaceAll(trimmed, `"`, "")
+	normalized = strings.ReplaceAll(normalized, "X", " x ")
+	normalized = strings.ReplaceAll(normalized, "x", " x ")
+	normalized = strings.Join(strings.Fields(normalized), " ")
+
+	lower := strings.ToLower(normalized)
+	switch {
+	case strings.HasSuffix(lower, " inches"):
+		return strings.TrimSpace(normalized[:len(normalized)-len("inches")]) + " inch"
+	case strings.HasSuffix(lower, " inch"):
+		return normalized
+	case strings.HasSuffix(lower, " in"):
+		return strings.TrimSpace(normalized[:len(normalized)-len("in")]) + " inch"
+	default:
+		return normalized + " inch"
+	}
+}
+
+func buildRecommendationTextBody(
+	payload invoicePayload,
+	occasionDate string,
+	ref string,
+	recommendationFrames []recommendationEmailFrame,
+) string {
+	paragraphs := []string{
+		fmt.Sprintf(
+			"Dear %s %s,",
+			strings.TrimSpace(payload.Customer.Title),
+			strings.TrimSpace(payload.Customer.Surname),
+		),
+		fmt.Sprintf(
+			"Reference: %s\nOccasion Date: %s\nReference Number: %s",
+			strings.TrimSpace(payload.Customer.Surname),
+			occasionDate,
+			ref,
+		),
+		"We are delighted to have been asked to preserve your flowers. They have now been photographed, measured, and the preservation process has begun.",
+		"As each piece we create is bespoke, we kindly ask all customers to complete the order form below to confirm how they would like their flowers displayed - even for smaller items such as paperweights. This helps us fully understand your preferences and ensures we create something just right for you. It should only take a few minutes, and we respectfully ask that you return it within four weeks to avoid delays.",
+		"You can access the form here:\nhttps://eu.jotform.com/PPetals/order-form",
+		"If you would prefer to visit our studio to complete the form and discuss your options with one of our artists, or if you would like a phone consultation, please call us as soon as possible to arrange an appointment. Your flowers will be ready for you to view in approximately one month.",
+	}
+
+	for _, frame := range recommendationFrames {
+		displayDescription := strings.TrimSpace(frame.DisplayDescription)
+		if displayDescription == "" {
+			displayDescription = "display"
+		} else {
+			displayDescription += " display"
+		}
+
+		paragraphs = append(paragraphs,
+			fmt.Sprintf(
+				"We would like to suggest a %s in a %s frame. This style would complement your bridal flowers beautifully. The price is %s, including the frame with %s and a single mount.",
+				displayDescription,
+				frame.FrameType,
+				frame.MainPrice,
+				frame.GlassType,
+			),
+		)
+
+		if frame.HasAdditionalMount {
+			paragraphs = append(paragraphs,
+				fmt.Sprintf(
+					"An additional %s mount would further enhance the display, bringing the total to %s.",
+					frame.AdditionalMount,
+					frame.TotalPrice,
+				),
+			)
+		}
+
+		if frame.HasGlassEngraving {
+			paragraphs = append(paragraphs,
+				fmt.Sprintf(
+					"%s would be an additional %s.",
+					frame.GlassEngravingLabel,
+					frame.GlassEngravingPrice,
+				),
+			)
+		}
+	}
+
+	paragraphs = append(paragraphs,
+		"There are many more ideas available on our website, including a range of beautiful optional extras you may wish to include in your order.",
+		"If you had a hand-tied bouquet, you may prefer a side profile display (showing the stems and ribbons). This can be created in a larger frame for an additional £50.00.",
+		"The price includes the replacement of any damaged flowers, which we recommend considering. To do this accurately, we will need a list of the flower varieties used by your florist, as some seasonal flowers may need to be ordered promptly.",
+		"You can also find the order form within the frame styles section of our website:\nhttps://www.preciouspetals.co.uk/framestyles",
+		"Please remember to include any special requirements in the additional instructions section of the form.",
+		"Your order is accepted on the basis that you have read and agree to our terms and conditions:\nhttps://www.preciouspetals.co.uk/terms",
+		"Please note that flowers may change colour slightly during the preservation process due to the removal of moisture.",
+		"If you have any questions or would like assistance completing the form, please do not hesitate to get in touch - we are always happy to help.",
+		"Once we receive your completed form and final payment, your preserved arrangement will be ready within four weeks.",
+		"Kind regards,\nCatherine",
+		"https://www.preciouspetals.co.uk\n01256 882422\nStudio Opening hours\nMon - Thurs 9-5\nFri - Sat 9.30-12.30",
+	)
+
+	return strings.Join(paragraphs, "\n\n")
 }
 
 func floatFromNumber(n Number) float64 {

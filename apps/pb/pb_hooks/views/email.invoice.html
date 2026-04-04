@@ -2,12 +2,11 @@
 <p>Dear {{.customer.title}} {{.customer.surname}}</p>
 
 <p>
-  Reference: Name: {{.customer.surname}}, Occasion Date:
-  {{.order.occasionDate}}, Invoice: {{.order.invoiceNumber}}
+  Reference: Name: {{.customer.surname}}<br />
+  Occasion Date: {{.order.occasionDate}}<br />
+  Invoice: {{.order.invoiceNumber}}
 </p>
-{{if .order.requiredBy}}
 <p>Estimated Completion Date: {{.order.requiredBy}}</p>
-{{end}}
 
 <p>
   Please see attached your final invoice which details your display choices, the
@@ -21,5 +20,14 @@
   touch as soon as possible if you need to amend anything.
 </p>
 
-<p>Kind Regards<br />The Precious Petals Team</p>
+<p>Kind Regards,<br />The Precious Petals Team</p>
+
+<p>
+  <a href="https://www.preciouspetals.co.uk">https://www.preciouspetals.co.uk</a
+  ><br />
+  01256 882422<br />
+  Studio Opening hours<br />
+  Mon - Thurs 9-5<br />
+  Fri - Sat 9.30-12.30
+</p>
 {{end}}

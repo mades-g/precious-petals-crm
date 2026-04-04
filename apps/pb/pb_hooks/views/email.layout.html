@@ -18,26 +18,40 @@
       a {
         color: inherit;
       }
+      .cta-button {
+        display: inline-block;
+        padding: 12px 18px;
+        border: 3px solid #111;
+        background: #ddb8b8;
+        color: #111 !important;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .cta-button:hover {
+        background: #c9d7ad;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      {{block "body" .}}{{end}}
-      <div style="margin-top: 24px; background: #fff">
+      {{if .logoDataURI}}
+      <div style="margin-bottom: 24px">
         <img
-          src="cid:pp_footer"
-          alt="Precious Petals footer"
+          src="{{safeURL .logoDataURI}}"
+          alt="Precious Petals"
           style="
             display: block;
             border: 0;
             outline: none;
             text-decoration: none;
             width: 100%;
-            max-width: 320px;
+            max-width: 458px;
             height: auto;
           "
         />
       </div>
+      {{end}}
+      {{block "body" .}}{{end}}
     </div>
   </body>
 </html>
