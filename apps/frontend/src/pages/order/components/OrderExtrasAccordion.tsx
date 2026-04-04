@@ -117,7 +117,6 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
 
         <Box>
           <Flex direction="column" gap="1" mb="2">
-            <Heading size="3">Other extras</Heading>
             <Text size="1" color="gray">
               Toggle each extra on only when needed, then set its price.
             </Text>

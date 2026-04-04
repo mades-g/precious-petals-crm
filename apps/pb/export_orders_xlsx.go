@@ -16,6 +16,7 @@ import (
 const (
 	maxOrdersExport = 2000
 	filterChunkSize = 200
+	recordPageSize  = 500
 )
 
 type orderExportCustomer struct {
@@ -630,15 +631,23 @@ func calculateOrderTotal(order *core.Record, frames []*core.Record, pw *core.Rec
 	}
 
 	extrasTotal := 0.0
-	extrasTotal += order.GetFloat("replacementFlowersPrice")
-	extrasTotal += order.GetFloat("collectionPrice")
-	extrasTotal += order.GetFloat("deliveryPrice")
-	extrasTotal += order.GetFloat("recreateButtonholePrice")
-	extrasTotal += order.GetFloat("returnUnusedFlowersPrice")
+	if order.GetBool("replacementFlowers") {
+		extrasTotal += order.GetFloat("replacementFlowersPrice")
+	}
+	if order.GetFloat("collectionQty") > 0 {
+		extrasTotal += order.GetFloat("collectionPrice")
+	}
+	if order.GetFloat("deliveryQty") > 0 {
+		extrasTotal += order.GetFloat("deliveryPrice")
+	}
+	if order.GetFloat("recreateButtonholeQty") > 0 {
+		extrasTotal += order.GetFloat("recreateButtonholePrice")
+	}
+	if order.GetBool("returnUnusedFlowers") {
+		extrasTotal += order.GetFloat("returnUnusedFlowersPrice")
+	}
 
-	subTotal := frameTotal + paperweightTotal + extrasTotal
-	vatTotal := subTotal * 0.2
-	return subTotal + vatTotal
+	return frameTotal + paperweightTotal + extrasTotal
 }
 
 func getStringFirst(r *core.Record, keys ...string) string {
@@ -808,13 +817,30 @@ func fetchRecordsByField(app *pocketbase.PocketBase, collection, field string, i
 			continue
 		}
 
-		records, err := app.FindRecordsByFilter(collection, filter, "", len(ids[start:end]), 0)
+		records, err := collectRecordsPageByPage(func(limit, offset int) ([]*core.Record, error) {
+			return app.FindRecordsByFilter(collection, filter, "", limit, offset)
+		})
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, records...)
 	}
 
+	return result, nil
+}
+
+func collectRecordsPageByPage(fetchPage func(limit, offset int) ([]*core.Record, error)) ([]*core.Record, error) {
+	result := []*core.Record{}
+	for offset := 0; ; offset += recordPageSize {
+		records, err := fetchPage(recordPageSize, offset)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, records...)
+		if len(records) < recordPageSize {
+			break
+		}
+	}
 	return result, nil
 }
 
@@ -856,13 +882,12 @@ func writeOrdersSheet(
 		"Order Status",
 		"Payment Status",
 		"Replacement Flowers",
-		"Replacement Flowers Qty",
 		"Replacement Flowers Price",
-		"Collection Qty",
+		"Collection",
 		"Collection Price",
-		"Delivery Qty",
+		"Delivery",
 		"Delivery Price",
-		"Recreate Buttonhole Qty",
+		"Recreate Buttonhole",
 		"Recreate Buttonhole Price",
 		"Return Unused Flowers",
 		"Return Unused Flowers Price",
@@ -886,13 +911,12 @@ func writeOrdersSheet(
 			order.GetString("orderStatus"),
 			order.GetString("payment_status"),
 			order.GetBool("replacementFlowers"),
-			order.GetFloat("replacementFlowersQty"),
 			exportMoneyNumber(order.GetFloat("replacementFlowersPrice")),
-			order.GetFloat("collectionQty"),
+			order.GetFloat("collectionQty") > 0,
 			exportMoneyNumber(order.GetFloat("collectionPrice")),
-			order.GetFloat("deliveryQty"),
+			order.GetFloat("deliveryQty") > 0,
 			exportMoneyNumber(order.GetFloat("deliveryPrice")),
-			order.GetFloat("recreateButtonholeQty"),
+			order.GetFloat("recreateButtonholeQty") > 0,
 			exportMoneyNumber(order.GetFloat("recreateButtonholePrice")),
 			order.GetBool("returnUnusedFlowers"),
 			exportMoneyNumber(order.GetFloat("returnUnusedFlowersPrice")),

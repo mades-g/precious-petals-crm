@@ -379,7 +379,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                       {...register("deliveryAddressLine1", {
                         validate: (value) =>
                           deliverySameAsBilling ||
-                          value ||
+                          (value ?? "").trim().length > 0 ||
                           "Delivery address line 1 is required",
                       })}
                     />
@@ -422,7 +422,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                       {...register("deliveryTown", {
                         validate: (value) =>
                           deliverySameAsBilling ||
-                          value ||
+                          (value ?? "").trim().length > 0 ||
                           "Delivery town is required",
                       })}
                     />
@@ -460,7 +460,7 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
                       {...register("deliveryPostcode", {
                         validate: (value) =>
                           deliverySameAsBilling ||
-                          value ||
+                          (value ?? "").trim().length > 0 ||
                           "Delivery postcode is required",
                       })}
                     />

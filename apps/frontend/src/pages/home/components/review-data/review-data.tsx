@@ -85,6 +85,9 @@ const ReviewData: FC<ReviewDataProps> = ({
         county: values.deliveryCounty,
         postcode: values.deliveryPostcode,
       });
+  const showSameAsBillingAddress =
+    deliverySameAsBilling ||
+    (billingAddress.length > 0 && deliveryAddress === billingAddress);
 
   return (
     <Flex direction="column" gap="4">
@@ -137,12 +140,8 @@ const ReviewData: FC<ReviewDataProps> = ({
             {billingAddress || "—"}
           </ReviewDataRow>
           <ReviewDataRow label="Delivery address">
-            {deliverySameAsBilling ? (
-              <Text size="2">
-                Same as billing address
-                <br />
-                {billingAddress || "—"}
-              </Text>
+            {showSameAsBillingAddress ? (
+              "Same as billing address"
             ) : (
               deliveryAddress || "—"
             )}

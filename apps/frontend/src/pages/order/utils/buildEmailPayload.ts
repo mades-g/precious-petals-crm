@@ -43,17 +43,21 @@ const buildMergedInvoiceNotes = (
     lines.push(trimmed);
   };
 
+  const buildInclusionLabel = (index: number) =>
+    frames.length > 1 ? `Bouquet #${index + 1} Include` : "Include";
+
   appendLine(notes);
 
-  frames.forEach((frame) => {
+  frames.forEach((frame, index) => {
     const inclusions = frame.inclusions?.trim();
+    const label = buildInclusionLabel(index);
     if (inclusions === "Buttonhole") {
-      appendLine("Include: Buttonhole");
+      appendLine(`${label}: Buttonhole`);
       return;
     }
     const inclusionDetails = normalizeInclusionDetails(frame.specialNotes);
     if (inclusions === "Yes" && inclusionDetails) {
-      appendLine(`Include: ${inclusionDetails}`);
+      appendLine(`${label}: ${inclusionDetails}`);
     }
   });
 

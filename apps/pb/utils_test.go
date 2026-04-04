@@ -301,7 +301,7 @@ func TestBuildInvoiceViewModelMergesInclusionsIntoNotes(t *testing.T) {
 
 	view := buildInvoiceViewModel(payload, "", "", false)
 
-	expected := "Please add ribbon\nInclude: test 1, Test 3\nInclude: Buttonhole"
+	expected := "Please add ribbon\nBouquet #1 Include: test 1, Test 3\nBouquet #2 Include: Buttonhole"
 	if view.Notes != expected {
 		t.Fatalf("expected merged invoice notes %q, got %q", expected, view.Notes)
 	}

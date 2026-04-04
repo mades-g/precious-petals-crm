@@ -151,4 +151,68 @@ describe("buildEmailPayload", () => {
       "Please add ribbon\nInclude: Buttonhole",
     );
   });
+
+  it("numbers bouquet inclusion notes when there is more than one bouquet", () => {
+    const payload = buildEmailPayload({
+      customer: null,
+      order: null,
+      frames: [
+        {
+          frameId: "frame-1",
+          measuredSize: "20 x 30 inches",
+          recommendedSize: "20 x 30 inches",
+          frameType: "Dark wood gold line",
+          glassType: "Conservation glass",
+          layout: "Hand tied birds eye",
+          preservationType: "Pressed",
+          inclusions: "Yes",
+          specialNotes: "Ribbon\nPhotographs",
+          mountColour: "Cream",
+          glassEngraving: "",
+          price: 200,
+          extras: null,
+        },
+        {
+          frameId: "frame-2",
+          measuredSize: "10 x 8 inches",
+          recommendedSize: "10 x 8 inches",
+          frameType: "Oak",
+          glassType: "Conservation glass",
+          layout: "Hand tied side profile",
+          preservationType: "Pressed",
+          inclusions: "Buttonhole",
+          specialNotes: "",
+          mountColour: "Cream",
+          glassEngraving: "",
+          price: 150,
+          extras: null,
+        },
+      ] as never,
+      paperweight: null,
+      extras: {
+        replacementFlowers: false,
+        replacementFlowersQty: null,
+        replacementFlowersPrice: null,
+        collectionQty: null,
+        collectionPrice: null,
+        deliveryQty: null,
+        deliveryPrice: null,
+        recreateButtonholeQty: null,
+        recreateButtonholePrice: null,
+        returnUnusedFlowers: false,
+        returnUnusedFlowersPrice: null,
+        notes: "Please add ribbon",
+      },
+      totals: {
+        subTotal: 0,
+        vatRate: 20,
+        vatTotal: 0,
+        grandTotal: 0,
+      },
+    });
+
+    expect(payload.orderExtras.notes).toBe(
+      "Please add ribbon\nBouquet #1 Include: Ribbon, Photographs\nBouquet #2 Include: Buttonhole",
+    );
+  });
 });

@@ -461,19 +461,27 @@ func buildInvoiceNotes(payload invoicePayload) string {
 		lines = append(lines, trimmed)
 	}
 
+	buildInclusionLabel := func(index int) string {
+		if len(payload.Frames) > 1 {
+			return fmt.Sprintf("Bouquet #%d Include", index+1)
+		}
+		return "Include"
+	}
+
 	if payload.OrderExtras != nil && strings.TrimSpace(payload.OrderExtras.Notes) != "" {
 		notes := strings.TrimSpace(payload.OrderExtras.Notes)
 		lines = append(lines, notes)
 		registerSeenLines(notes)
 	}
 
-	for _, frame := range payload.Frames {
+	for index, frame := range payload.Frames {
+		label := buildInclusionLabel(index)
 		switch strings.TrimSpace(frame.Inclusions) {
 		case "Buttonhole":
-			appendLine("Include: Buttonhole")
+			appendLine(fmt.Sprintf("%s: Buttonhole", label))
 		case "Yes":
 			if details := normalizeInclusionDetails(frame.SpecialNotes); details != "" {
-				appendLine(fmt.Sprintf("Include: %s", details))
+				appendLine(fmt.Sprintf("%s: %s", label, details))
 			}
 		}
 	}

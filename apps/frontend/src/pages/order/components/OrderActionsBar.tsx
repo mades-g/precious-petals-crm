@@ -59,7 +59,6 @@ export type OrderActionsBarProps = {
   orderStatus: OrdersOrderStatusOptions;
   paymentStatus: OrdersPaymentStatusOptions;
   onPreviewInvoice: () => void;
-  previewDisabled?: boolean;
   onOpenEmailActions: () => void;
   onOpenSms: () => void;
   onOpenSmsLogs: () => void;
@@ -92,7 +91,6 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   orderStatus,
   paymentStatus,
   onPreviewInvoice,
-  previewDisabled,
   onOpenEmailActions,
   onOpenSms,
   onOpenSmsLogs,
@@ -160,11 +158,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
             ) : null}
           </Flex>
           <Flex gap="2" align="center" wrap="wrap">
-            <Button
-              variant="outline"
-              onClick={onPreviewInvoice}
-              disabled={previewDisabled}
-            >
+            <Button variant="outline" onClick={onPreviewInvoice}>
               Preview invoice
             </Button>
             <DropdownMenu.Root>

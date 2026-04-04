@@ -134,7 +134,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
 }) => {
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] =
-    useState<OrderPaymentsPaymentTypeOptions>("first_deposit");
+    useState<OrderPaymentsPaymentTypeOptions | undefined>(undefined);
   const [paidAt, setPaidAt] = useState(defaultPaidAt());
   const [notes, setNotes] = useState("");
   const [requiredBy, setRequiredBy] = useState("");
@@ -237,6 +237,11 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (!paymentType) {
+      setSubmitError("Select a payment type.");
+      return;
+    }
+
     const parsedAmount = Number(amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
       setSubmitError("Enter a valid amount.");
@@ -304,6 +309,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
           : {}),
       });
       setAmount("");
+      setPaymentType(undefined);
       setNotes("");
       setRequiredBy("");
       setArtistHours("");
@@ -469,7 +475,10 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   }}
                   disabled={inputsDisabled}
                 >
-                  <Select.Trigger disabled={inputsDisabled} />
+                  <Select.Trigger
+                    disabled={inputsDisabled}
+                    placeholder="Select payment type"
+                  />
                   <Select.Content>
                     {PAYMENT_TYPE_OPTIONS.map((option) => (
                       <Select.Item
@@ -496,7 +505,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 width="150px"
               />
             </Box>
-            {requiresRequiredBy(paymentType) ? (
+            {paymentType && requiresRequiredBy(paymentType) ? (
               <Box style={{ minWidth: 170 }}>
                 <Text size="1" color="gray">
                   Required by
@@ -511,7 +520,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 />
               </Box>
             ) : null}
-            {requiresArtistHours(paymentType) ? (
+            {paymentType && requiresArtistHours(paymentType) ? (
               <Box style={{ minWidth: 160 }}>
                 <Text size="1" color="gray">
                   Artist hours

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Card, Text } from "@radix-ui/themes";
+import { Box, Button, Text } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
 
@@ -346,7 +346,6 @@ const OrderPage = () => {
     paymentStatusDraft === "final_balance_paid" &&
     outstandingBalance === 0;
   const canSendInvoice = chosenEligible;
-  const orderDetailsAvailable = chosenEligible;
 
   const allowedOrderStatuses: Record<
     OrdersOrderStatusOptions,
@@ -663,14 +662,13 @@ const OrderPage = () => {
   };
 
   const openEditModal = (stage: FormStage, bouquetId?: string | null) => {
-    if (!orderDetailsAvailable) return;
     setCurrentFormStage(stage);
     setSelectedBouquetId(bouquetId ?? null);
     setIsEditModalOpen(true);
   };
 
   const handlePreviewInvoice = () => {
-    if (!order?.orderId || !orderDetailsAvailable) return;
+    if (!order?.orderId) return;
 
     const payload = buildEmailPayload({
       customer,
@@ -775,7 +773,6 @@ const OrderPage = () => {
         requiredBy={order?.requiredBy}
         orderStatus={orderStatusDraft}
         paymentStatus={paymentStatusDraft}
-        previewDisabled={!orderDetailsAvailable}
         showCompletion={hasFrames || hasPaperweight}
         showFrameCompletion={hasFrames}
         showPaperweightCompletion={hasPaperweight}
@@ -826,36 +823,26 @@ const OrderPage = () => {
         />
       </Box>
       <Box mt="4">
-        {orderDetailsAvailable ? (
-          <OrderItemsTable
-            lineItems={lineItems}
-            paperweight={paperweight}
-            onEditFrame={(frameId) => openEditModal("bouquet_data", frameId)}
-            onEditPaperweight={() => openEditModal("paperweight_data")}
-            isSavingPaperweight={isSavingPaperweight}
-          />
-        ) : (
-          <Card>
-            <Text size="2" color="gray">
-              Order details become available after the second deposit is paid.
-            </Text>
-          </Card>
-        )}
+        <OrderItemsTable
+          lineItems={lineItems}
+          paperweight={paperweight}
+          onEditFrame={(frameId) => openEditModal("bouquet_data", frameId)}
+          onEditPaperweight={() => openEditModal("paperweight_data")}
+          isSavingPaperweight={isSavingPaperweight}
+        />
       </Box>
-      {orderDetailsAvailable ? (
-        <Box mt="4">
-          <OrderExtrasAccordion
-            orderExtras={orderExtrasDraft}
-            frameGlassDrafts={frameGlassDrafts}
-            summary={orderExtrasSummary}
-            onUpdateField={handleUpdateExtrasField}
-            onUpdateFrameGlass={handleUpdateFrameGlass}
-            onSave={handleSaveExtras}
-            isSaving={isSavingExtras || isSavingFrameGlassDrafts}
-            error={orderExtrasError}
-          />
-        </Box>
-      ) : null}
+      <Box mt="4">
+        <OrderExtrasAccordion
+          orderExtras={orderExtrasDraft}
+          frameGlassDrafts={frameGlassDrafts}
+          summary={orderExtrasSummary}
+          onUpdateField={handleUpdateExtrasField}
+          onUpdateFrameGlass={handleUpdateFrameGlass}
+          onSave={handleSaveExtras}
+          isSaving={isSavingExtras || isSavingFrameGlassDrafts}
+          error={orderExtrasError}
+        />
+      </Box>
       <CreateNewOrderModal
         modalMode={modalMode}
         isModalOpen={isEditModalOpen}
