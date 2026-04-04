@@ -3,6 +3,7 @@ import {
   Badge,
   Box,
   Button,
+  Card,
   Checkbox,
   Flex,
   Heading,
@@ -11,18 +12,13 @@ import {
   TextArea,
   TextField,
 } from "@radix-ui/themes";
-import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDownIcon } from "@radix-ui/react-icons";
 
 import type { FrameGlassDraft, OrderExtrasDraft } from "../types";
-import orderPageStyles from "../order.module.css";
 
 export type OrderExtrasAccordionProps = {
   orderExtras: OrderExtrasDraft;
   frameGlassDrafts: FrameGlassDraft[];
   summary: string[];
-  open: boolean;
-  onOpenChange: (next: boolean) => void;
   onUpdateField: (
     key: keyof OrderExtrasDraft,
     value: OrderExtrasDraft[keyof OrderExtrasDraft],
@@ -88,8 +84,6 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
   orderExtras,
   frameGlassDrafts,
   summary,
-  open,
-  onOpenChange,
   onUpdateField,
   onUpdateFrameGlass,
   onSave,
@@ -97,210 +91,184 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
   error,
 }) => {
   return (
-    <Accordion.Root
-      className={orderPageStyles.root}
-      type="single"
-      collapsible
-      value={open ? "order-extras" : ""}
-      onValueChange={(value) => onOpenChange(value === "order-extras")}
-    >
-      <Accordion.Item className={orderPageStyles.item} value="order-extras">
-        <Accordion.Header className={orderPageStyles.header}>
-          <Accordion.Trigger className={orderPageStyles.trigger}>
-            <Flex
-              direction="column"
-              gap="1"
-              align="start"
-              className={orderPageStyles.triggerContent}
-            >
-              <Heading size="3">Order extras</Heading>
-              {summary.length > 0 ? (
-                <Flex gap="2" wrap="wrap">
-                  {summary.map((item) => (
-                    <Badge key={item} variant="soft" color="gray">
-                      {item}
-                    </Badge>
-                  ))}
-                </Flex>
-              ) : (
-                <Text size="1" color="gray">
-                  No extras added yet
-                </Text>
-              )}
-            </Flex>
-            <Flex
-              align="center"
-              gap="2"
-              className={orderPageStyles.triggerMeta}
-            >
+    <Card>
+      <Flex direction="column" gap="4">
+        <Flex justify="between" align="start" wrap="wrap" gap="3">
+          <Flex direction="column" gap="1">
+            <Heading size="3">Order extras</Heading>
+            <Text size="1" color="gray">
+              Update extras, glass upgrades, and order notes.
+            </Text>
+          </Flex>
+          <Flex gap="2" wrap="wrap" justify="end">
+            {summary.length > 0 ? (
+              summary.map((item) => (
+                <Badge key={item} variant="soft" color="gray">
+                  {item}
+                </Badge>
+              ))
+            ) : (
               <Text size="1" color="gray">
-                {open ? "Hide details" : "Add details"}
+                No extras added yet
               </Text>
-              <ChevronDownIcon
-                className={orderPageStyles.chevron}
-                aria-hidden
-              />
-            </Flex>
-          </Accordion.Trigger>
-        </Accordion.Header>
-        <Accordion.Content className={orderPageStyles.content}>
-          <Box className={orderPageStyles.contentInner}>
-            <Flex direction="column" gap="3">
-              <Table.Root variant="surface">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>Y / N</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
+            )}
+          </Flex>
+        </Flex>
+
+        <Box>
+          <Flex direction="column" gap="1" mb="2">
+            <Heading size="3">Other extras</Heading>
+            <Text size="1" color="gray">
+              Toggle each extra on only when needed, then set its price.
+            </Text>
+          </Flex>
+          <Table.Root variant="surface">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Y / N</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {orderExtrasRows.map((row) => {
+                const qtyValue = row.qtyKey ? orderExtras[row.qtyKey] : null;
+                const isEnabled = row.toggleKey
+                  ? Boolean(orderExtras[row.toggleKey])
+                  : row.qtyKey
+                    ? typeof qtyValue === "number" && qtyValue > 0
+                    : row.priceKey
+                      ? orderExtras[row.priceKey] != null
+                      : true;
+
+                return (
+                  <Table.Row key={row.id}>
+                    <Table.Cell>{row.label}</Table.Cell>
+                    <Table.Cell>
+                      <Checkbox
+                        checked={isEnabled}
+                        onCheckedChange={(checked) => {
+                          const enabled = Boolean(checked);
+
+                          if (row.toggleKey) {
+                            onUpdateField(row.toggleKey, enabled);
+                          } else if (row.qtyKey) {
+                            onUpdateField(row.qtyKey, enabled ? 1 : null);
+                          }
+
+                          if (!enabled) {
+                            if (row.qtyKey) onUpdateField(row.qtyKey, null);
+                            if (row.priceKey) onUpdateField(row.priceKey, null);
+                          }
+                        }}
+                      />
+                    </Table.Cell>
+                    <Table.Cell>
+                      {row.priceKey ? (
+                        <TextField.Root
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={
+                            orderExtras[row.priceKey] == null
+                              ? ""
+                              : String(orderExtras[row.priceKey])
+                          }
+                          onChange={(event) =>
+                            onUpdateField(
+                              row.priceKey!,
+                              parseNumberInput(event.target.value),
+                            )
+                          }
+                          disabled={!isEnabled}
+                        />
+                      ) : null}
+                    </Table.Cell>
                   </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {orderExtrasRows.map((row) => {
-                    const qtyValue = row.qtyKey ? orderExtras[row.qtyKey] : null;
-                    const isEnabled = row.toggleKey
-                      ? Boolean(orderExtras[row.toggleKey])
-                      : row.qtyKey
-                        ? typeof qtyValue === "number" && qtyValue > 0
-                        : row.priceKey
-                          ? orderExtras[row.priceKey] != null
-                          : true;
+                );
+              })}
+            </Table.Body>
+          </Table.Root>
+        </Box>
 
-                    return (
-                      <Table.Row key={row.id}>
-                        <Table.Cell>{row.label}</Table.Cell>
-                        <Table.Cell>
-                          <Checkbox
-                            checked={isEnabled}
-                            onCheckedChange={(checked) => {
-                              const enabled = Boolean(checked);
-
-                              if (row.toggleKey) {
-                                onUpdateField(row.toggleKey, enabled);
-                              } else if (row.qtyKey) {
-                                onUpdateField(row.qtyKey, enabled ? 1 : null);
-                              }
-
-                              if (!enabled) {
-                                if (row.qtyKey) onUpdateField(row.qtyKey, null);
-                                if (row.priceKey) onUpdateField(row.priceKey, null);
-                              }
-                            }}
-                          />
-                        </Table.Cell>
-                        <Table.Cell>
-                          {row.priceKey ? (
-                            <TextField.Root
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={
-                                orderExtras[row.priceKey] == null
-                                  ? ""
-                                  : String(orderExtras[row.priceKey])
-                              }
-                              onChange={(event) =>
-                                onUpdateField(
-                                  row.priceKey!,
-                                  parseNumberInput(event.target.value),
-                                )
-                              }
-                              disabled={!isEnabled}
-                            />
-                          ) : null}
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table.Root>
-
-              {frameGlassDrafts.length > 0 ? (
-                <Box>
-                  <Flex direction="column" gap="1" mb="2">
-                    <Heading size="3">Glass upgrades</Heading>
-                    <Text size="1" color="gray">
-                      Conservation glass is the default. Enable Clearview UV
-                      glass only where needed.
-                    </Text>
-                  </Flex>
-                  <Table.Root variant="surface">
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.ColumnHeaderCell>Bouquet</Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>
-                          Clearview UV glass
-                        </Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {frameGlassDrafts.map((draft) => (
-                        <Table.Row key={draft.frameId}>
-                          <Table.Cell>{draft.label}</Table.Cell>
-                          <Table.Cell>
-                            <Checkbox
-                              checked={draft.clearviewEnabled}
-                              onCheckedChange={(checked) =>
-                                onUpdateFrameGlass(draft.frameId, {
-                                  clearviewEnabled: Boolean(checked),
-                                  ...(checked ? {} : { price: null }),
-                                })
-                              }
-                            />
-                          </Table.Cell>
-                          <Table.Cell>
-                            <TextField.Root
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={
-                                draft.price == null ? "" : String(draft.price)
-                              }
-                              onChange={(event) =>
-                                onUpdateFrameGlass(draft.frameId, {
-                                  price: parseNumberInput(event.target.value),
-                                })
-                              }
-                              disabled={!draft.clearviewEnabled}
-                            />
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Root>
-                </Box>
-              ) : null}
-
-              {error ? (
-                <Text size="2" color="red">
-                  {error}
-                </Text>
-              ) : null}
-
-              <Box>
-                <Text size="2" weight="medium" mb="1">
-                  Notes
-                </Text>
-                <TextArea
-                  value={orderExtras.notes}
-                  onChange={(event) =>
-                    onUpdateField("notes", event.target.value)
-                  }
-                  placeholder="Add notes for this order..."
-                  resize="vertical"
-                />
-              </Box>
-
-              <Flex justify="end">
-                <Button size="2" onClick={onSave} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save details"}
-                </Button>
-              </Flex>
+        {frameGlassDrafts.length > 0 ? (
+          <Box>
+            <Flex direction="column" gap="1" mb="2">
+              <Heading size="3">Glass upgrades</Heading>
+              <Text size="1" color="gray">
+                Conservation glass is the default. Enable Clearview UV glass
+                only where needed.
+              </Text>
             </Flex>
+            <Table.Root variant="surface">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeaderCell>Bouquet</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Clearview UV glass</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {frameGlassDrafts.map((draft) => (
+                  <Table.Row key={draft.frameId}>
+                    <Table.Cell>{draft.label}</Table.Cell>
+                    <Table.Cell>
+                      <Checkbox
+                        checked={draft.clearviewEnabled}
+                        onCheckedChange={(checked) =>
+                          onUpdateFrameGlass(draft.frameId, {
+                            clearviewEnabled: Boolean(checked),
+                            ...(checked ? {} : { price: null }),
+                          })
+                        }
+                      />
+                    </Table.Cell>
+                    <Table.Cell>
+                      <TextField.Root
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={draft.price == null ? "" : String(draft.price)}
+                        onChange={(event) =>
+                          onUpdateFrameGlass(draft.frameId, {
+                            price: parseNumberInput(event.target.value),
+                          })
+                        }
+                        disabled={!draft.clearviewEnabled}
+                      />
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
           </Box>
-        </Accordion.Content>
-      </Accordion.Item>
-    </Accordion.Root>
+        ) : null}
+
+        {error ? (
+          <Text size="2" color="red">
+            {error}
+          </Text>
+        ) : null}
+
+        <Box>
+          <Text size="2" weight="medium" mb="1">
+            Notes
+          </Text>
+          <TextArea
+            value={orderExtras.notes}
+            onChange={(event) => onUpdateField("notes", event.target.value)}
+            placeholder="Add notes for this order..."
+            resize="vertical"
+          />
+        </Box>
+
+        <Flex justify="end">
+          <Button size="2" onClick={onSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save details"}
+          </Button>
+        </Flex>
+      </Flex>
+    </Card>
   );
 };
 

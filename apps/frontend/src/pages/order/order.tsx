@@ -118,7 +118,6 @@ const OrderPage = () => {
   const [isEmailDrawerOpen, setIsEmailDrawerOpen] = useState(false);
   const [isSmsOpen, setIsSmsOpen] = useState(false);
   const [smsLogsOpen, setSmsLogsOpen] = useState(false);
-  const [orderExtrasOpen, setOrderExtrasOpen] = useState(false);
 
   const [orderStatusDraft, setOrderStatusDraft] =
     useState<OrdersOrderStatusOptions>("draft");
@@ -849,8 +848,6 @@ const OrderPage = () => {
             orderExtras={orderExtrasDraft}
             frameGlassDrafts={frameGlassDrafts}
             summary={orderExtrasSummary}
-            open={orderExtrasOpen}
-            onOpenChange={setOrderExtrasOpen}
             onUpdateField={handleUpdateExtrasField}
             onUpdateFrameGlass={handleUpdateFrameGlass}
             onSave={handleSaveExtras}
