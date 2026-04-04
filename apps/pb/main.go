@@ -47,7 +47,7 @@ func main() {
 		}
 
 		logoDataURI := ""
-		logoPath := resolvePBPublicPath("email", "pp-logo.png")
+		logoPath := resolvePBPublicPath("email", "pp-header.png")
 		if logoBytes, logoErr := os.ReadFile(logoPath); logoErr != nil {
 			fmt.Println("WARN: failed to read invoice logo:", logoErr.Error())
 		} else {
