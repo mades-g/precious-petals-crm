@@ -14,6 +14,8 @@ import {
 
 import type { SmsType } from "@/api/send-sms";
 
+const DEFAULT_SMS_TYPE: SmsType = "chase_to_choose";
+
 type SendSmsDialogProps = {
   open: boolean;
   onOpenChange: (next: boolean) => void;
@@ -30,13 +32,24 @@ type SendSmsDialogProps = {
 };
 
 const TEMPLATE_BY_TYPE: Record<SmsType, string> = {
-  deposit_reminder:
-    "Hi {firstName}, just a reminder your deposit is due for order {orderNo}.",
-  paperweight_received:
-    "Hi {firstName}, we've received your paperweight for order {orderNo}.",
-  framing_complete:
-    "Hi {firstName}, your framing is complete for order {orderNo}.",
+  chase_to_choose: `Hi {firstName}, please confirm how you'd like your flowers displayed so we can proceed with your order.
+You can find the form on www.preciouspetals.co.uk/framestyles
+Need help? Call 01256 882422 or email enquiries@preciouspetals.co.uk`,
+  order_ready: `Hi {firstName},
+Your preserved flower display is complete.
+Call 01256 882422 or email enquiries@preciouspetals.co.uk to arrange collection or delivery.`,
+  invite_to_pay_final_balance: `Hi {firstName},
+Your flowers are ready for the next stage.
+Please settle your final balance so we can proceed.
+Call 01256 882422 enquiries@preciouspetals.co.uk`,
   custom: "",
+};
+
+const TEMPLATE_LABEL_BY_TYPE: Record<SmsType, string> = {
+  chase_to_choose: "Chase to choose",
+  order_ready: "Order ready",
+  invite_to_pay_final_balance: "Invite to pay final balance",
+  custom: "Custom",
 };
 
 const SendSmsDialog: FC<SendSmsDialogProps> = ({
@@ -48,7 +61,7 @@ const SendSmsDialog: FC<SendSmsDialogProps> = ({
   onSend,
   isSending,
 }) => {
-  const [type, setType] = useState<SmsType>("deposit_reminder");
+  const [type, setType] = useState<SmsType>(DEFAULT_SMS_TYPE);
   const [message, setMessage] = useState("");
   const [sender, setSender] = useState("PrecPetals");
   const [isPreview, setIsPreview] = useState(false);
@@ -62,10 +75,11 @@ const SendSmsDialog: FC<SendSmsDialogProps> = ({
   useEffect(() => {
     if (!open) return;
     setError(null);
-    if (!message.trim()) {
-      setMessage(TEMPLATE_BY_TYPE[type]);
-    }
-  }, [open, type, message]);
+    setType(DEFAULT_SMS_TYPE);
+    setMessage(TEMPLATE_BY_TYPE[DEFAULT_SMS_TYPE]);
+    setSender("PrecPetals");
+    setIsPreview(false);
+  }, [open]);
 
   const insertToken = (token: string) => {
     setMessage((prev) => (prev ? `${prev} ${token}` : token));
@@ -151,16 +165,13 @@ const SendSmsDialog: FC<SendSmsDialogProps> = ({
               >
                 <Select.Trigger style={{ width: "100%" }} />
                 <Select.Content>
-                  <Select.Item value="deposit_reminder">
-                    Deposit reminder
-                  </Select.Item>
-                  <Select.Item value="paperweight_received">
-                    Paperweight received
-                  </Select.Item>
-                  <Select.Item value="framing_complete">
-                    Framing complete
-                  </Select.Item>
-                  <Select.Item value="custom">Custom</Select.Item>
+                  {(Object.keys(TEMPLATE_LABEL_BY_TYPE) as SmsType[]).map(
+                    (templateType) => (
+                      <Select.Item key={templateType} value={templateType}>
+                        {TEMPLATE_LABEL_BY_TYPE[templateType]}
+                      </Select.Item>
+                    ),
+                  )}
                 </Select.Content>
               </Select.Root>
             </Box>

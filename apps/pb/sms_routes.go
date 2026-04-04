@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -15,12 +16,12 @@ import (
 )
 
 type smsSendRequest struct {
-	OrderId        string `json:"orderId"`
-	Type           string `json:"type"`
-	Message        string `json:"message"`
-	Sender         string `json:"sender"`
-	BalanceDue     string `json:"balanceDue"`
-	TotalBalance   string `json:"totalBalance"`
+	OrderId      string `json:"orderId"`
+	Type         string `json:"type"`
+	Message      string `json:"message"`
+	Sender       string `json:"sender"`
+	BalanceDue   string `json:"balanceDue"`
+	TotalBalance string `json:"totalBalance"`
 }
 
 type txtlocalResponse struct {
@@ -177,7 +178,7 @@ func registerSmsRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 
 func isAllowedSmsType(value string) bool {
 	switch value {
-	case "deposit_reminder", "paperweight_received", "framing_complete", "custom":
+	case "chase_to_choose", "order_ready", "invite_to_pay_final_balance", "custom":
 		return true
 	default:
 		return false
@@ -265,7 +266,7 @@ func sendTxtLocalSMS(apiKey, sender, toNumber, message string) (string, error) {
 	}
 	if strings.ToLower(payload.Status) != "success" {
 		if len(payload.Errors) > 0 {
-			return "", fmt.Errorf(payload.Errors[0].Message)
+			return "", errors.New(payload.Errors[0].Message)
 		}
 		return "", fmt.Errorf("SMS provider error")
 	}

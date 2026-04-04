@@ -1,9 +1,9 @@
 import { pb } from "@/services/pb/client";
 
 export type SmsType =
-  | "deposit_reminder"
-  | "paperweight_received"
-  | "framing_complete"
+  | "chase_to_choose"
+  | "order_ready"
+  | "invite_to_pay_final_balance"
   | "custom";
 
 export type SendSmsPayload = {

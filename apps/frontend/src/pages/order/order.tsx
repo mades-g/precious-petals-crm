@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Text } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router";
@@ -294,9 +294,32 @@ const OrderPage = () => {
       },
     });
 
-  const handleUpdateStatus = async (nextStatus: OrdersOrderStatusOptions) => {
-    await updateStatus(nextStatus);
-    setOrderStatusDraft(nextStatus);
+  const handleUpdateStatus = useCallback(
+    async (nextStatus: OrdersOrderStatusOptions) => {
+      await updateStatus(nextStatus);
+      setOrderStatusDraft(nextStatus);
+    },
+    [updateStatus],
+  );
+
+  const getCompletionDrivenStatus = (
+    currentStatus: OrdersOrderStatusOptions,
+    nextCompletionEligible: boolean,
+    nextChosenEligible: boolean,
+  ): OrdersOrderStatusOptions | null => {
+    if (currentStatus === "cancelled" || currentStatus === "left_the_studio") {
+      return null;
+    }
+
+    if (nextChosenEligible && nextCompletionEligible) {
+      return currentStatus === "ready" ? null : "ready";
+    }
+
+    if (currentStatus === "ready" && !nextCompletionEligible) {
+      return nextChosenEligible ? "in_progress" : "chosen";
+    }
+
+    return null;
   };
 
   const syncCompletionDrivenStatus = async (nextValues: {
@@ -317,13 +340,14 @@ const OrderPage = () => {
       !hasPaperweight || nextPaperweightReceived;
     const nextCompletionEligible =
       nextFramesComplete && nextPaperweightComplete;
+    const nextStatus = getCompletionDrivenStatus(
+      orderStatusDraft,
+      nextCompletionEligible,
+      chosenEligible,
+    );
 
-    if (orderStatusDraft === "in_progress" && nextCompletionEligible) {
-      await handleUpdateStatus("ready");
-    }
-
-    if (orderStatusDraft === "ready" && !nextCompletionEligible) {
-      await handleUpdateStatus("in_progress");
+    if (nextStatus && nextStatus !== orderStatusDraft) {
+      await handleUpdateStatus(nextStatus);
     }
   };
 
@@ -347,6 +371,27 @@ const OrderPage = () => {
     outstandingBalance === 0;
   const canSendInvoice = chosenEligible;
 
+  useEffect(() => {
+    if (!order?.orderId || isUpdatingStatus) return;
+
+    const nextStatus = getCompletionDrivenStatus(
+      orderStatusDraft,
+      completionEligible,
+      chosenEligible,
+    );
+
+    if (!nextStatus || nextStatus === orderStatusDraft) return;
+
+    void handleUpdateStatus(nextStatus);
+  }, [
+    chosenEligible,
+    completionEligible,
+    handleUpdateStatus,
+    isUpdatingStatus,
+    order?.orderId,
+    orderStatusDraft,
+  ]);
+
   const allowedOrderStatuses: Record<
     OrdersOrderStatusOptions,
     OrdersOrderStatusOptions[]
@@ -360,7 +405,6 @@ const OrderPage = () => {
       "chosen",
       "in_progress",
       "ready",
-      "left_the_studio",
       "cancelled",
     ],
     ready: [

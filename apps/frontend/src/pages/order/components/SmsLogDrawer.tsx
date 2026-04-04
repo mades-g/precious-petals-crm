@@ -13,7 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 import { getSmsLogs, type SmsLogItem } from "@/api/get-sms-logs";
-import { formatDate } from "@/utils";
+import { formatDate, formatSnakeCase } from "@/utils";
 
 const statusColor = (status?: string) => {
   if (status === "sent") return "green";
@@ -81,7 +81,7 @@ const SmsLogDrawer: FC<SmsLogDrawerProps> = ({ open, onOpenChange, order }) => {
                     </Table.Cell>
                     <Table.Cell>
                       <Code size="1" variant="outline">
-                        {log.type}
+                        {formatSnakeCase(log.type)}
                       </Code>
                     </Table.Cell>
                     <Table.Cell>{log.toNumber}</Table.Cell>

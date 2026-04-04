@@ -312,6 +312,9 @@ export type SmsTypeOptions =
   | "deposit_reminder"
   | "paperweight_received"
   | "framing_complete"
+  | "chase_to_choose"
+  | "order_ready"
+  | "invite_to_pay_final_balance"
   | "custom";
 
 export type SmsStatusOptions = "sent" | "failed";
