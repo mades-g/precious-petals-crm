@@ -143,13 +143,12 @@ type invoicePayload struct {
 
 	OrderExtras *struct {
 		ReplacementFlowers       bool   `json:"replacementFlowers"`
-		ReplacementFlowersQty    Number `json:"replacementFlowersQty"`
 		ReplacementFlowersPrice  Number `json:"replacementFlowersPrice"`
-		CollectionQty            Number `json:"collectionQty"`
+		Collection               bool   `json:"collection"`
 		CollectionPrice          Number `json:"collectionPrice"`
-		DeliveryQty              Number `json:"deliveryQty"`
+		Delivery                 bool   `json:"delivery"`
 		DeliveryPrice            Number `json:"deliveryPrice"`
-		RecreateButtonholeQty    Number `json:"recreateButtonholeQty"`
+		RecreateButtonhole       bool   `json:"recreateButtonhole"`
 		RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
 		ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
 		ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`
@@ -386,35 +385,53 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 	// Other extras
 	extras := payload.OrderExtras
 	if extras != nil {
-		pushOtherRow := func(description string, amount *float64) {
-			if amount != nil && *amount > 0 {
-				rows = append(rows, invoiceRow{
-					ItemLabel:   "Other",
-					Description: description,
-					Amount:      formatMoney(*amount),
-				})
+		pushOtherRow := func(enabled bool, description string, amount *float64) {
+			if !enabled {
+				return
 			}
+
+			value := 0.0
+			if amount != nil {
+				value = *amount
+			}
+
+			rows = append(rows, invoiceRow{
+				ItemLabel:   "Other",
+				Description: description,
+				Amount:      formatMoney(value),
+			})
 		}
 
-		if extras.ReplacementFlowers || extras.ReplacementFlowersQty.Float64() != nil || extras.ReplacementFlowersPrice.Float64() != nil {
-			pushOtherRow("Replacement flowers", extras.ReplacementFlowersPrice.Float64())
-		}
+		pushOtherRow(
+			extras.ReplacementFlowers,
+			"Replacement flowers",
+			extras.ReplacementFlowersPrice.Float64(),
+		)
 
-		if extras.CollectionQty.Float64() != nil || extras.CollectionPrice.Float64() != nil {
-			pushOtherRow("Collection", extras.CollectionPrice.Float64())
-		}
+		pushOtherRow(
+			extras.Collection,
+			"Collection",
+			extras.CollectionPrice.Float64(),
+		)
 
-		if extras.DeliveryQty.Float64() != nil || extras.DeliveryPrice.Float64() != nil {
-			pushOtherRow("Delivery", extras.DeliveryPrice.Float64())
-		}
+		pushOtherRow(
+			extras.Delivery,
+			"Delivery",
+			extras.DeliveryPrice.Float64(),
+		)
 
-		if extras.RecreateButtonholeQty.Float64() != nil || extras.RecreateButtonholePrice.Float64() != nil {
-			pushOtherRow("Recreate buttonhole", extras.RecreateButtonholePrice.Float64())
-		}
+		pushOtherRow(
+			extras.RecreateButtonhole,
+			"Recreate buttonhole",
+			extras.RecreateButtonholePrice.Float64(),
+		)
 
-		if extras.ReturnUnusedFlowers || extras.ReturnUnusedFlowersPrice.Float64() != nil {
-			pushOtherRow("Return of unframed flowers charge", extras.ReturnUnusedFlowersPrice.Float64())
-		}
+		pushOtherRow(
+			extras.ReturnUnusedFlowers ||
+				extras.ReturnUnusedFlowersPrice.Float64() != nil,
+			"Return of unframed flowers charge",
+			extras.ReturnUnusedFlowersPrice.Float64(),
+		)
 	}
 
 	return rows

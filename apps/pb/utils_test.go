@@ -172,20 +172,19 @@ func TestBuildInvoiceRowsIncludesRecreateButtonholeExtra(t *testing.T) {
 	payload := invoicePayload{
 		OrderExtras: &struct {
 			ReplacementFlowers       bool   `json:"replacementFlowers"`
-			ReplacementFlowersQty    Number `json:"replacementFlowersQty"`
 			ReplacementFlowersPrice  Number `json:"replacementFlowersPrice"`
-			CollectionQty            Number `json:"collectionQty"`
+			Collection               bool   `json:"collection"`
 			CollectionPrice          Number `json:"collectionPrice"`
-			DeliveryQty              Number `json:"deliveryQty"`
+			Delivery                 bool   `json:"delivery"`
 			DeliveryPrice            Number `json:"deliveryPrice"`
-			RecreateButtonholeQty    Number `json:"recreateButtonholeQty"`
+			RecreateButtonhole       bool   `json:"recreateButtonhole"`
 			RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
 			ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
 			ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`
 			ArtistHours              Number `json:"artistHours"`
 			Notes                    string `json:"notes"`
 		}{
-			RecreateButtonholeQty:   Number{Val: numberPtr(2)},
+			RecreateButtonhole:      true,
 			RecreateButtonholePrice: Number{Val: numberPtr(80)},
 		},
 	}
@@ -208,13 +207,12 @@ func TestBuildInvoiceRowsOtherExtrasDoNotShowQty(t *testing.T) {
 	payload := invoicePayload{
 		OrderExtras: &struct {
 			ReplacementFlowers       bool   `json:"replacementFlowers"`
-			ReplacementFlowersQty    Number `json:"replacementFlowersQty"`
 			ReplacementFlowersPrice  Number `json:"replacementFlowersPrice"`
-			CollectionQty            Number `json:"collectionQty"`
+			Collection               bool   `json:"collection"`
 			CollectionPrice          Number `json:"collectionPrice"`
-			DeliveryQty              Number `json:"deliveryQty"`
+			Delivery                 bool   `json:"delivery"`
 			DeliveryPrice            Number `json:"deliveryPrice"`
-			RecreateButtonholeQty    Number `json:"recreateButtonholeQty"`
+			RecreateButtonhole       bool   `json:"recreateButtonhole"`
 			RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
 			ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
 			ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`
@@ -222,11 +220,10 @@ func TestBuildInvoiceRowsOtherExtrasDoNotShowQty(t *testing.T) {
 			Notes                    string `json:"notes"`
 		}{
 			ReplacementFlowers:      true,
-			ReplacementFlowersQty:   Number{Val: numberPtr(1)},
 			ReplacementFlowersPrice: Number{Val: numberPtr(30)},
-			CollectionQty:           Number{Val: numberPtr(1)},
+			Collection:              true,
 			CollectionPrice:         Number{Val: numberPtr(10)},
-			DeliveryQty:             Number{Val: numberPtr(1)},
+			Delivery:                true,
 			DeliveryPrice:           Number{Val: numberPtr(200)},
 		},
 	}
@@ -249,17 +246,57 @@ func TestBuildInvoiceRowsOtherExtrasDoNotShowQty(t *testing.T) {
 	}
 }
 
+func TestBuildInvoiceRowsIncludesEnabledZeroValueOtherExtras(t *testing.T) {
+	payload := invoicePayload{
+		OrderExtras: &struct {
+			ReplacementFlowers       bool   `json:"replacementFlowers"`
+			ReplacementFlowersPrice  Number `json:"replacementFlowersPrice"`
+			Collection               bool   `json:"collection"`
+			CollectionPrice          Number `json:"collectionPrice"`
+			Delivery                 bool   `json:"delivery"`
+			DeliveryPrice            Number `json:"deliveryPrice"`
+			RecreateButtonhole       bool   `json:"recreateButtonhole"`
+			RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
+			ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
+			ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`
+			ArtistHours              Number `json:"artistHours"`
+			Notes                    string `json:"notes"`
+		}{
+			ReplacementFlowers:       true,
+			ReplacementFlowersPrice:  Number{Val: numberPtr(0)},
+			Collection:               true,
+			CollectionPrice:          Number{Val: numberPtr(0)},
+			Delivery:                 true,
+			DeliveryPrice:            Number{Val: numberPtr(0)},
+			RecreateButtonhole:       true,
+			RecreateButtonholePrice:  Number{Val: numberPtr(0)},
+			ReturnUnusedFlowers:      true,
+			ReturnUnusedFlowersPrice: Number{Val: numberPtr(0)},
+		},
+	}
+
+	rows := buildInvoiceRows(payload)
+	if len(rows) != 5 {
+		t.Fatalf("expected 5 invoice rows, got %d", len(rows))
+	}
+
+	for _, row := range rows {
+		if row.Amount != "£0.00" {
+			t.Fatalf("expected zero-value enabled extra to render as £0.00, got %q for %q", row.Amount, row.Description)
+		}
+	}
+}
+
 func TestBuildInvoiceViewModelMergesInclusionsIntoNotes(t *testing.T) {
 	payload := invoicePayload{
 		OrderExtras: &struct {
 			ReplacementFlowers       bool   `json:"replacementFlowers"`
-			ReplacementFlowersQty    Number `json:"replacementFlowersQty"`
 			ReplacementFlowersPrice  Number `json:"replacementFlowersPrice"`
-			CollectionQty            Number `json:"collectionQty"`
+			Collection               bool   `json:"collection"`
 			CollectionPrice          Number `json:"collectionPrice"`
-			DeliveryQty              Number `json:"deliveryQty"`
+			Delivery                 bool   `json:"delivery"`
 			DeliveryPrice            Number `json:"deliveryPrice"`
-			RecreateButtonholeQty    Number `json:"recreateButtonholeQty"`
+			RecreateButtonhole       bool   `json:"recreateButtonhole"`
 			RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
 			ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
 			ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`
@@ -311,13 +348,12 @@ func TestBuildInvoiceViewModelDoesNotDuplicatePreMergedInclusionNotes(t *testing
 	payload := invoicePayload{
 		OrderExtras: &struct {
 			ReplacementFlowers       bool   `json:"replacementFlowers"`
-			ReplacementFlowersQty    Number `json:"replacementFlowersQty"`
 			ReplacementFlowersPrice  Number `json:"replacementFlowersPrice"`
-			CollectionQty            Number `json:"collectionQty"`
+			Collection               bool   `json:"collection"`
 			CollectionPrice          Number `json:"collectionPrice"`
-			DeliveryQty              Number `json:"deliveryQty"`
+			Delivery                 bool   `json:"delivery"`
 			DeliveryPrice            Number `json:"deliveryPrice"`
-			RecreateButtonholeQty    Number `json:"recreateButtonholeQty"`
+			RecreateButtonhole       bool   `json:"recreateButtonhole"`
 			RecreateButtonholePrice  Number `json:"recreateButtonholePrice"`
 			ReturnUnusedFlowers      bool   `json:"returnUnusedFlowers"`
 			ReturnUnusedFlowersPrice Number `json:"returnUnusedFlowersPrice"`

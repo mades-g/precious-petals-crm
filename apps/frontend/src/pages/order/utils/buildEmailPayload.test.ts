@@ -27,13 +27,12 @@ describe("buildEmailPayload", () => {
       paperweight: null,
       extras: {
         replacementFlowers: false,
-        replacementFlowersQty: null,
         replacementFlowersPrice: null,
-        collectionQty: null,
+        collection: false,
         collectionPrice: null,
-        deliveryQty: null,
+        delivery: false,
         deliveryPrice: null,
-        recreateButtonholeQty: 2,
+        recreateButtonhole: true,
         recreateButtonholePrice: 40,
         returnUnusedFlowers: false,
         returnUnusedFlowersPrice: null,
@@ -50,7 +49,7 @@ describe("buildEmailPayload", () => {
     expect(payload.orderExtras.notes).toBe(
       "Please add ribbon\nInclude: test 1, Test 3",
     );
-    expect(payload.orderExtras.recreateButtonholeQty).toBe(2);
+    expect(payload.orderExtras.recreateButtonhole).toBe(true);
     expect(payload.orderExtras.recreateButtonholePrice).toBe(40);
   });
 
@@ -78,13 +77,12 @@ describe("buildEmailPayload", () => {
       paperweight: null,
       extras: {
         replacementFlowers: false,
-        replacementFlowersQty: null,
         replacementFlowersPrice: null,
-        collectionQty: null,
+        collection: false,
         collectionPrice: null,
-        deliveryQty: null,
+        delivery: false,
         deliveryPrice: null,
-        recreateButtonholeQty: null,
+        recreateButtonhole: false,
         recreateButtonholePrice: null,
         returnUnusedFlowers: false,
         returnUnusedFlowersPrice: null,
@@ -127,13 +125,12 @@ describe("buildEmailPayload", () => {
       paperweight: null,
       extras: {
         replacementFlowers: false,
-        replacementFlowersQty: null,
         replacementFlowersPrice: null,
-        collectionQty: null,
+        collection: false,
         collectionPrice: null,
-        deliveryQty: null,
+        delivery: false,
         deliveryPrice: null,
-        recreateButtonholeQty: null,
+        recreateButtonhole: false,
         recreateButtonholePrice: null,
         returnUnusedFlowers: false,
         returnUnusedFlowersPrice: null,
@@ -191,13 +188,12 @@ describe("buildEmailPayload", () => {
       paperweight: null,
       extras: {
         replacementFlowers: false,
-        replacementFlowersQty: null,
         replacementFlowersPrice: null,
-        collectionQty: null,
+        collection: false,
         collectionPrice: null,
-        deliveryQty: null,
+        delivery: false,
         deliveryPrice: null,
-        recreateButtonholeQty: null,
+        recreateButtonhole: false,
         recreateButtonholePrice: null,
         returnUnusedFlowers: false,
         returnUnusedFlowersPrice: null,

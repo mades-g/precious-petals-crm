@@ -10,13 +10,12 @@ export type OrderPaperweight = OrderDetails["paperWeightOrder"];
 
 export type OrderExtrasDraft = {
   replacementFlowers: boolean;
-  replacementFlowersQty: number | null;
   replacementFlowersPrice: number | null;
-  collectionQty: number | null;
+  collection: boolean;
   collectionPrice: number | null;
-  deliveryQty: number | null;
+  delivery: boolean;
   deliveryPrice: number | null;
-  recreateButtonholeQty: number | null;
+  recreateButtonhole: boolean;
   recreateButtonholePrice: number | null;
   returnUnusedFlowers: boolean;
   returnUnusedFlowersPrice: number | null;

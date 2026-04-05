@@ -264,13 +264,12 @@ export type OrdersRecord = {
   lastSmsError?: string;
   updated: IsoAutoDateString;
   replacementFlowers?: boolean;
-  replacementFlowersQty?: number;
   replacementFlowersPrice?: number;
-  collectionQty?: number;
+  collection?: boolean;
   collectionPrice?: number;
-  deliveryQty?: number;
+  delivery?: boolean;
   deliveryPrice?: number;
-  recreateButtonholeQty?: number;
+  recreateButtonhole?: boolean;
   recreateButtonholePrice?: number;
   returnUnusedFlowers?: boolean;
   returnUnusedFlowersPrice?: number;

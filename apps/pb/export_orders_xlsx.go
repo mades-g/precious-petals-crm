@@ -634,13 +634,13 @@ func calculateOrderTotal(order *core.Record, frames []*core.Record, pw *core.Rec
 	if order.GetBool("replacementFlowers") {
 		extrasTotal += order.GetFloat("replacementFlowersPrice")
 	}
-	if order.GetFloat("collectionQty") > 0 {
+	if order.GetBool("collection") {
 		extrasTotal += order.GetFloat("collectionPrice")
 	}
-	if order.GetFloat("deliveryQty") > 0 {
+	if order.GetBool("delivery") {
 		extrasTotal += order.GetFloat("deliveryPrice")
 	}
-	if order.GetFloat("recreateButtonholeQty") > 0 {
+	if order.GetBool("recreateButtonhole") {
 		extrasTotal += order.GetFloat("recreateButtonholePrice")
 	}
 	if order.GetBool("returnUnusedFlowers") {
@@ -912,11 +912,11 @@ func writeOrdersSheet(
 			order.GetString("payment_status"),
 			order.GetBool("replacementFlowers"),
 			exportMoneyNumber(order.GetFloat("replacementFlowersPrice")),
-			order.GetFloat("collectionQty") > 0,
+			order.GetBool("collection"),
 			exportMoneyNumber(order.GetFloat("collectionPrice")),
-			order.GetFloat("deliveryQty") > 0,
+			order.GetBool("delivery"),
 			exportMoneyNumber(order.GetFloat("deliveryPrice")),
-			order.GetFloat("recreateButtonholeQty") > 0,
+			order.GetBool("recreateButtonhole"),
 			exportMoneyNumber(order.GetFloat("recreateButtonholePrice")),
 			order.GetBool("returnUnusedFlowers"),
 			exportMoneyNumber(order.GetFloat("returnUnusedFlowersPrice")),

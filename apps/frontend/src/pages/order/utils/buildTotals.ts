@@ -4,13 +4,9 @@ const getExtrasTotal = (extras?: OrderExtrasDraft | null) => {
   if (!extras) return 0;
   const values = [
     extras.replacementFlowers ? extras.replacementFlowersPrice : null,
-    extras.collectionQty != null && extras.collectionQty > 0
-      ? extras.collectionPrice
-      : null,
-    extras.deliveryQty != null && extras.deliveryQty > 0
-      ? extras.deliveryPrice
-      : null,
-    extras.recreateButtonholeQty != null && extras.recreateButtonholeQty > 0
+    extras.collection ? extras.collectionPrice : null,
+    extras.delivery ? extras.deliveryPrice : null,
+    extras.recreateButtonhole
       ? extras.recreateButtonholePrice
       : null,
     extras.returnUnusedFlowers ? extras.returnUnusedFlowersPrice : null,

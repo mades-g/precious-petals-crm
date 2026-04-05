@@ -49,6 +49,7 @@ import { buildEmailPayload } from "./utils/buildEmailPayload";
 import {
   EMAIL_ACTIONS,
   type FrameGlassDraft,
+  type OrderDetails,
   type OrderExtrasDraft,
   type OrderFrame,
 } from "./types";
@@ -57,13 +58,12 @@ import type { FrameExtras } from "@/api/types";
 
 const defaultExtrasDraft: OrderExtrasDraft = {
   replacementFlowers: false,
-  replacementFlowersQty: null,
   replacementFlowersPrice: null,
-  collectionQty: null,
+  collection: false,
   collectionPrice: null,
-  deliveryQty: null,
+  delivery: false,
   deliveryPrice: null,
-  recreateButtonholeQty: null,
+  recreateButtonhole: false,
   recreateButtonholePrice: null,
   returnUnusedFlowers: false,
   returnUnusedFlowersPrice: null,
@@ -82,9 +82,6 @@ const PAYMENT_STATUS_SEQUENCE: OrdersPaymentStatusOptions[] = [
 const normalizeLoadedPrice = (value?: number | null) =>
   value == null ? null : value;
 
-const normalizeLoadedQty = (value?: number | null) =>
-  value == null || value <= 0 ? null : value;
-
 const buildFrameGlassDrafts = (frames: OrderFrame[]): FrameGlassDraft[] =>
   frames.map((frame, index) => ({
     frameId: frame.frameId ?? `frame-${index}`,
@@ -92,6 +89,76 @@ const buildFrameGlassDrafts = (frames: OrderFrame[]): FrameGlassDraft[] =>
     clearviewEnabled: frame.glassType === CLEARVIEW_GLASS_TYPE,
     price: frame.extras?.glassPrice ?? null,
   }));
+
+const buildOrderExtrasDraftFromOrder = (
+  order?: OrderDetails | null,
+): OrderExtrasDraft => {
+  if (!order) return defaultExtrasDraft;
+
+  const replacementFlowersEnabled = Boolean(order.replacementFlowers);
+  const collectionEnabled = Boolean(order.collection);
+  const deliveryEnabled = Boolean(order.delivery);
+  const recreateButtonholeEnabled = Boolean(order.recreateButtonhole);
+  const returnUnusedFlowersEnabled = Boolean(order.returnUnusedFlowers);
+
+  return {
+    replacementFlowers: replacementFlowersEnabled,
+    replacementFlowersPrice: replacementFlowersEnabled
+      ? normalizeLoadedPrice(order.replacementFlowersPrice)
+      : null,
+    collection: collectionEnabled,
+    collectionPrice:
+      collectionEnabled ? normalizeLoadedPrice(order.collectionPrice) : null,
+    delivery: deliveryEnabled,
+    deliveryPrice:
+      deliveryEnabled ? normalizeLoadedPrice(order.deliveryPrice) : null,
+    recreateButtonhole: recreateButtonholeEnabled,
+    recreateButtonholePrice:
+      recreateButtonholeEnabled
+        ? normalizeLoadedPrice(order.recreateButtonholePrice)
+        : null,
+    returnUnusedFlowers: returnUnusedFlowersEnabled,
+    returnUnusedFlowersPrice: returnUnusedFlowersEnabled
+      ? normalizeLoadedPrice(order.returnUnusedFlowersPrice)
+      : null,
+    notes: order.notes ?? "",
+  };
+};
+
+const normalizeOrderExtrasDraftForComparison = (draft: OrderExtrasDraft) => ({
+  replacementFlowers: draft.replacementFlowers,
+  replacementFlowersPrice: draft.replacementFlowersPrice,
+  collection: draft.collection,
+  collectionPrice: draft.collectionPrice,
+  delivery: draft.delivery,
+  deliveryPrice: draft.deliveryPrice,
+  recreateButtonhole: draft.recreateButtonhole,
+  recreateButtonholePrice: draft.recreateButtonholePrice,
+  returnUnusedFlowers: draft.returnUnusedFlowers,
+  returnUnusedFlowersPrice: draft.returnUnusedFlowersPrice,
+  notes: draft.notes,
+});
+
+const normalizeFrameGlassDraftsForComparison = (drafts: FrameGlassDraft[]) =>
+  [...drafts]
+    .map(({ frameId, clearviewEnabled, price }) => ({
+      frameId,
+      clearviewEnabled,
+      price,
+    }))
+    .sort((left, right) => left.frameId.localeCompare(right.frameId));
+
+const hasOrderExtrasData = (
+  draft: OrderExtrasDraft,
+  glassDrafts: FrameGlassDraft[],
+) =>
+  draft.replacementFlowers ||
+  draft.collection ||
+  draft.delivery ||
+  draft.recreateButtonhole ||
+  draft.returnUnusedFlowers ||
+  draft.notes.trim() !== "" ||
+  glassDrafts.some((item) => item.clearviewEnabled || item.price != null);
 
 const OrderPage = () => {
   const navigate = useNavigate();
@@ -141,6 +208,14 @@ const OrderPage = () => {
     if (!customer) return null;
     return buildCustomerFormDefaults(customer);
   }, [customer]);
+  const initialOrderExtrasDraft = useMemo(
+    () => buildOrderExtrasDraftFromOrder(order),
+    [order],
+  );
+  const initialFrameGlassDrafts = useMemo(
+    () => buildFrameGlassDrafts(order?.frameOrder ?? []),
+    [order],
+  );
 
   useEffect(() => {
     if (!order) return;
@@ -152,42 +227,10 @@ const OrderPage = () => {
     );
     setArtworkCompleteDraft(Boolean(order.artworkComplete));
     setFramingCompleteDraft(Boolean(order.framingComplete));
-    const replacementFlowersEnabled = Boolean(order.replacementFlowers);
-    const collectionQty = normalizeLoadedQty(order.collectionQty);
-    const deliveryQty = normalizeLoadedQty(order.deliveryQty);
-    const recreateButtonholeQty = normalizeLoadedQty(
-      order.recreateButtonholeQty,
-    );
-    const returnUnusedFlowersEnabled = Boolean(order.returnUnusedFlowers);
-
-    setOrderExtrasDraft({
-      replacementFlowers: replacementFlowersEnabled,
-      replacementFlowersQty: replacementFlowersEnabled
-        ? normalizeLoadedQty(order.replacementFlowersQty) ?? 1
-        : null,
-      replacementFlowersPrice: replacementFlowersEnabled
-        ? normalizeLoadedPrice(order.replacementFlowersPrice)
-        : null,
-      collectionQty,
-      collectionPrice:
-        collectionQty != null ? normalizeLoadedPrice(order.collectionPrice) : null,
-      deliveryQty,
-      deliveryPrice:
-        deliveryQty != null ? normalizeLoadedPrice(order.deliveryPrice) : null,
-      recreateButtonholeQty,
-      recreateButtonholePrice:
-        recreateButtonholeQty != null
-          ? normalizeLoadedPrice(order.recreateButtonholePrice)
-          : null,
-      returnUnusedFlowers: returnUnusedFlowersEnabled,
-      returnUnusedFlowersPrice: returnUnusedFlowersEnabled
-        ? normalizeLoadedPrice(order.returnUnusedFlowersPrice)
-        : null,
-      notes: order.notes ?? "",
-    });
-    setFrameGlassDrafts(buildFrameGlassDrafts(order.frameOrder ?? []));
+    setOrderExtrasDraft(initialOrderExtrasDraft);
+    setFrameGlassDrafts(initialFrameGlassDrafts);
     setOrderExtrasError(null);
-  }, [order]);
+  }, [order, initialFrameGlassDrafts, initialOrderExtrasDraft]);
 
   const framesForDisplay = useMemo(
     () =>
@@ -231,6 +274,38 @@ const OrderPage = () => {
     () => buildExtrasSummary(orderExtrasDraft, frameGlassDrafts),
     [frameGlassDrafts, orderExtrasDraft],
   );
+  const hasOrderExtrasChanges = useMemo(() => {
+    const currentExtras = JSON.stringify(
+      normalizeOrderExtrasDraftForComparison(orderExtrasDraft),
+    );
+    const initialExtras = JSON.stringify(
+      normalizeOrderExtrasDraftForComparison(initialOrderExtrasDraft),
+    );
+    const currentGlass = JSON.stringify(
+      normalizeFrameGlassDraftsForComparison(frameGlassDrafts),
+    );
+    const initialGlass = JSON.stringify(
+      normalizeFrameGlassDraftsForComparison(initialFrameGlassDrafts),
+    );
+
+    return currentExtras !== initialExtras || currentGlass !== initialGlass;
+  }, [
+    frameGlassDrafts,
+    initialFrameGlassDrafts,
+    initialOrderExtrasDraft,
+    orderExtrasDraft,
+  ]);
+  const hasCurrentOrderExtrasData = useMemo(
+    () => hasOrderExtrasData(orderExtrasDraft, frameGlassDrafts),
+    [frameGlassDrafts, orderExtrasDraft],
+  );
+  const hasInitialOrderExtrasData = useMemo(
+    () => hasOrderExtrasData(initialOrderExtrasDraft, initialFrameGlassDrafts),
+    [initialFrameGlassDrafts, initialOrderExtrasDraft],
+  );
+  const isOrderExtrasSaveDisabled =
+    !hasOrderExtrasChanges ||
+    (!hasCurrentOrderExtrasData && !hasInitialOrderExtrasData);
 
   const { deleteOrder, isDeleting } = useOrderDeleteMutation(order?.orderId);
   const { saveExtras, isSavingExtras } = useOrderExtrasMutations(
@@ -466,15 +541,9 @@ const OrderPage = () => {
     if (!order?.orderId) return;
 
     const replacementFlowersEnabled = orderExtrasDraft.replacementFlowers;
-    const collectionEnabled =
-      typeof orderExtrasDraft.collectionQty === "number" &&
-      orderExtrasDraft.collectionQty > 0;
-    const deliveryEnabled =
-      typeof orderExtrasDraft.deliveryQty === "number" &&
-      orderExtrasDraft.deliveryQty > 0;
-    const recreateButtonholeEnabled =
-      typeof orderExtrasDraft.recreateButtonholeQty === "number" &&
-      orderExtrasDraft.recreateButtonholeQty > 0;
+    const collectionEnabled = orderExtrasDraft.collection;
+    const deliveryEnabled = orderExtrasDraft.delivery;
+    const recreateButtonholeEnabled = orderExtrasDraft.recreateButtonhole;
     const returnUnusedFlowersEnabled = orderExtrasDraft.returnUnusedFlowers;
 
     const invalidGlassDraft = frameGlassDrafts.find(
@@ -493,21 +562,16 @@ const OrderPage = () => {
     const payload: Update<"orders"> = {
       notes: orderExtrasDraft.notes ?? "",
       replacementFlowers: replacementFlowersEnabled,
-      replacementFlowersQty: replacementFlowersEnabled
-        ? (orderExtrasDraft.replacementFlowersQty ?? 1)
-        : 0,
       replacementFlowersPrice: replacementFlowersEnabled
         ? (orderExtrasDraft.replacementFlowersPrice ?? 0)
         : 0,
-      collectionQty: collectionEnabled ? (orderExtrasDraft.collectionQty ?? 1) : 0,
+      collection: collectionEnabled,
       collectionPrice: collectionEnabled
         ? (orderExtrasDraft.collectionPrice ?? 0)
         : 0,
-      deliveryQty: deliveryEnabled ? (orderExtrasDraft.deliveryQty ?? 1) : 0,
+      delivery: deliveryEnabled,
       deliveryPrice: deliveryEnabled ? (orderExtrasDraft.deliveryPrice ?? 0) : 0,
-      recreateButtonholeQty: recreateButtonholeEnabled
-        ? (orderExtrasDraft.recreateButtonholeQty ?? 1)
-        : 0,
+      recreateButtonhole: recreateButtonholeEnabled,
       recreateButtonholePrice: recreateButtonholeEnabled
         ? (orderExtrasDraft.recreateButtonholePrice ?? 0)
         : 0,
@@ -580,49 +644,32 @@ const OrderPage = () => {
   ) => {
     setOrderExtrasError(null);
     setOrderExtrasDraft((prev) => {
-      if (key === "replacementFlowers" && value === false) {
+      const priceKeyByToggle: Partial<
+        Record<
+          keyof OrderExtrasDraft,
+          | "replacementFlowersPrice"
+          | "collectionPrice"
+          | "deliveryPrice"
+          | "recreateButtonholePrice"
+          | "returnUnusedFlowersPrice"
+        >
+      > = {
+        replacementFlowers: "replacementFlowersPrice",
+        collection: "collectionPrice",
+        delivery: "deliveryPrice",
+        recreateButtonhole: "recreateButtonholePrice",
+        returnUnusedFlowers: "returnUnusedFlowersPrice",
+      };
+      const priceKey = priceKeyByToggle[key];
+
+      if (priceKey && value === false) {
         return {
           ...prev,
-          replacementFlowers: false,
-          replacementFlowersQty: null,
-          replacementFlowersPrice: null,
+          [key]: false,
+          [priceKey]: null,
         };
       }
-      if (key === "replacementFlowersQty" && value == null) {
-        return {
-          ...prev,
-          replacementFlowersQty: null,
-          replacementFlowersPrice: null,
-        };
-      }
-      if (key === "collectionQty" && value == null) {
-        return {
-          ...prev,
-          collectionQty: null,
-          collectionPrice: null,
-        };
-      }
-      if (key === "deliveryQty" && value == null) {
-        return {
-          ...prev,
-          deliveryQty: null,
-          deliveryPrice: null,
-        };
-      }
-      if (key === "recreateButtonholeQty" && value == null) {
-        return {
-          ...prev,
-          recreateButtonholeQty: null,
-          recreateButtonholePrice: null,
-        };
-      }
-      if (key === "returnUnusedFlowers" && value === false) {
-        return {
-          ...prev,
-          returnUnusedFlowers: false,
-          returnUnusedFlowersPrice: null,
-        };
-      }
+
       return { ...prev, [key]: value };
     });
   };
@@ -884,6 +931,7 @@ const OrderPage = () => {
           onUpdateFrameGlass={handleUpdateFrameGlass}
           onSave={handleSaveExtras}
           isSaving={isSavingExtras || isSavingFrameGlassDrafts}
+          isSaveDisabled={isOrderExtrasSaveDisabled}
           error={orderExtrasError}
         />
       </Box>

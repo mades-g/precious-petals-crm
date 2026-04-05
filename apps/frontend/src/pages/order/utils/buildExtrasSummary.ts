@@ -18,18 +18,15 @@ export const buildExtrasSummary = (
     );
   }
 
-  if (orderExtras.collectionQty != null && orderExtras.collectionQty > 0) {
+  if (orderExtras.collection) {
     items.push(formatPrice("Collection", orderExtras.collectionPrice));
   }
 
-  if (orderExtras.deliveryQty != null && orderExtras.deliveryQty > 0) {
+  if (orderExtras.delivery) {
     items.push(formatPrice("Delivery", orderExtras.deliveryPrice));
   }
 
-  if (
-    orderExtras.recreateButtonholeQty != null &&
-    orderExtras.recreateButtonholeQty > 0
-  ) {
+  if (orderExtras.recreateButtonhole) {
     items.push(
       formatPrice("Recreate buttonhole", orderExtras.recreateButtonholePrice),
     );

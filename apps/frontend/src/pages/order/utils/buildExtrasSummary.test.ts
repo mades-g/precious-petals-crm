@@ -7,13 +7,12 @@ describe("buildExtrasSummary", () => {
   it("includes Clearview glass upgrades in the accordion summary", () => {
     const orderExtras: OrderExtrasDraft = {
       replacementFlowers: true,
-      replacementFlowersQty: 1,
       replacementFlowersPrice: 30,
-      collectionQty: 1,
+      collection: true,
       collectionPrice: 10,
-      deliveryQty: 1,
+      delivery: true,
       deliveryPrice: 200,
-      recreateButtonholeQty: 1,
+      recreateButtonhole: true,
       recreateButtonholePrice: 25,
       returnUnusedFlowers: false,
       returnUnusedFlowersPrice: null,
@@ -54,13 +53,12 @@ describe("buildExtrasSummary", () => {
   it("ignores stale disabled prices and keeps zero as a valid price", () => {
     const orderExtras: OrderExtrasDraft = {
       replacementFlowers: false,
-      replacementFlowersQty: null,
       replacementFlowersPrice: 30,
-      collectionQty: 1,
+      collection: true,
       collectionPrice: 0,
-      deliveryQty: null,
+      delivery: false,
       deliveryPrice: 90,
-      recreateButtonholeQty: null,
+      recreateButtonhole: false,
       recreateButtonholePrice: 300,
       returnUnusedFlowers: false,
       returnUnusedFlowersPrice: 30,

@@ -7,13 +7,12 @@ describe("buildTotals", () => {
   it("includes recreate buttonhole in the grand total", () => {
     const extras: OrderExtrasDraft = {
       replacementFlowers: false,
-      replacementFlowersQty: null,
       replacementFlowersPrice: null,
-      collectionQty: null,
+      collection: false,
       collectionPrice: null,
-      deliveryQty: null,
+      delivery: false,
       deliveryPrice: null,
-      recreateButtonholeQty: 1,
+      recreateButtonhole: true,
       recreateButtonholePrice: 60,
       returnUnusedFlowers: false,
       returnUnusedFlowersPrice: null,
@@ -28,13 +27,12 @@ describe("buildTotals", () => {
   it("ignores stale prices for extras that are not enabled", () => {
     const extras: OrderExtrasDraft = {
       replacementFlowers: false,
-      replacementFlowersQty: null,
       replacementFlowersPrice: 30,
-      collectionQty: null,
+      collection: false,
       collectionPrice: 50,
-      deliveryQty: 1,
+      delivery: true,
       deliveryPrice: 0,
-      recreateButtonholeQty: 1,
+      recreateButtonhole: true,
       recreateButtonholePrice: 60,
       returnUnusedFlowers: false,
       returnUnusedFlowersPrice: 25,

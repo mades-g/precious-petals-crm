@@ -29,6 +29,7 @@ export type OrderExtrasAccordionProps = {
   ) => void;
   onSave: () => void;
   isSaving: boolean;
+  isSaveDisabled: boolean;
   error?: string | null;
 };
 
@@ -43,42 +44,45 @@ const parseNumberInput = (value: string) => {
 const orderExtrasRows: Array<{
   id: string;
   label: string;
-  toggleKey?: "replacementFlowers" | "returnUnusedFlowers";
-  qtyKey?: keyof OrderExtrasDraft;
-  priceKey?: keyof OrderExtrasDraft;
+  toggleKey:
+    | "replacementFlowers"
+    | "collection"
+    | "delivery"
+    | "recreateButtonhole"
+    | "returnUnusedFlowers";
+  priceKey: keyof OrderExtrasDraft;
 }> = [
-    {
-      id: "replacement-flowers",
-      label: "Replacement flowers",
-      toggleKey: "replacementFlowers",
-      qtyKey: "replacementFlowersQty",
-      priceKey: "replacementFlowersPrice",
-    },
-    {
-      id: "collection",
-      label: "Collection",
-      qtyKey: "collectionQty",
-      priceKey: "collectionPrice",
-    },
-    {
-      id: "delivery",
-      label: "Delivery",
-      qtyKey: "deliveryQty",
-      priceKey: "deliveryPrice",
-    },
-    {
-      id: "recreate-buttonhole",
-      label: "Recreate buttonhole",
-      qtyKey: "recreateButtonholeQty",
-      priceKey: "recreateButtonholePrice",
-    },
-    {
-      id: "return-unused-flowers",
-      label: "Return unused flowers",
-      toggleKey: "returnUnusedFlowers",
-      priceKey: "returnUnusedFlowersPrice",
-    },
-  ];
+  {
+    id: "replacement-flowers",
+    label: "Replacement flowers",
+    toggleKey: "replacementFlowers",
+    priceKey: "replacementFlowersPrice",
+  },
+  {
+    id: "collection",
+    label: "Collection",
+    toggleKey: "collection",
+    priceKey: "collectionPrice",
+  },
+  {
+    id: "delivery",
+    label: "Delivery",
+    toggleKey: "delivery",
+    priceKey: "deliveryPrice",
+  },
+  {
+    id: "recreate-buttonhole",
+    label: "Recreate buttonhole",
+    toggleKey: "recreateButtonhole",
+    priceKey: "recreateButtonholePrice",
+  },
+  {
+    id: "return-unused-flowers",
+    label: "Return unused flowers",
+    toggleKey: "returnUnusedFlowers",
+    priceKey: "returnUnusedFlowersPrice",
+  },
+];
 
 const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
   orderExtras,
@@ -88,6 +92,7 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
   onUpdateFrameGlass,
   onSave,
   isSaving,
+  isSaveDisabled,
   error,
 }) => {
   return (
@@ -131,14 +136,7 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
             </Table.Header>
             <Table.Body>
               {orderExtrasRows.map((row) => {
-                const qtyValue = row.qtyKey ? orderExtras[row.qtyKey] : null;
-                const isEnabled = row.toggleKey
-                  ? Boolean(orderExtras[row.toggleKey])
-                  : row.qtyKey
-                    ? typeof qtyValue === "number" && qtyValue > 0
-                    : row.priceKey
-                      ? orderExtras[row.priceKey] != null
-                      : true;
+                const isEnabled = Boolean(orderExtras[row.toggleKey]);
 
                 return (
                   <Table.Row key={row.id}>
@@ -148,40 +146,32 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
                         checked={isEnabled}
                         onCheckedChange={(checked) => {
                           const enabled = Boolean(checked);
-
-                          if (row.toggleKey) {
-                            onUpdateField(row.toggleKey, enabled);
-                          } else if (row.qtyKey) {
-                            onUpdateField(row.qtyKey, enabled ? 1 : null);
-                          }
+                          onUpdateField(row.toggleKey, enabled);
 
                           if (!enabled) {
-                            if (row.qtyKey) onUpdateField(row.qtyKey, null);
-                            if (row.priceKey) onUpdateField(row.priceKey, null);
+                            onUpdateField(row.priceKey, null);
                           }
                         }}
                       />
                     </Table.Cell>
                     <Table.Cell>
-                      {row.priceKey ? (
-                        <TextField.Root
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={
-                            orderExtras[row.priceKey] == null
-                              ? ""
-                              : String(orderExtras[row.priceKey])
-                          }
-                          onChange={(event) =>
-                            onUpdateField(
-                              row.priceKey!,
-                              parseNumberInput(event.target.value),
-                            )
-                          }
-                          disabled={!isEnabled}
-                        />
-                      ) : null}
+                      <TextField.Root
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={
+                          orderExtras[row.priceKey] == null
+                            ? ""
+                            : String(orderExtras[row.priceKey])
+                        }
+                        onChange={(event) =>
+                          onUpdateField(
+                            row.priceKey,
+                            parseNumberInput(event.target.value),
+                          )
+                        }
+                        disabled={!isEnabled}
+                      />
                     </Table.Cell>
                   </Table.Row>
                 );
@@ -262,7 +252,7 @@ const OrderExtrasAccordion: FC<OrderExtrasAccordionProps> = ({
         </Box>
 
         <Flex justify="end">
-          <Button size="2" onClick={onSave} disabled={isSaving}>
+          <Button size="2" onClick={onSave} disabled={isSaving || isSaveDisabled}>
             {isSaving ? "Saving..." : "Save details"}
           </Button>
         </Flex>
