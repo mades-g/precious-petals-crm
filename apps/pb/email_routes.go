@@ -713,7 +713,7 @@ func buildRecommendationTextBody(
 		"Please note that flowers may change colour slightly during the preservation process due to the removal of moisture.",
 		"If you have any questions or would like assistance completing the form, please do not hesitate to get in touch - we are always happy to help.",
 		"Once we receive your completed form and final payment, your preserved arrangement will be ready within four weeks.",
-		"Kind regards,\nCatherine",
+		"Kind regards,\nThe Precious Petals Team",
 		"https://www.preciouspetals.co.uk\n01256 882422\nStudio Opening hours\nMon - Thurs 9-5\nFri - Sat 9.30-12.30",
 	)
 
