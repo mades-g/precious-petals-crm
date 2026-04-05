@@ -436,7 +436,7 @@ func registerEmailRoutes(
 		}
 
 		textBody := fmt.Sprintf(
-			"We are pleased to tell you that your order #%s is now ready for collection/delivery.\n\nPlease contact the studio to make the necessary arrangements.\n\nKind Regards,\nThe Precious Petals Team\n",
+			"We are pleased to tell you that your order #%s is now ready for collection/delivery.\n\nPlease contact the studio to make the necessary arrangements.\n\nKind regards,\nThe Precious Petals Team\n\nwww.preciouspetals.co.,uk\n01256 882422\nStudio Opening hours\nMon - Thurs 9-5\nFri - Sat 9.30-12.30\n",
 			orderNo,
 		)
 
