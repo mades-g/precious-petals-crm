@@ -46,12 +46,20 @@ func main() {
 			footerPngBytes = nil
 		}
 
-		logoDataURI := ""
-		logoPath := resolvePBPublicPath("email", "pp-header.png")
-		if logoBytes, logoErr := os.ReadFile(logoPath); logoErr != nil {
+		invoiceLogoDataURI := ""
+		invoiceLogoPath := resolvePBPublicPath("email", "pp-logo.png")
+		if logoBytes, logoErr := os.ReadFile(invoiceLogoPath); logoErr != nil {
 			fmt.Println("WARN: failed to read invoice logo:", logoErr.Error())
 		} else {
-			logoDataURI = "data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes)
+			invoiceLogoDataURI = "data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes)
+		}
+
+		emailLogoDataURI := ""
+		emailLogoPath := resolvePBPublicPath("email", "pp-header.png")
+		if logoBytes, logoErr := os.ReadFile(emailLogoPath); logoErr != nil {
+			fmt.Println("WARN: failed to read email header image:", logoErr.Error())
+		} else {
+			emailLogoDataURI = "data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes)
 		}
 
 		footerDataURI := ""
@@ -63,7 +71,7 @@ func main() {
 		}
 
 		// Always register the rest.
-		registerInvoiceRoutes(se, app, invoicePreviewTemplatePath, logoDataURI, footerDataURI)
+		registerInvoiceRoutes(se, app, invoicePreviewTemplatePath, invoiceLogoDataURI, footerDataURI)
 		registerExportRoutes(se, app)
 		registerSmsRoutes(se, app)
 
@@ -75,7 +83,7 @@ func main() {
 			if err != nil {
 				return fmt.Errorf("email disabled: resend misconfigured: %w", err)
 			}
-			registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, logoDataURI, footerDataURI)
+			registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, invoiceLogoDataURI, emailLogoDataURI, footerDataURI)
 
 		} else {
 			// Dev: optional
@@ -84,7 +92,7 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("resend misconfigured in dev: %w", err)
 				}
-				registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, logoDataURI, footerDataURI)
+				registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, invoiceLogoDataURI, emailLogoDataURI, footerDataURI)
 			}
 		}
 

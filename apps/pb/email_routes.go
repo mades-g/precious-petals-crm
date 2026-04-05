@@ -67,7 +67,8 @@ func registerEmailRoutes(
 	previewTemplatePath string,
 	resend *ResendClient,
 	footerPngBytes []byte,
-	logoDataURI string,
+	invoiceLogoDataURI string,
+	emailLogoDataURI string,
 	footerDataURI string,
 ) {
 	viewsDir := resolvePathFromExecutable("pb_hooks", "views")
@@ -112,7 +113,7 @@ func registerEmailRoutes(
 			fmt.Println("email log create failed:", err.Error())
 		}
 
-		view := buildInvoiceViewModel(payload, logoDataURI, footerDataURI, false)
+		view := buildInvoiceViewModel(payload, invoiceLogoDataURI, footerDataURI, false)
 		html, err := renderInvoiceTemplate(previewTemplatePath, view)
 		if err != nil {
 			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{"stage": "render_html"})
@@ -157,7 +158,7 @@ func registerEmailRoutes(
 		emailView.Order.InvoiceNo = formatInvoiceNo(payload.Order.OrderNo.Float64())
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.invoice.html", map[string]any{
-			"logoDataURI": logoDataURI,
+			"logoDataURI": emailLogoDataURI,
 			"customer": map[string]any{
 				"title":   emailView.Customer.Title,
 				"surname": emailView.Customer.Surname,
@@ -287,7 +288,7 @@ func registerEmailRoutes(
 		recommendationFrames, _ := buildRecommendationEmailContentFromPayload(payload)
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.recommendation.html", map[string]any{
-			"logoDataURI": logoDataURI,
+			"logoDataURI": emailLogoDataURI,
 			"customer": map[string]any{
 				"title":   strings.TrimSpace(payload.Customer.Title),
 				"surname": strings.TrimSpace(payload.Customer.Surname),
@@ -420,7 +421,7 @@ func registerEmailRoutes(
 		}
 
 		emailHTML, err := renderEmailTemplate(viewsDir, "email.delivery_collect.html", map[string]any{
-			"logoDataURI": logoDataURI,
+			"logoDataURI": emailLogoDataURI,
 			"order": map[string]any{
 				"orderNo": orderNo,
 			},
