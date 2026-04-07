@@ -664,7 +664,7 @@ func buildRecommendationTextBody(
 		"If you would prefer to visit our studio to complete the form and discuss your options with one of our artists, or if you would like a phone consultation, please call us as soon as possible to arrange an appointment. Your flowers will be ready for you to view in approximately one month.",
 	}
 
-	for _, frame := range recommendationFrames {
+	for index, frame := range recommendationFrames {
 		displayDescription := strings.TrimSpace(frame.DisplayDescription)
 		if displayDescription == "" {
 			displayDescription = "display"
@@ -672,11 +672,23 @@ func buildRecommendationTextBody(
 			displayDescription += " display"
 		}
 
-		paragraphs = append(paragraphs,
-			fmt.Sprintf(
-				"We would like to suggest a %s in a %s frame. This style would complement your bridal flowers beautifully. The price is %s, including the frame with %s and a single mount.",
+		recommendationLead := fmt.Sprintf(
+			"We would like to suggest a %s in a %s frame.",
+			displayDescription,
+			frame.FrameType,
+		)
+		if index > 0 {
+			recommendationLead = fmt.Sprintf(
+				"We would also like to suggest a %s in a %s frame for your extra display.",
 				displayDescription,
 				frame.FrameType,
+			)
+		}
+
+		paragraphs = append(paragraphs,
+			fmt.Sprintf(
+				"%s This style would complement your flowers beautifully. The price is %s, including the frame with %s and a single mount.",
+				recommendationLead,
 				frame.MainPrice,
 				frame.GlassType,
 			),
