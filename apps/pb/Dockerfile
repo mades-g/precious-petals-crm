@@ -6,7 +6,7 @@ RUN apk add --no-cache git ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY main.go utils.go export_orders_xlsx.go export_routes.go email_routes.go invoice_routes.go sms_routes.go resend_client.go render_email_template.go ./
+COPY main.go utils.go export_orders_xlsx.go export_routes.go email_routes.go invoice_routes.go sms_routes.go resend_client.go render_email_template.go recommendation_followups.go ./
 COPY ./pb_migrations /src/pb_migrations
 RUN go build -o /precious-petals-crm .
 

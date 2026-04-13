@@ -108,6 +108,7 @@ export type EmailLogEntry = {
   toName?: string;
   eventNote?: string;
   templateKey?: string;
+  meta?: Record<string, unknown> | null;
   expand?: {
     sentBy?: {
       id?: string;
@@ -115,6 +116,28 @@ export type EmailLogEntry = {
       name?: string;
     };
   };
+};
+
+export type RecommendationReminderStatus =
+  | "not_eligible"
+  | "not_started"
+  | "scheduled"
+  | "due_today"
+  | "overdue"
+  | "stopped";
+
+export type RecommendationReminderSummary = {
+  status: RecommendationReminderStatus;
+  automatedReminderCount: number;
+  successfulRecommendationCount: number;
+  firstRecommendationSentAt?: string;
+  lastReminderSentAt?: string;
+  lastFailedReminderAt?: string;
+  nextReminderDueDate?: string;
+  daysUntilNextReminder?: number;
+  daysOverdue?: number;
+  blockedReason?: string;
+  hasFailedReminderAfterLastSuccess: boolean;
 };
 
 export const EMAIL_ACTIONS: EmailActionConfig[] = [

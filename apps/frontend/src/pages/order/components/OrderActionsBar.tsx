@@ -18,6 +18,7 @@ import type {
   OrdersPaymentStatusOptions,
 } from "@/services/pb/types";
 import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
+import type { RecommendationReminderSummary } from "../types";
 import InlineToggle from "./InlineToggle";
 
 type PillColor =
@@ -52,6 +53,52 @@ const InfoPill: FC<{
   </Flex>
 );
 
+const pluralizeDays = (value: number) => `${value} day${value === 1 ? "" : "s"}`;
+
+const getReminderStatusColor = (
+  summary: RecommendationReminderSummary,
+): PillColor => {
+  switch (summary.status) {
+    case "scheduled":
+      return "blue";
+    case "due_today":
+      return "orange";
+    case "overdue":
+      return "red";
+    case "stopped":
+      return "gray";
+    case "not_started":
+      return "gray";
+    case "not_eligible":
+      return "gray";
+    default:
+      return "gray";
+  }
+};
+
+const getReminderStatusValue = (summary: RecommendationReminderSummary) => {
+  switch (summary.status) {
+    case "scheduled":
+      return summary.daysUntilNextReminder != null
+        ? `${pluralizeDays(summary.daysUntilNextReminder)} left`
+        : "Scheduled";
+    case "due_today":
+      return "Due today";
+    case "overdue":
+      return summary.daysOverdue != null
+        ? `${pluralizeDays(summary.daysOverdue)} overdue`
+        : "Overdue";
+    case "stopped":
+      return "Stopped";
+    case "not_started":
+      return "Not started";
+    case "not_eligible":
+      return "Not eligible";
+    default:
+      return "Unknown";
+  }
+};
+
 export type OrderActionsBarProps = {
   created?: string | null;
   occasionDate?: string | null;
@@ -82,6 +129,7 @@ export type OrderActionsBarProps = {
   onTogglePaperweightReceived?: (next: boolean) => void;
   isSavingCompletion?: boolean;
   isSavingPaperweight?: boolean;
+  recommendationReminder?: RecommendationReminderSummary | null;
 };
 
 const OrderActionsBar: FC<OrderActionsBarProps> = ({
@@ -114,6 +162,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   onTogglePaperweightReceived,
   isSavingCompletion,
   isSavingPaperweight,
+  recommendationReminder,
 }) => {
   const menuAction =
     (disabled: boolean | undefined, action: () => void) => (event: Event) => {
@@ -155,6 +204,20 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
             />
             {requiredBy ? (
               <InfoPill color="orange" label="Required by:" value={requiredBy} />
+            ) : null}
+            {recommendationReminder ? (
+              <>
+                <InfoPill
+                  color="blue"
+                  label="Reminder emails:"
+                  value={`${recommendationReminder.automatedReminderCount} sent`}
+                />
+                <InfoPill
+                  color={getReminderStatusColor(recommendationReminder)}
+                  label="Reminder status:"
+                  value={getReminderStatusValue(recommendationReminder)}
+                />
+              </>
             ) : null}
           </Flex>
           <Flex gap="2" align="center" wrap="wrap">
@@ -229,6 +292,21 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
         {statusHelperText ? (
           <Text size="2" color="gray" weight="bold">
             {statusHelperText}
+          </Text>
+        ) : null}
+        {recommendationReminder?.hasFailedReminderAfterLastSuccess ? (
+          <Text size="2" color="red" weight="bold">
+            A recommendation follow-up failed recently. The cron will retry on
+            the next scheduled run.
+          </Text>
+        ) : recommendationReminder?.blockedReason ? (
+          <Text size="2" color="gray" weight="bold">
+            Recommendation follow-ups: {recommendationReminder.blockedReason}
+          </Text>
+        ) : recommendationReminder?.nextReminderDueDate ? (
+          <Text size="2" color="gray" weight="bold">
+            Next recommendation reminder due{" "}
+            {formatDate(recommendationReminder.nextReminderDueDate)}.
           </Text>
         ) : null}
         {showCompletion ? (

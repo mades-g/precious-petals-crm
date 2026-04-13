@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -72,6 +73,7 @@ func registerEmailRoutes(
 	footerDataURI string,
 ) {
 	viewsDir := resolvePathFromExecutable("pb_hooks", "views")
+	recommendationService := newRecommendationEmailService(app, resend, emailLogoDataURI)
 
 	se.Router.POST("/api/email/invoice", func(e *core.RequestEvent) error {
 		var payload invoicePayload
@@ -251,130 +253,29 @@ func registerEmailRoutes(
 			})
 		}
 
-		originalTo := strings.TrimSpace(payload.Customer.Email)
-		if originalTo == "" {
+		if strings.TrimSpace(payload.Customer.Email) == "" {
 			return e.JSON(http.StatusBadRequest, map[string]any{
 				"ok":    false,
 				"error": "Missing customer email.",
 			})
 		}
 
-		toEmail := originalTo
-		if devOverride := strings.TrimSpace(os.Getenv("RESEND_DEV_OVERRIDE_TO")); devOverride != "" {
-			toEmail = devOverride
-		}
-
-		subject := buildOrderSubject(payload)
-
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "recommendation_bouquet", "manual", "recommendation")
-		if toEmail != originalTo {
-			meta["recipientOverride"] = true
-			meta["overrideRecipient"] = toEmail
-			meta["originalRecipient"] = originalTo
-		}
-		toName := buildCustomerDisplayName(payload)
-
-		var logRec *core.Record
-		if rec, err := createEmailLog(app, e, originalTo, toName, subject, logCtx, meta); err == nil {
-			logRec = rec
-		} else {
-			fmt.Println("email log create failed:", err.Error())
-		}
-
-		occasionDate := formatDate(string(payload.Order.OccasionDate))
-
-		ref := buildOrderReference(payload)
-
-		recommendationFrames, _ := buildRecommendationEmailContentFromPayload(payload)
-
-		emailHTML, err := renderEmailTemplate(viewsDir, "email.recommendation.html", map[string]any{
-			"logoDataURI": emailLogoDataURI,
-			"customer": map[string]any{
-				"title":   strings.TrimSpace(payload.Customer.Title),
-				"surname": strings.TrimSpace(payload.Customer.Surname),
-			},
-			"order": map[string]any{
-				"occasionDate": occasionDate,
-				"ref":          ref,
-			},
-			"links": map[string]any{
-				"jotform":     "https://eu.jotform.com/PPetals/order-form",
-				"frameStyles": "https://www.preciouspetals.co.uk/framestyles",
-				"terms":       "https://www.preciouspetals.co.uk/terms",
-				"website":     "https://www.preciouspetals.co.uk",
-			},
-			"recommendation": map[string]any{
-				"frames": recommendationFrames,
-			},
-			"suggestions": map[string]any{
-				"sideProfileUpsizePrice": "£50.00",
-			},
-			"contact": map[string]any{
-				"phone": "01256 882422",
-				"email": "enquiries@preciouspetals.co.uk",
-			},
-			"brand": map[string]any{
-				"name":    "Precious Petals",
-				"tagline": "Flower Preservation Specialists",
-				"phone":   "01256 882422",
-				"website": "https://www.preciouspetals.co.uk",
-			},
-		})
-		if err != nil {
-			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{"stage": "render_email_html"})
-			return e.JSON(http.StatusInternalServerError, map[string]any{
-				"ok":      false,
-				"error":   "Failed to render recommendation email.",
-				"details": err.Error(),
-			})
-		}
-
-		textBody := buildRecommendationTextBody(
-			payload,
-			occasionDate,
-			ref,
-			recommendationFrames,
-		)
-
-		req := ResendEmailRequest{
-			To:      []string{toEmail},
-			Subject: subject,
-			HTML:    emailHTML,
-			Text:    textBody,
-		}
-
-		idemKey := ""
-		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
-			idemKey = "email_log_" + logRec.Id
-		}
-
-		sendStart := time.Now()
-		resp, sendErr := resend.SendEmail(e.Request.Context(), req, idemKey)
-		if sendErr != nil {
-			metaPatch := map[string]any{
-				"stage":  "send_email",
-				"sendMs": time.Since(sendStart).Milliseconds(),
+		if err := recommendationService.send(e.Request.Context(), e, payload, logCtx, meta); err != nil {
+			var sendErr *recommendationEmailSendError
+			if errors.As(err, &sendErr) && sendErr != nil {
+				return e.JSON(http.StatusInternalServerError, map[string]any{
+					"ok":      false,
+					"error":   sendErr.PublicMessage,
+					"details": sendErr.Cause.Error(),
+				})
 			}
-			if httpErr, ok := sendErr.(*ResendHTTPError); ok {
-				metaPatch["resendStatus"] = httpErr.Status
-				metaPatch["resendBody"] = httpErr.Body
-			}
-			updateEmailLog(app, logRec, "failed", sendErr.Error(), metaPatch)
-
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":      false,
 				"error":   "Failed to send recommendation email.",
-				"details": sendErr.Error(),
+				"details": err.Error(),
 			})
 		}
-
-		updateEmailLog(app, logRec, "sent", "", map[string]any{
-			"stage":          "sent",
-			"sendMs":         time.Since(sendStart).Milliseconds(),
-			"resendId":       resp.ID,
-			"idempotencyKey": idemKey,
-			"toEmailActual":  toEmail,
-		})
 
 		return e.JSON(http.StatusOK, map[string]any{"ok": true})
 	}).Bind(apis.RequireAuth())

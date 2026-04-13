@@ -46,6 +46,7 @@ import { buildLineItems } from "./utils/buildLineItems";
 import { buildTotals } from "./utils/buildTotals";
 import { buildExtrasSummary } from "./utils/buildExtrasSummary";
 import { buildEmailPayload } from "./utils/buildEmailPayload";
+import { deriveRecommendationReminderSummary } from "./utils/deriveRecommendationReminderSummary";
 import {
   EMAIL_ACTIONS,
   type FrameGlassDraft,
@@ -536,6 +537,23 @@ const OrderPage = () => {
     isLoading: isLoadingLogs,
     isError: isLogsError,
   } = useEmailLogsQuery(order?.orderId);
+  const recommendationReminderSummary = useMemo(
+    () =>
+      deriveRecommendationReminderSummary({
+        logs: emailLogs ?? [],
+        orderStatus: orderStatusDraft,
+        paymentStatus: paymentStatusDraft,
+        hasBouquetData: hasFrames,
+        hasCustomerEmail: Boolean(customer?.email?.trim()),
+      }),
+    [
+      customer?.email,
+      emailLogs,
+      hasFrames,
+      orderStatusDraft,
+      paymentStatusDraft,
+    ],
+  );
 
   const handleSaveExtras = async () => {
     if (!order?.orderId) return;
@@ -888,6 +906,7 @@ const OrderPage = () => {
         onDelete={handleDeleteOrder}
         isDeleting={isDeleting}
         showDelete={canDeleteOrder}
+        recommendationReminder={recommendationReminderSummary}
       />
       <Box mt="4">
         <OrderPaymentsCard
@@ -975,6 +994,7 @@ const OrderPage = () => {
         logs={emailLogs ?? []}
         isLoadingLogs={isLoadingLogs}
         isLogsError={Boolean(isLogsError)}
+        recommendationReminder={recommendationReminderSummary}
       />
       {order?.orderId && customer ? (
         <SendSmsDialog

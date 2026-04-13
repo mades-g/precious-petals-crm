@@ -11,13 +11,17 @@ import {
   TextArea,
 } from "@radix-ui/themes";
 
-import { formatDateTime } from "@/utils";
+import { formatDate, formatDateTime } from "@/utils";
 
 import type {
   EmailActionConfig,
   EmailActionStatus,
   EmailLogEntry,
+  RecommendationReminderSummary,
 } from "../types";
+import {
+  isAutomatedRecommendationFollowUpLog,
+} from "../utils/deriveRecommendationReminderSummary";
 
 export type EmailActionsDrawerProps = {
   open: boolean;
@@ -32,6 +36,7 @@ export type EmailActionsDrawerProps = {
   logs: EmailLogEntry[];
   isLoadingLogs: boolean;
   isLogsError: boolean;
+  recommendationReminder?: RecommendationReminderSummary | null;
 };
 
 const statusColor = (status?: string) => {
@@ -49,6 +54,10 @@ const statusLabel = (status?: string) => {
 };
 
 const getEmailActionLabel = (log: EmailLogEntry) => {
+  if (isAutomatedRecommendationFollowUpLog(log)) {
+    return "Recommendation follow-up";
+  }
+
   const emailType = log.emailType?.trim();
   const eventType = log.eventType?.trim();
 
@@ -113,6 +122,40 @@ const getSentByLabel = (log: EmailLogEntry) => {
   return sentBy;
 };
 
+const reminderStatusColor = (
+  summary: RecommendationReminderSummary,
+): "gray" | "blue" | "orange" | "red" => {
+  switch (summary.status) {
+    case "scheduled":
+      return "blue";
+    case "due_today":
+      return "orange";
+    case "overdue":
+      return "red";
+    default:
+      return "gray";
+  }
+};
+
+const reminderStatusLabel = (summary: RecommendationReminderSummary) => {
+  switch (summary.status) {
+    case "scheduled":
+      return "Scheduled";
+    case "due_today":
+      return "Due today";
+    case "overdue":
+      return "Overdue";
+    case "stopped":
+      return "Stopped";
+    case "not_started":
+      return "Not started";
+    case "not_eligible":
+      return "Not eligible";
+    default:
+      return "Unknown";
+  }
+};
+
 const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
   open,
   onOpenChange,
@@ -126,6 +169,7 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
   logs,
   isLoadingLogs,
   isLogsError,
+  recommendationReminder,
 }) => {
   const [notes, setNotes] = useState<Record<string, string>>({});
 
@@ -239,6 +283,94 @@ const EmailActionsDrawer: FC<EmailActionsDrawerProps> = ({
                 );
               })}
             </Flex>
+          </Box>
+
+          <Separator size="4" />
+
+          <Box>
+            <Heading size="3" mb="2">
+              Recommendation reminders
+            </Heading>
+            {recommendationReminder ? (
+              <Box
+                style={{
+                  border: "1px solid var(--gray-a5)",
+                  borderRadius: 8,
+                  padding: 10,
+                }}
+              >
+                <Flex align="center" justify="between" gap="2" wrap="wrap">
+                  <Text size="2" weight="medium">
+                    Follow-up status
+                  </Text>
+                  <Badge
+                    color={reminderStatusColor(recommendationReminder)}
+                    variant="soft"
+                  >
+                    {reminderStatusLabel(recommendationReminder)}
+                  </Badge>
+                </Flex>
+                <Flex direction="column" gap="1" mt="2">
+                  <Text size="2" color="gray">
+                    Automated reminders sent:{" "}
+                    {recommendationReminder.automatedReminderCount}
+                  </Text>
+                  {recommendationReminder.firstRecommendationSentAt ? (
+                    <Text size="2" color="gray">
+                      Initial recommendation:{" "}
+                      {formatDateTime(
+                        recommendationReminder.firstRecommendationSentAt,
+                      )}
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.lastReminderSentAt ? (
+                    <Text size="2" color="gray">
+                      Last automated reminder:{" "}
+                      {formatDateTime(recommendationReminder.lastReminderSentAt)}
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.nextReminderDueDate ? (
+                    <Text size="2" color="gray">
+                      Next reminder due:{" "}
+                      {formatDate(recommendationReminder.nextReminderDueDate)}
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.daysUntilNextReminder != null &&
+                  recommendationReminder.status === "scheduled" ? (
+                    <Text size="2" color="gray">
+                      Time remaining: {recommendationReminder.daysUntilNextReminder}{" "}
+                      day
+                      {recommendationReminder.daysUntilNextReminder === 1
+                        ? ""
+                        : "s"}
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.status === "due_today" ? (
+                    <Text size="2" color="orange">
+                      Time remaining: Due today
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.daysOverdue != null ? (
+                    <Text size="2" color="red">
+                      Delay: {recommendationReminder.daysOverdue} day
+                      {recommendationReminder.daysOverdue === 1 ? "" : "s"}{" "}
+                      overdue
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.blockedReason ? (
+                    <Text size="2" color="gray">
+                      Reason: {recommendationReminder.blockedReason}
+                    </Text>
+                  ) : null}
+                  {recommendationReminder.hasFailedReminderAfterLastSuccess ? (
+                    <Text size="2" color="red">
+                      The last automated follow-up failed. The cron should retry
+                      on the next scheduled run.
+                    </Text>
+                  ) : null}
+                </Flex>
+              </Box>
+            ) : null}
           </Box>
 
           <Separator size="4" />
