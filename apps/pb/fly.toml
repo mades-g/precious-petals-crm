@@ -11,7 +11,7 @@ primary_region = "lhr"
   auto_stop_machines = 'stop'
   force_https = true
   internal_port = 8_080
-  min_machines_running = 0
+  min_machines_running = 1
   processes = [ "app" ]
 
   [http_service.concurrency]
@@ -24,4 +24,3 @@ primary_region = "lhr"
 
 [[vm]]
   size = "shared-cpu-1x"
-

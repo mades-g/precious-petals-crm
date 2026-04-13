@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	_ "time/tzdata"
 
 	_ "precious-petals/pb-crm/pb_migrations"
 
@@ -88,9 +89,7 @@ func main() {
 					return fmt.Errorf("email disabled: resend misconfigured: %w", err)
 				}
 				registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, invoiceLogoDataURI, emailLogoDataURI, footerDataURI)
-				if err := registerRecommendationFollowUpCron(app, newRecommendationEmailService(app, resendClient, emailLogoDataURI)); err != nil {
-					return fmt.Errorf("recommendation reminder cron disabled: %w", err)
-				}
+				registerRecommendationCronOrWarn(app, resendClient, emailLogoDataURI)
 
 			} else {
 				// Dev: optional
@@ -100,9 +99,7 @@ func main() {
 						return fmt.Errorf("resend misconfigured in dev: %w", err)
 					}
 					registerEmailRoutes(se, app, invoicePreviewTemplatePath, resendClient, footerPngBytes, invoiceLogoDataURI, emailLogoDataURI, footerDataURI)
-					if err := registerRecommendationFollowUpCron(app, newRecommendationEmailService(app, resendClient, emailLogoDataURI)); err != nil {
-						return fmt.Errorf("recommendation reminder cron disabled: %w", err)
-					}
+					registerRecommendationCronOrWarn(app, resendClient, emailLogoDataURI)
 				}
 			}
 
@@ -115,5 +112,11 @@ func main() {
 
 	if err := app.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(err)
+	}
+}
+
+func registerRecommendationCronOrWarn(app *pocketbase.PocketBase, resendClient *ResendClient, emailLogoDataURI string) {
+	if err := registerRecommendationFollowUpCron(app, newRecommendationEmailService(app, resendClient, emailLogoDataURI)); err != nil {
+		fmt.Println("WARN: recommendation reminder cron disabled:", err.Error())
 	}
 }
