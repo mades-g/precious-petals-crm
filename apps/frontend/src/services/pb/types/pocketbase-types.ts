@@ -104,7 +104,7 @@ export type SuperusersRecord = {
   verified?: boolean;
 };
 
-export type CustomersTitleOptions = "Mrs" | "Mr" | "Miss";
+export type CustomersTitleOptions = "Mrs" | "Ms" | "Mr" | "Miss";
 
 export type CustomersHowRecommendedOptions =
   | "Google"

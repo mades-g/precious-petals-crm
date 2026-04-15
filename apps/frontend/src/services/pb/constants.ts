@@ -42,6 +42,7 @@ export const COLLECTIONS: Record<
 
 export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [
   "Mrs",
+  "Ms",
   "Mr",
   "Miss",
 ] as const;

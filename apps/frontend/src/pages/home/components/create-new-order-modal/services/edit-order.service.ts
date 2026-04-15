@@ -6,7 +6,6 @@ import {
 } from "@/services/pb/constants";
 import type {
   CustomersHowRecommendedOptions,
-  CustomersTitleOptions,
 } from "@/services/pb/types";
 
 import { updateCustomer } from "@/api/update-customer";
@@ -46,7 +45,7 @@ const editCustomerStage = async ({
     surname: values.surname,
     email: values.email,
     telephone: values.telephone,
-    title: values.title as CustomersTitleOptions | "",
+    title: values.title,
     howRecommended: values.howRecommended as
       | CustomersHowRecommendedOptions
       | "",

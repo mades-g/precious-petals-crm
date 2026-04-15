@@ -3,6 +3,7 @@ import { type FC, type ReactNode, useEffect, useMemo } from "react";
 import { useForm, FormProvider, type SubmitHandler } from "react-hook-form";
 
 import type {
+  CustomersTitleOptions,
   OrderFrameItemsFrameMountColourOptions,
   OrderFrameItemsFrameTypeOptions,
   OrderFrameItemsGlassTypeOptions,
@@ -40,7 +41,7 @@ export type CreateOrderFormValues = {
   paperweightId?: string | null;
   // Above for collections IDS
   orderNo: number;
-  title: string;
+  title: CustomersTitleOptions | "";
   firstName: string;
   surname: string;
   email: string;
