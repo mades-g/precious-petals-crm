@@ -14,6 +14,7 @@ import type {
   OrdersOrderStatusOptions,
   Update,
 } from "@/services/pb/types";
+import { shouldAutoMoveOrderToChosenAfterSecondDeposit } from "@/utils/orderStatus";
 
 const PAYMENT_STATUS_BY_TYPE: Partial<
   Record<OrderPaymentsPaymentTypeOptions, OrdersPaymentStatusOptions>
@@ -60,8 +61,7 @@ export const useOrderPaymentsMutations = (orderId?: string) => {
 
     if (
       payload.paymentType === "second_deposit" &&
-      (payload.currentOrderStatus === "draft" ||
-        payload.currentOrderStatus === "to_choose")
+      shouldAutoMoveOrderToChosenAfterSecondDeposit(payload.currentOrderStatus)
     ) {
       updatePayload.orderStatus = "chosen";
     }

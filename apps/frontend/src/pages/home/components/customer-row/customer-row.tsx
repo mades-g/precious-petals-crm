@@ -24,8 +24,12 @@ import {
 import type { NormalisedCustomer } from "@/api/get-customers";
 import { useOrderDeleteMutation } from "@/pages/order/hooks/useOrderDeleteMutation";
 import { pb } from "@/services/pb/client";
-import { COLLECTIONS, ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
+import { COLLECTIONS } from "@/services/pb/constants";
 import type { OrdersOrderStatusOptions, Update } from "@/services/pb/types";
+import {
+  MANUAL_ORDER_STATUS_OPTIONS,
+  canManuallyUpdateOrderStatus,
+} from "@/utils/orderStatus";
 
 import type { FormStage } from "../create-new-order-modal/create-new-order-modal";
 
@@ -99,37 +103,9 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
   const leftStudioEligible =
     completionEligible && paymentStatus === "final_balance_paid";
 
-  const allowedOrderStatuses: Record<
-    OrdersOrderStatusOptions,
-    OrdersOrderStatusOptions[]
-  > = {
-    draft: ["draft", "to_choose", "cancelled"],
-    to_choose: ["draft", "to_choose", "chosen", "cancelled"],
-    chosen: ["draft", "to_choose", "chosen", "in_progress", "cancelled"],
-    in_progress: [
-      "draft",
-      "to_choose",
-      "chosen",
-      "in_progress",
-      "ready",
-      "cancelled",
-    ],
-    ready: [
-      "draft",
-      "to_choose",
-      "chosen",
-      "in_progress",
-      "ready",
-      "left_the_studio",
-      "cancelled",
-    ],
-    cancelled: ["cancelled"],
-    left_the_studio: ["left_the_studio"],
-  };
-
   const isOrderStatusDisabled = (status: OrdersOrderStatusOptions) => {
     if (!orderDetails?.orderStatus) return true;
-    if (!allowedOrderStatuses[orderDetails.orderStatus].includes(status))
+    if (!canManuallyUpdateOrderStatus(orderDetails.orderStatus, status))
       return true;
     if (status === "chosen") return !chosenEligible;
     if (status === "in_progress") return !chosenEligible;
@@ -334,7 +310,7 @@ const CustomerRow: FC<CustomerRowProps> = ({ customer, isAdmin, onClick }) => {
                   Update order status
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent>
-                  {ORDER_STATUS_OPTIONS.map((status) => (
+                  {MANUAL_ORDER_STATUS_OPTIONS.map((status) => (
                     <DropdownMenu.Item
                       key={status}
                       onClick={() => updateStatus(status)}

@@ -42,6 +42,10 @@ import {
 import { useEmailActions } from "./hooks/useEmailActions";
 import { useEmailLogsQuery } from "./hooks/useEmailLogsQuery";
 import { formatCurrency } from "@/utils";
+import {
+  canManuallyUpdateOrderStatus,
+  getCompletionDrivenOrderStatus,
+} from "@/utils/orderStatus";
 import { buildLineItems } from "./utils/buildLineItems";
 import { buildTotals } from "./utils/buildTotals";
 import { buildExtrasSummary } from "./utils/buildExtrasSummary";
@@ -378,26 +382,6 @@ const OrderPage = () => {
     [updateStatus],
   );
 
-  const getCompletionDrivenStatus = (
-    currentStatus: OrdersOrderStatusOptions,
-    nextCompletionEligible: boolean,
-    nextChosenEligible: boolean,
-  ): OrdersOrderStatusOptions | null => {
-    if (currentStatus === "cancelled" || currentStatus === "left_the_studio") {
-      return null;
-    }
-
-    if (nextChosenEligible && nextCompletionEligible) {
-      return currentStatus === "ready" ? null : "ready";
-    }
-
-    if (currentStatus === "ready" && !nextCompletionEligible) {
-      return nextChosenEligible ? "in_progress" : "chosen";
-    }
-
-    return null;
-  };
-
   const syncCompletionDrivenStatus = async (nextValues: {
     artworkComplete?: boolean;
     framingComplete?: boolean;
@@ -416,7 +400,7 @@ const OrderPage = () => {
       !hasPaperweight || nextPaperweightReceived;
     const nextCompletionEligible =
       nextFramesComplete && nextPaperweightComplete;
-    const nextStatus = getCompletionDrivenStatus(
+    const nextStatus = getCompletionDrivenOrderStatus(
       orderStatusDraft,
       nextCompletionEligible,
       chosenEligible,
@@ -450,7 +434,7 @@ const OrderPage = () => {
   useEffect(() => {
     if (!order?.orderId || isUpdatingStatus) return;
 
-    const nextStatus = getCompletionDrivenStatus(
+    const nextStatus = getCompletionDrivenOrderStatus(
       orderStatusDraft,
       completionEligible,
       chosenEligible,
@@ -468,36 +452,8 @@ const OrderPage = () => {
     orderStatusDraft,
   ]);
 
-  const allowedOrderStatuses: Record<
-    OrdersOrderStatusOptions,
-    OrdersOrderStatusOptions[]
-  > = {
-    draft: ["draft", "to_choose", "cancelled"],
-    to_choose: ["draft", "to_choose", "chosen", "cancelled"],
-    chosen: ["draft", "to_choose", "chosen", "in_progress", "cancelled"],
-    in_progress: [
-      "draft",
-      "to_choose",
-      "chosen",
-      "in_progress",
-      "ready",
-      "cancelled",
-    ],
-    ready: [
-      "draft",
-      "to_choose",
-      "chosen",
-      "in_progress",
-      "ready",
-      "left_the_studio",
-      "cancelled",
-    ],
-    cancelled: ["cancelled"],
-    left_the_studio: ["left_the_studio"],
-  };
-
   const isOrderStatusDisabled = (status: OrdersOrderStatusOptions) => {
-    if (!allowedOrderStatuses[orderStatusDraft].includes(status)) return true;
+    if (!canManuallyUpdateOrderStatus(orderStatusDraft, status)) return true;
     if (status === "chosen") return !chosenEligible;
     if (status === "in_progress") return !chosenEligible;
     if (status === "ready") return !completionEligible;

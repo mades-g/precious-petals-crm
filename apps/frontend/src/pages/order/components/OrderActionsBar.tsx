@@ -13,11 +13,11 @@ import {
   getOrderStatusColor,
   getPaymentStatusColor,
 } from "@/utils";
+import { MANUAL_ORDER_STATUS_OPTIONS } from "@/utils/orderStatus";
 import type {
   OrdersOrderStatusOptions,
   OrdersPaymentStatusOptions,
 } from "@/services/pb/types";
-import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
 import type { RecommendationReminderSummary } from "../types";
 import InlineToggle from "./InlineToggle";
 
@@ -249,7 +249,7 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                     Update order status
                   </DropdownMenu.SubTrigger>
                   <DropdownMenu.SubContent>
-                    {ORDER_STATUS_OPTIONS.map((status) => (
+                    {MANUAL_ORDER_STATUS_OPTIONS.map((status) => (
                       <DropdownMenu.Item
                         key={status}
                         onSelect={(event) => {

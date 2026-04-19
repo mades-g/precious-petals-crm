@@ -5,8 +5,12 @@ import Login from "./login";
 import { login } from "@/services/pb/client";
 
 vi.mock("@/services/pb/client", () => ({
-  login: vi.fn().mockResolvedValue(undefined),
+  login: vi.fn(),
 }));
+
+type LoginResponse = Awaited<ReturnType<typeof login>>;
+
+const mockLoginResponse = {} as LoginResponse;
 
 const renderLogin = () => {
   const queryClient = new QueryClient();
@@ -20,7 +24,7 @@ const renderLogin = () => {
 
 beforeEach(() => {
   vi.mocked(login).mockReset();
-  vi.mocked(login).mockResolvedValue(undefined);
+  vi.mocked(login).mockResolvedValue(mockLoginResponse);
 });
 
 test("renders Sign in text", () => {
@@ -82,8 +86,8 @@ test("shows a loading state while the login request is pending", async () => {
 
   vi.mocked(login).mockImplementation(
     () =>
-      new Promise<void>((resolve) => {
-        resolveLogin = resolve;
+      new Promise<LoginResponse>((resolve) => {
+        resolveLogin = () => resolve(mockLoginResponse);
       }),
   );
 
