@@ -102,115 +102,71 @@ const editBouquetStage = async ({
     );
   }
 
-  // 🟡 CASE 1: No existing + no new → invalid
+  // CASE 1: No existing + no new -> invalid
   if (existingBouquets.length === 0 && newBouquets.length === 0) {
     return fail("Please add at least one bouquet before saving this section.");
   }
 
-  // 🟠 CASE 2: Existing bouquets, but user removed all in the form → delete all
-  if (existingBouquets.length > 0 && newBouquets.length === 0) {
-    if (!currentCustomerForm?.orderId) {
-      console.error("Missing orderId when deleting bouquets in edit mode");
-      return ok();
-    }
+  const submittedIds = new Set(
+    newBouquets.map((bq) => bq.id).filter((id): id is string => !!id),
+  );
+  const removedIds = existingBouquets
+    .map((bq) => bq.id)
+    .filter((id): id is string => !!id && !submittedIds.has(id));
+  const bouquetsToCreate = newBouquets.filter((bq) => !bq.id);
+  const bouquetsToUpdate = newBouquets.filter(
+    (
+      bq,
+    ): bq is CreateOrderFormValues["bouquets"][number] & { id: string } =>
+      !!bq.id,
+  );
 
-    await Promise.all(
-      existingBouquets
-        .filter((bq) => bq.id)
-        .map((bq) =>
-          pb.collection(COLLECTIONS.ORDER_FRAME_ITEMS).delete(bq.id as string),
-        ),
-    );
+  await Promise.all(
+    bouquetsToUpdate.map((bq) => {
+      const payload = mapBouquetToFrameItemPayload(bq);
 
-    await pb
-      .collection(COLLECTIONS.ORDERS)
-      .update(currentCustomerForm.orderId, {
-        frameOrderId: [],
+      return updateBouquet({
+        frameId: bq.id,
+        ...payload,
       });
+    }),
+  );
 
-    return ok();
-  }
-
-  // 🟢 CASE 3: Existing + new → update existing by index, create extra
-  if (existingBouquets.length > 0 && newBouquets.length > 0) {
-    const minCount = Math.min(existingBouquets.length, newBouquets.length);
-
-    // 3a) UPDATE the overlapping ones
-    await Promise.all(
-      Array.from({ length: minCount }).map((_, idx) => {
-        const existing = existingBouquets[idx];
-        const bq = newBouquets[idx];
-        if (!existing?.id) return Promise.resolve();
-
-        const payload = mapBouquetToFrameItemPayload(bq);
-
-        // @ts-expect-error - Need to fix this at some point
-        return updateBouquet({
-          frameId: existing.id,
-          ...payload,
-        });
-      }),
-    );
-
-    // 3b) If user added MORE bouquets than existed → CREATE the extras
-    if (newBouquets.length > existingBouquets.length) {
-      if (!currentCustomerForm?.orderId) {
-        console.error(
-          "Missing orderId when creating extra bouquets in edit mode",
-        );
-        return ok();
-      }
-
-      const extraBouquets = newBouquets.slice(existingBouquets.length);
-
-      const createdFrameItems = await Promise.all(
-        extraBouquets.map((bq, index) => {
-          const payload = mapBouquetToFrameItemPayload(bq);
-          return pb
-            .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
-            .create(payload, { requestKey: `extra-${index}` });
-        }),
-      );
-
-      const existingIds = existingBouquets
-        .map((bq) => bq.id)
-        .filter(Boolean) as string[];
-      const newIds = createdFrameItems.map((fi) => fi.id);
-
-      await pb
-        .collection(COLLECTIONS.ORDERS)
-        .update(currentCustomerForm.orderId, {
-          frameOrderId: [...existingIds, ...newIds],
-        });
+  if (!currentCustomerForm?.orderId) {
+    if (removedIds.length > 0 || bouquetsToCreate.length > 0) {
+      console.error("Missing orderId when syncing bouquets in edit mode");
     }
-
     return ok();
   }
 
-  // 🔵 CASE 4: No existing, but new bouquets added → create & link to order
-  if (existingBouquets.length === 0 && newBouquets.length > 0) {
-    if (!currentCustomerForm?.orderId) {
-      console.error("Missing orderId when creating bouquets in edit mode");
-      return ok();
-    }
+  await Promise.all(
+    removedIds.map((id) =>
+      pb.collection(COLLECTIONS.ORDER_FRAME_ITEMS).delete(id),
+    ),
+  );
 
-    const createdFrameItems = await Promise.all(
-      newBouquets.map((bq, index) => {
-        const payload = mapBouquetToFrameItemPayload(bq);
-        return pb
-          .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
-          .create(payload, { requestKey: `${index}` });
-      }),
-    );
+  const createdFrameItems = await Promise.all(
+    bouquetsToCreate.map((bq, index) => {
+      const payload = mapBouquetToFrameItemPayload(bq);
+      const requestKey =
+        existingBouquets.length > 0 ? `extra-${index}` : `${index}`;
+      return pb
+        .collection(COLLECTIONS.ORDER_FRAME_ITEMS)
+        .create(payload, { requestKey });
+    }),
+  );
 
-    await pb
-      .collection(COLLECTIONS.ORDERS)
-      .update(currentCustomerForm.orderId, {
-        frameOrderId: createdFrameItems.map((fi) => fi.id),
-      });
+  let createdIndex = 0;
+  const frameOrderId = newBouquets.map((bq) => {
+    if (bq.id) return bq.id;
+    const created = createdFrameItems[createdIndex];
+    createdIndex += 1;
+    return created.id;
+  });
 
-    return ok();
-  }
+  await pb.collection(COLLECTIONS.ORDERS).update(currentCustomerForm.orderId, {
+    frameOrderId,
+  });
 
   return ok();
 };

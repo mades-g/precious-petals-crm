@@ -15,8 +15,30 @@ type LocationState = {
   payload?: unknown;
 };
 
+type ApiErrorPayload = {
+  details?: unknown;
+  error?: unknown;
+  message?: unknown;
+};
+
 const A4_WIDTH_PX = 794; // ~ 210mm at 96dpi
 const A4_HEIGHT_PX = 1123; // ~ 297mm at 96dpi
+
+const getApiErrorMessage = (text: string, fallback: string) => {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (parsed && typeof parsed === "object") {
+      const { details, error, message } = parsed as ApiErrorPayload;
+      if (typeof details === "string") return details;
+      if (typeof error === "string") return error;
+      if (typeof message === "string") return message;
+    }
+  } catch {
+    // Fall through to the raw response text.
+  }
+
+  return text || fallback;
+};
 
 const InvoicePreview: FC = () => {
   const navigate = useNavigate();
@@ -78,17 +100,9 @@ const InvoicePreview: FC = () => {
 
       if (!res.ok) {
         const text = await res.text();
-        try {
-          const j = JSON.parse(text) as any;
-          const msg =
-            j?.details ||
-            j?.error ||
-            j?.message ||
-            `Download failed (${res.status})`;
-          throw new Error(msg);
-        } catch {
-          throw new Error(text || `Download failed (${res.status})`);
-        }
+        throw new Error(
+          getApiErrorMessage(text, `Download failed (${res.status})`),
+        );
       }
 
       const blob = await res.blob();
@@ -129,17 +143,9 @@ const InvoicePreview: FC = () => {
         const text = await res.text();
 
         if (!res.ok) {
-          try {
-            const j = JSON.parse(text) as any;
-            const msg =
-              j?.details ||
-              j?.error ||
-              j?.message ||
-              `Preview failed (${res.status})`;
-            throw new Error(msg);
-          } catch {
-            throw new Error(text || `Preview failed (${res.status})`);
-          }
+          throw new Error(
+            getApiErrorMessage(text, `Preview failed (${res.status})`),
+          );
         }
 
         if (!cancelled) setHtml(text);
