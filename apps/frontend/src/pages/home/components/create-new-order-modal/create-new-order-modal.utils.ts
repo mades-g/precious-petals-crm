@@ -1,5 +1,9 @@
 import { formatSnakeCase } from "@/utils";
-import { DEFAULT_FRAME_GLASS_TYPE } from "@/services/pb/constants";
+import {
+  DEFAULT_FRAME_GLASS_TYPE,
+  FRAME_TYPE_OPTIONS,
+} from "@/services/pb/constants";
+import type { OrderFrameItemsFrameTypeOptions } from "@/services/pb/types";
 
 import type { NormalisedCustomer } from "@/api/get-customers";
 
@@ -8,6 +12,11 @@ import type { CreateOrderFormValues } from "../create-new-customer-form/create-n
 import type { ModalMode } from "../../home";
 
 import type { FormStage } from "./create-new-order-modal";
+
+const isCurrentFrameType = (
+  value: string | null | undefined,
+): value is OrderFrameItemsFrameTypeOptions =>
+  FRAME_TYPE_OPTIONS.includes(value as OrderFrameItemsFrameTypeOptions);
 
 export const getModalTitle = (
   mode: ModalMode,
@@ -77,7 +86,9 @@ export const buildCustomerFormDefaults = (
         recommendedSizeHeightIn: extras?.recommendedSizeHeightIn ?? null,
         preservationType: frameOrder.preservationType,
         preservationDate: frameOrder.preservationDate ?? "",
-        frameType: frameOrder.frameType,
+        frameType: isCurrentFrameType(frameOrder.frameType)
+          ? frameOrder.frameType
+          : "",
         framePrice: extras?.framePrice ?? null,
         mountPrice: extras?.mountPrice ?? null,
         glassEngraving: frameOrder.glassEngraving ?? "",

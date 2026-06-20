@@ -48,7 +48,13 @@ export const CUSTOMERS_TITLE_OPTIONS: CustomersTitleOptions[] = [
 ] as const;
 
 export const CUSTOMERS_HOW_RECOMMENDED_OPTIONS: CustomersHowRecommendedOptions[] =
-  ["Google", "Friend / Family", "Florist", "Wedding planner"];
+  [
+    "Google",
+    "Friend / Family",
+    "Florist",
+    "Wedding planner",
+    "Previous customer",
+  ];
 
 export const FRAME_MOUNT_COLOUR_OPTIONS: OrderFrameItemsFrameMountColourOptions[] =
   [
@@ -82,9 +88,7 @@ export const FRAME_TYPE_OPTIONS: OrderFrameItemsFrameTypeOptions[] = [
   "Cottage pine",
   "Bronze",
   "Antique gold",
-  "Speckled gold",
   "Antique silver",
-  "Speckled silver",
   "New modern silver",
   "Distressed white",
   "Modern white",

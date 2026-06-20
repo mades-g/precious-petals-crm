@@ -110,6 +110,8 @@ func main() {
 		},
 	})
 
+	fmt.Println(buildInfoLogLine())
+
 	if err := app.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(err)
 	}

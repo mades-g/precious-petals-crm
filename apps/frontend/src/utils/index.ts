@@ -100,6 +100,8 @@ export const howRecommendedColour = (
       return "iris";
     case "Friend / Family":
       return "indigo";
+    case "Previous customer":
+      return "grass";
     case "Google":
       return "blue";
     default:

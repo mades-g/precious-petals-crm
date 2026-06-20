@@ -39,6 +39,8 @@ const PAYMENT_TYPE_OPTIONS: OrderPaymentsPaymentTypeOptions[] = [
   "other",
 ];
 
+const PAPERWEIGHT_ONLY_ARTIST_HOURS = "0.1";
+
 const defaultPaidAt = () => todayDateOnly();
 
 type PaymentDatePickerProps = {
@@ -104,6 +106,7 @@ type OrderPaymentsCardProps = {
   outstanding?: number;
   orderRequiredBy?: string | null;
   orderArtistHours?: number | null;
+  isPaperweightOnly?: boolean;
   onCreate: (
     payload: CreateOrderPaymentDraft & {
       requiredBy?: string;
@@ -128,6 +131,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   outstanding,
   orderRequiredBy,
   orderArtistHours,
+  isPaperweightOnly = false,
   onCreate,
   onUpdate,
   disabled,
@@ -190,6 +194,11 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const requiresArtistHours = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "second_deposit";
 
+  const getDefaultArtistHours = () =>
+    isPaperweightOnly && orderArtistHours == null
+      ? PAPERWEIGHT_ONLY_ARTIST_HOURS
+      : "";
+
   const isFinalBalance = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "final_balance";
 
@@ -234,6 +243,32 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     const [day, month, year] = trimmed.split("/");
     if (!day || !month || !year) return "";
     return `${year}-${month}-${day}`;
+  };
+
+  const handlePaymentTypeChange = (next: OrderPaymentsPaymentTypeOptions) => {
+    setPaymentType(next);
+    if (next !== "second_deposit") {
+      setRequiredBy("");
+      setArtistHours("");
+      return;
+    }
+    if (artistHours.trim() === "") {
+      setArtistHours(getDefaultArtistHours());
+    }
+  };
+
+  const handleEditPaymentTypeChange = (
+    next: OrderPaymentsPaymentTypeOptions,
+  ) => {
+    setEditPaymentType(next);
+    if (next !== "second_deposit") {
+      setEditRequiredBy("");
+      setEditArtistHours("");
+      return;
+    }
+    if (editArtistHours.trim() === "") {
+      setEditArtistHours(getDefaultArtistHours());
+    }
   };
 
   const handleSubmit = async () => {
@@ -328,7 +363,9 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     setEditNotes(payment.notes ?? "");
     setEditRequiredBy(toIsoDate(orderRequiredBy ?? ""));
     setEditArtistHours(
-      orderArtistHours != null ? String(orderArtistHours) : "",
+      orderArtistHours != null
+        ? String(orderArtistHours)
+        : getDefaultArtistHours(),
     );
     setSubmitError(null);
   };
@@ -467,11 +504,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   value={paymentType}
                   onValueChange={(value) => {
                     const next = value as OrderPaymentsPaymentTypeOptions;
-                    setPaymentType(next);
-                    if (next !== "second_deposit") {
-                      setRequiredBy("");
-                      setArtistHours("");
-                    }
+                    handlePaymentTypeChange(next);
                   }}
                   disabled={inputsDisabled}
                 >
@@ -632,11 +665,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             onValueChange={(value) => {
                               const next =
                                 value as OrderPaymentsPaymentTypeOptions;
-                              setEditPaymentType(next);
-                              if (next !== "second_deposit") {
-                                setEditRequiredBy("");
-                                setEditArtistHours("");
-                              }
+                              handleEditPaymentTypeChange(next);
                             }}
                             disabled={inputsDisabled}
                           >

@@ -1,5 +1,5 @@
 {{define "title"}}Invoice #{{.order.invoiceNumber}}{{end}} {{define "body"}}
-<p>Dear {{.customer.title}} {{.customer.surname}}</p>
+<p>Dear {{if .customer.title}}{{.customer.title}} {{end}}{{.customer.surname}}</p>
 
 <p>
   <strong>Reference: Name:</strong> {{.customer.surname}}<br />

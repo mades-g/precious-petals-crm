@@ -103,7 +103,7 @@ func TestBuildInvoiceRowsFormatsMainFrameLineWithInches(t *testing.T) {
 		t.Fatalf("expected 1 invoice row, got %d", len(rows))
 	}
 
-	if rows[0].Description != "Picture, 10 x 8 inches, Oak, Pressed, Conservation glass" {
+	if rows[0].Description != "Picture, 10 x 8 inches, Oak, Single, Pressed, Conservation glass" {
 		t.Fatalf("unexpected main invoice description %q", rows[0].Description)
 	}
 }
@@ -155,7 +155,7 @@ func TestBuildInvoiceRowsKeepsClearviewOnSeparatePricedLine(t *testing.T) {
 		t.Fatalf("expected 2 invoice rows, got %d", len(rows))
 	}
 
-	if rows[0].Description != "Picture, 10 x 8 inches, Oak, Pressed" {
+	if rows[0].Description != "Picture, 10 x 8 inches, Oak, Single, Pressed" {
 		t.Fatalf("unexpected main invoice description %q", rows[0].Description)
 	}
 

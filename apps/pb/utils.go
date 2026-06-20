@@ -305,6 +305,9 @@ func buildInvoiceRows(payload invoicePayload) []invoiceRow {
 		if frame.FrameType != "" {
 			descriptionParts = append(descriptionParts, frame.FrameType)
 		}
+		if frame.Layout != "" {
+			descriptionParts = append(descriptionParts, frame.Layout)
+		}
 		if frame.PreservationType != "" {
 			descriptionParts = append(descriptionParts, frame.PreservationType)
 		}

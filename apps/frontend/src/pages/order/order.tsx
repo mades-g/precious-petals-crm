@@ -873,6 +873,7 @@ const OrderPage = () => {
           outstanding={outstandingBalance}
           orderRequiredBy={order?.requiredBy}
           orderArtistHours={order?.artistHours ?? null}
+          isPaperweightOnly={hasPaperweight && !hasFrames}
           onCreate={(payload) =>
             addPayment({ ...payload, currentOrderStatus: orderStatusDraft })
           }

@@ -1,6 +1,6 @@
 {{define "title"}}Your flower preservation order – reference
 {{.order.ref}}{{end}} {{define "body"}}
-<p>Dear {{.customer.title}} {{.customer.surname}},</p>
+<p>Dear {{if .customer.title}}{{.customer.title}} {{end}}{{.customer.surname}},</p>
 
 <p>
   <strong>Reference:</strong> {{.customer.surname}}<br />
