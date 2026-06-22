@@ -30,11 +30,12 @@ type recommendationEmailService struct {
 }
 
 type recommendationReminderState struct {
-	IsDeleted     bool
-	OrderStatus   string
-	PaymentStatus string
-	FrameCount    int
-	CustomerEmail string
+	IsDeleted         bool
+	OrderStatus       string
+	PaymentStatus     string
+	FrameCount        int
+	PaperweightItemId string
+	CustomerEmail     string
 }
 
 type recommendationEmailSendError struct {
@@ -247,23 +248,20 @@ func runRecommendationFollowUpCron(
 			continue
 		}
 
-		frameIDs := order.GetStringSlice("frameOrderId")
-		if len(uniqueNonEmptyStrings(frameIDs)) == 0 {
-			continue
-		}
-
 		customer, err := fetchCustomerByOrderId(app, order.Id)
 		if err != nil {
 			fmt.Println("recommendation reminder cron: skipping order without customer:", order.Id, err.Error())
 			continue
 		}
 
+		frameIDs := uniqueNonEmptyStrings(order.GetStringSlice("frameOrderId"))
 		state := recommendationReminderState{
-			IsDeleted:     order.GetBool("isDeleted"),
-			OrderStatus:   strings.TrimSpace(order.GetString("orderStatus")),
-			PaymentStatus: strings.TrimSpace(order.GetString("payment_status")),
-			FrameCount:    len(uniqueNonEmptyStrings(frameIDs)),
-			CustomerEmail: strings.TrimSpace(customer.GetString("email")),
+			IsDeleted:         order.GetBool("isDeleted"),
+			OrderStatus:       strings.TrimSpace(order.GetString("orderStatus")),
+			PaymentStatus:     strings.TrimSpace(order.GetString("payment_status")),
+			FrameCount:        len(frameIDs),
+			PaperweightItemId: strings.TrimSpace(order.GetString("paperweightOrderId")),
+			CustomerEmail:     strings.TrimSpace(customer.GetString("email")),
 		}
 		if !state.IsEligible() {
 			continue
@@ -293,17 +291,23 @@ func runRecommendationFollowUpCron(
 			fmt.Println("recommendation reminder cron: failed to fetch frame items:", order.Id, err.Error())
 			continue
 		}
-		if len(frames) == 0 {
+		paperweight, err := fetchPaperweightRecordForOrder(app, order)
+		if err != nil {
+			fmt.Println("recommendation reminder cron: failed to fetch paperweight item:", order.Id, err.Error())
 			continue
 		}
 
-		payload, err := buildRecommendationPayloadFromRecords(order, customer, frames)
+		if len(frames) == 0 && paperweight == nil {
+			continue
+		}
+
+		payload, err := buildRecommendationPayloadFromRecords(order, customer, frames, paperweight)
 		if err != nil {
 			fmt.Println("recommendation reminder cron: failed to build payload:", order.Id, err.Error())
 			continue
 		}
 
-		logCtx, meta := buildRecommendationFollowUpLogContext(order, customer, frames)
+		logCtx, meta := buildRecommendationFollowUpLogContext(order, customer, frames, paperweight)
 		if err := service.send(context.Background(), nil, payload, logCtx, meta); err != nil {
 			fmt.Println("recommendation reminder cron:", recommendationEmailLogMessage(err), order.Id)
 		}
@@ -361,7 +365,16 @@ func fetchOrderedFrameRecordsForOrder(app *pocketbase.PocketBase, order *core.Re
 	return ordered, nil
 }
 
-func buildRecommendationFollowUpLogContext(order, customer *core.Record, frames []*core.Record) (emailLogContext, map[string]any) {
+func fetchPaperweightRecordForOrder(app *pocketbase.PocketBase, order *core.Record) (*core.Record, error) {
+	paperweightID := strings.TrimSpace(order.GetString("paperweightOrderId"))
+	if paperweightID == "" {
+		return nil, nil
+	}
+
+	return app.FindRecordById("order_paperweight_items", paperweightID)
+}
+
+func buildRecommendationFollowUpLogContext(order, customer *core.Record, frames []*core.Record, paperweight *core.Record) (emailLogContext, map[string]any) {
 	ctx := emailLogContext{
 		EmailType:   "recommendation_bouquet",
 		EventType:   "bouquet_recommendation_followup",
@@ -372,13 +385,18 @@ func buildRecommendationFollowUpLogContext(order, customer *core.Record, frames 
 	if len(frames) == 1 && frames[0] != nil {
 		ctx.FrameItemId = frames[0].Id
 	}
+	if paperweight != nil {
+		ctx.PaperweightItemId = paperweight.Id
+	}
 
 	return ctx, map[string]any{
-		"source": recommendationReminderSource,
+		"source":         recommendationReminderSource,
+		"frameCount":     len(frames),
+		"hasPaperweight": paperweight != nil,
 	}
 }
 
-func buildRecommendationPayloadFromRecords(order, customer *core.Record, frames []*core.Record) (invoicePayload, error) {
+func buildRecommendationPayloadFromRecords(order, customer *core.Record, frames []*core.Record, paperweight *core.Record) (invoicePayload, error) {
 	if order == nil {
 		return invoicePayload{}, errors.New("missing order record")
 	}
@@ -432,6 +450,13 @@ func buildRecommendationPayloadFromRecords(order, customer *core.Record, frames 
 			"requiredBy":   strings.TrimSpace(order.GetString("requiredBy")),
 		},
 		"frames": framePayloads,
+	}
+
+	if paperweight != nil {
+		rawPayload["paperweight"] = map[string]any{
+			"quantity": paperweight.GetFloat("quantity"),
+			"price":    paperweight.GetFloat("price"),
+		}
 	}
 
 	data, err := json.Marshal(rawPayload)
@@ -514,7 +539,7 @@ func (s recommendationReminderState) IsEligible() bool {
 	if strings.TrimSpace(s.OrderStatus) != "to_choose" {
 		return false
 	}
-	if s.FrameCount <= 0 {
+	if s.FrameCount <= 0 && strings.TrimSpace(s.PaperweightItemId) == "" {
 		return false
 	}
 	if strings.TrimSpace(s.CustomerEmail) == "" {

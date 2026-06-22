@@ -22,6 +22,17 @@ func TestRecommendationReminderStateEligibility(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "eligible to choose paperweight only order",
+			state: recommendationReminderState{
+				OrderStatus:       "to_choose",
+				PaymentStatus:     "waiting_second_deposit",
+				FrameCount:        0,
+				PaperweightItemId: "paperweight-1",
+				CustomerEmail:     "customer@example.com",
+			},
+			want: true,
+		},
+		{
 			name: "skip non to choose order",
 			state: recommendationReminderState{
 				OrderStatus:   "chosen",
@@ -43,7 +54,7 @@ func TestRecommendationReminderStateEligibility(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "skip order without bouquet data",
+			name: "skip order without recommendation items",
 			state: recommendationReminderState{
 				OrderStatus:   "to_choose",
 				PaymentStatus: "waiting_second_deposit",
@@ -100,6 +111,68 @@ func TestRecommendationReminderStateEligibility(t *testing.T) {
 				t.Fatalf("IsEligible() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildRecommendationPayloadFromRecordsIncludesPaperweightOnlyOrder(t *testing.T) {
+	order := newExportTestRecord("orders", map[string]any{
+		"orderNo":      30145,
+		"occasionDate": "2026-06-20",
+	})
+	order.Id = "order-1"
+	customer := newExportTestRecord("customers", map[string]any{
+		"title":     "Mrs",
+		"firstName": "Gemma",
+		"surname":   "Wingrove",
+		"email":     "customer@example.com",
+	})
+	customer.Id = "customer-1"
+	paperweight := newExportTestRecord("order_paperweight_items", map[string]any{
+		"quantity": 2,
+		"price":    120,
+	})
+	paperweight.Id = "paperweight-1"
+
+	payload, err := buildRecommendationPayloadFromRecords(order, customer, nil, paperweight)
+	if err != nil {
+		t.Fatalf("buildRecommendationPayloadFromRecords() error = %v", err)
+	}
+
+	if len(payload.Frames) != 0 {
+		t.Fatalf("expected no frame payloads, got %d", len(payload.Frames))
+	}
+	if payload.GetPaperweight() == nil {
+		t.Fatal("expected paperweight payload")
+	}
+	if got := payload.GetPaperweight().Quantity.Float64(); got == nil || *got != 2 {
+		t.Fatalf("paperweight quantity = %v, want 2", got)
+	}
+	if got := payload.GetPaperweight().Price.Float64(); got == nil || *got != 120 {
+		t.Fatalf("paperweight price = %v, want 120", got)
+	}
+}
+
+func TestBuildRecommendationFollowUpLogContextIncludesPaperweight(t *testing.T) {
+	order := newExportTestRecord("orders", nil)
+	order.Id = "order-1"
+	customer := newExportTestRecord("customers", nil)
+	customer.Id = "customer-1"
+	paperweight := newExportTestRecord("order_paperweight_items", nil)
+	paperweight.Id = "paperweight-1"
+
+	ctx, meta := buildRecommendationFollowUpLogContext(order, customer, nil, paperweight)
+
+	if ctx.PaperweightItemId != "paperweight-1" {
+		t.Fatalf("PaperweightItemId = %q, want paperweight-1", ctx.PaperweightItemId)
+	}
+	if ctx.FrameItemId != "" {
+		t.Fatalf("FrameItemId = %q, want empty", ctx.FrameItemId)
+	}
+	if meta["hasPaperweight"] != true {
+		t.Fatalf("hasPaperweight meta = %v, want true", meta["hasPaperweight"])
+	}
+	if meta["frameCount"] != 0 {
+		t.Fatalf("frameCount meta = %v, want 0", meta["frameCount"])
 	}
 }
 
