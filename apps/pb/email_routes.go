@@ -181,7 +181,37 @@ func registerEmailRoutes(
 		}
 
 		textBody := fmt.Sprintf(
-			"Dear %s %s\n\nReference: Name: %s\nOccasion Date: %s\nInvoice: %s\n\nEstimated Completion Date: %s\nPlease see attached your final invoice which details your display choices, the payments that you have made and the outstanding balance, which is due one month before completion, this will enable us to meet the estimated completion date.\n\nWe kindly request that you read through the details on your invoice and get in touch as soon as possible if you need to amend anything.\n\nKind Regards,\nThe Precious Petals Team\n\nhttps://www.preciouspetals.co.uk\n01256 882422\nStudio Opening hours\nMon - Thurs 9-5\nFri - Sat 9.30-12.30\n",
+			`Dear %s %s
+
+Reference: Name: %s
+Occasion Date: %s
+Invoice: %s
+
+Estimated Completion Date: %s
+
+Please find attached your final invoice, which confirms your display choices, payments received, any outstanding balance and your estimated completion date.
+
+Every display we create is individual, making each piece completely unique. As every bouquet contains different flower varieties and each flower preserves in its own unique way, no two finished displays will ever be exactly the same. Our aim is always to create the most beautiful display possible following the instructions that you have provided.
+
+We kindly ask that you take a few moments to read through your invoice carefully and check that it accurately reflects your order. If there is anything you would like to amend, or if you feel we have misunderstood any aspect of your order, please let us know as soon as possible before we begin creating your display.
+
+If we do not hear from you, we will assume that the invoice accurately reflects your instructions and will proceed with creating your display accordingly.
+
+The outstanding balance is due one month before your estimated completion date. Receiving payment by this date allows us to complete your display within the planned timescale, protecting your preserved flowers within their finished display and reuniting them with you as soon as possible.
+
+If you have any questions at all, please don't hesitate to get in touch. We are always happy to help.
+
+Thank you once again for choosing Precious Petals. We look forward to creating a beautiful keepsake for you to treasure for many years to come.
+
+Kind regards,
+The Precious Petals Team
+
+https://www.preciouspetals.co.uk
+01256 882422
+Studio Opening hours
+Mon - Thurs 9-5
+Fri - Sat 9.30-12.30
+`,
 			emailView.Customer.Title,
 			emailView.Customer.Surname,
 			emailView.Customer.Surname,

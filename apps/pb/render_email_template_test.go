@@ -37,6 +37,10 @@ func TestRenderEmailTemplateUsesLogoHeader(t *testing.T) {
 		t.Fatalf("expected rendered email to include the logo image")
 	}
 
+	if !strings.Contains(html, "Every display we create is individual") {
+		t.Fatalf("expected rendered invoice email to include final invoice wording")
+	}
+
 	if strings.Contains(html, "Flower Preservation Specialists") {
 		t.Fatalf("expected shared header to use the logo image, not text header copy")
 	}
