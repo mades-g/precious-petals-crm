@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Theme, Flex, Spinner, Button, Text } from "@radix-ui/themes";
 import { useIsFetching } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { useAuth } from "@/auth/hooks/use-auth";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const isLoading = useIsFetching() > 0;
 
-  const { logout, isAuthed, user } = useAuth();
+  const { logout, isAuthed, isAdmin, user } = useAuth();
 
   return (
     <Theme>
@@ -26,7 +27,12 @@ export default function Layout({ children }: { children: ReactNode }) {
               Precious petals
             </Text>
             <Flex gap="3" justify="center" align="center">
-              <Text>Hello, {user?.name} 👋</Text>
+              {isAdmin && (
+                <Button asChild variant="soft">
+                  <Link to="/admin/member-passwords">Member passwords</Link>
+                </Button>
+              )}
+              <Text>Hello, {user?.name}</Text>
               <Button variant="solid" color="red" onClick={logout}>
                 Logout
               </Button>

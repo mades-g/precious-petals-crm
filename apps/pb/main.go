@@ -79,6 +79,7 @@ func main() {
 			registerInvoiceRoutes(se, app, invoicePreviewTemplatePath, invoiceLogoDataURI, footerDataURI)
 			registerExportRoutes(se, app)
 			registerSmsRoutes(se, app)
+			registerAdminRoutes(se, app)
 
 			// Email:
 			// - In prod/default: fail fast if Resend isn't configured correctly.
