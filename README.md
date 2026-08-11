@@ -48,6 +48,22 @@ The PocketBase server is in `apps/pb` and is built as a Go binary:
 pnpm --filter pb-crm build
 ```
 
+### Email delivery and IONOS Sent copies
+
+The backend sends customer email through Resend. It can also append the finalized
+HTML/text message and its attachments to the IONOS Sent folder after Resend accepts
+the send. Configure the following environment variables (Fly secrets in production):
+
+- `IONOS_IMAP_HOST` (for example, the IMAP hostname supplied by IONOS)
+- `IONOS_IMAP_PORT` (optional; defaults to `993` with implicit TLS)
+- `IONOS_IMAP_USERNAME`
+- `IONOS_IMAP_PASSWORD`
+- `IONOS_IMAP_SENT_MAILBOX` (optional; defaults to `Sent`)
+
+Sent-folder syncing is disabled when none of these values is present. If configuration
+is incomplete or an IMAP operation fails, the failure is logged and the successful
+Resend customer send is left intact.
+
 ## Collections and relationships
 
 System auth collections:

@@ -6,7 +6,7 @@ RUN apk add --no-cache git ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY main.go build_info.go utils.go export_orders_xlsx.go export_routes.go email_routes.go invoice_routes.go sms_routes.go admin_routes.go resend_client.go render_email_template.go recommendation_followups.go ./
+COPY main.go build_info.go utils.go export_orders_xlsx.go export_routes.go email_routes.go invoice_routes.go sms_routes.go admin_routes.go resend_client.go ionos_sent.go render_email_template.go recommendation_followups.go ./
 COPY ./pb_migrations /src/pb_migrations
 ARG BUILD_VERSION=container
 ARG BUILD_COMMIT=unknown

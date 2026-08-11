@@ -19,10 +19,12 @@ import (
 const resendSendEmailURL = "https://api.resend.com/emails"
 
 type ResendClient struct {
-	apiKey  string
-	from    string
-	replyTo string
-	http    *http.Client
+	apiKey   string
+	from     string
+	replyTo  string
+	http     *http.Client
+	endpoint string
+	archiver sentEmailArchiver
 }
 
 type ResendEmailRequest struct {
@@ -83,6 +85,8 @@ func NewResendClient(app *pocketbase.PocketBase) (*ResendClient, error) {
 		http: &http.Client{
 			Timeout: 15 * time.Second,
 		},
+		endpoint: resendSendEmailURL,
+		archiver: newIONOSSentArchiverFromEnv(),
 	}, nil
 }
 
@@ -122,7 +126,11 @@ func (c *ResendClient) SendEmail(ctx context.Context, req ResendEmailRequest, id
 		return nil, fmt.Errorf("marshal resend payload: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, resendSendEmailURL, bytes.NewReader(payload))
+	endpoint := c.endpoint
+	if endpoint == "" {
+		endpoint = resendSendEmailURL
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("build resend request: %w", err)
 	}
@@ -154,6 +162,13 @@ func (c *ResendClient) SendEmail(ctx context.Context, req ResendEmailRequest, id
 	var parsed ResendSendEmailResponse
 	if len(respBody) > 0 {
 		_ = json.Unmarshal(respBody, &parsed)
+	}
+
+	if c.archiver != nil {
+		messageID := sentMessageID(parsed.ID, idempotencyKey, req)
+		if err := c.archiver.Append(ctx, req, messageID); err != nil {
+			fmt.Printf("WARN: email delivered by Resend but IONOS Sent append failed: resend_id=%q error=%v\n", parsed.ID, err)
+		}
 	}
 
 	return &parsed, nil
