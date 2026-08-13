@@ -324,7 +324,7 @@ export type SmsLogsRecord = {
   sender: string;
   type: SmsTypeOptions;
   body: string;
-  provider: "txtlocal";
+  provider: "txtlocal" | "webex_interact";
   providerMessageId?: string;
   status: SmsStatusOptions;
   error?: string;

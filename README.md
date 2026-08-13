@@ -48,6 +48,14 @@ The PocketBase server is in `apps/pb` and is built as a Go binary:
 pnpm --filter pb-crm build
 ```
 
+### SMS delivery
+
+The backend sends SMS through the native Webex Interact API. Configure these
+environment variables (Fly secrets in production):
+
+- `WEBEX_INTERACT_ACCESS_TOKEN` (created under Developers → Create API project)
+- `WEBEX_INTERACT_SENDER` (an approved sender name, for example `PrecPetals`)
+
 ### Email delivery and IONOS Sent copies
 
 The backend sends customer email through Resend. It can also append the finalized

@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -24,18 +25,30 @@ type smsSendRequest struct {
 	TotalBalance string `json:"totalBalance"`
 }
 
-type txtlocalResponse struct {
-	Status   string `json:"status"`
-	Messages []struct {
-		ID        string      `json:"id"`
-		Message   string      `json:"message"`
-		Recipient json.Number `json:"recipient"`
+type webexInteractSmsRequest struct {
+	MessageBody string `json:"message_body"`
+	From        string `json:"from"`
+	To          []struct {
+		Phone []string `json:"phone"`
+	} `json:"to"`
+}
+
+type webexInteractSmsResponse struct {
+	RequestID string `json:"request_id"`
+	Messages  []struct {
+		TransactionID string `json:"transaction_id"`
+		To            string `json:"to"`
+		Status        string `json:"status"`
+		Code          int    `json:"code"`
 	} `json:"messages"`
 	Errors []struct {
 		Message string `json:"message"`
 		Code    int    `json:"code"`
 	} `json:"errors"`
+	Message string `json:"message"`
 }
+
+const webexInteractSmsEndpoint = "https://api.webexinteract.com/v1/sms"
 
 func registerSmsRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 	se.Router.POST("/api/sms/send", func(e *core.RequestEvent) error {
@@ -75,21 +88,21 @@ func registerSmsRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 			})
 		}
 
-		apiKey := strings.TrimSpace(os.Getenv("TXTLOCAL_API_KEY"))
+		apiKey := strings.TrimSpace(os.Getenv("WEBEX_INTERACT_ACCESS_TOKEN"))
 		if apiKey == "" {
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":    false,
-				"error": "TXTLOCAL_API_KEY is not configured.",
+				"error": "WEBEX_INTERACT_ACCESS_TOKEN is not configured.",
 			})
 		}
 		sender := strings.TrimSpace(payload.Sender)
 		if sender == "" {
-			sender = strings.TrimSpace(os.Getenv("TXTLOCAL_SENDER"))
+			sender = strings.TrimSpace(os.Getenv("WEBEX_INTERACT_SENDER"))
 		}
 		if sender == "" {
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":    false,
-				"error": "TXTLOCAL_SENDER is not configured.",
+				"error": "WEBEX_INTERACT_SENDER is not configured.",
 			})
 		}
 
@@ -145,12 +158,19 @@ func registerSmsRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 			Sender:     sender,
 			Type:       smsType,
 			Body:       finalMessage,
-			Provider:   "txtlocal",
+			Provider:   "webex_interact",
 			Status:     "failed",
 			SentAt:     sentAt,
 		})
 
-		providerMessageId, sendErr := sendTxtLocalSMS(apiKey, sender, providerNumber, finalMessage)
+		providerMessageId, sendErr := sendWebexInteractSMS(
+			&http.Client{Timeout: 10 * time.Second},
+			webexInteractSmsEndpoint,
+			apiKey,
+			sender,
+			providerNumber,
+			finalMessage,
+		)
 		if sendErr != nil {
 			updateSmsLog(app, logRecord, "failed", sendErr.Error(), providerMessageId)
 			updateOrderSmsStatus(orderRec, smsType, finalMessage, "failed", sendErr.Error(), "")
@@ -171,7 +191,7 @@ func registerSmsRoutes(se *core.ServeEvent, app *pocketbase.PocketBase) {
 			"orderId":  orderId,
 			"type":     smsType,
 			"sentAt":   sentAt,
-			"provider": "txtlocal",
+			"provider": "webex_interact",
 		})
 	}).Bind(apis.RequireAuth())
 }
@@ -200,11 +220,20 @@ func normalizePhoneNumber(value string) (string, string, error) {
 	if len(digits) < 8 {
 		return "", "", fmt.Errorf("Customer phone number looks invalid.")
 	}
-	display := digits
-	if hasPlus {
-		display = "+" + digits
+	provider := ""
+	switch {
+	case hasPlus:
+		provider = "+" + digits
+	case strings.HasPrefix(digits, "00"):
+		provider = "+" + strings.TrimPrefix(digits, "00")
+	case strings.HasPrefix(digits, "07") && len(digits) == 11:
+		provider = "+44" + strings.TrimPrefix(digits, "0")
+	case strings.HasPrefix(digits, "44"):
+		provider = "+" + digits
+	default:
+		return "", "", fmt.Errorf("Customer phone number must include a country code.")
 	}
-	return display, digits, nil
+	return provider, provider, nil
 }
 
 func replaceTokens(message string, tokens map[string]string) string {
@@ -242,39 +271,55 @@ func fetchCustomerByOrderId(app *pocketbase.PocketBase, orderId string) (*core.R
 	return records[0], nil
 }
 
-func sendTxtLocalSMS(apiKey, sender, toNumber, message string) (string, error) {
-	values := url.Values{}
-	values.Set("apikey", apiKey)
-	values.Set("numbers", toNumber)
-	values.Set("message", message)
-	values.Set("sender", sender)
+func sendWebexInteractSMS(client *http.Client, endpoint, accessToken, sender, toNumber, message string) (string, error) {
+	payload := webexInteractSmsRequest{
+		MessageBody: message,
+		From:        sender,
+		To: []struct {
+			Phone []string `json:"phone"`
+		}{
+			{Phone: []string{toNumber}},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-AUTH-KEY", accessToken)
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.PostForm("https://api.txtlocal.com/send/", values)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	var payload txtlocalResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return "", err
 	}
+	var response webexInteractSmsResponse
+	if err := json.Unmarshal(responseBody, &response); err != nil {
+		return "", fmt.Errorf("SMS provider returned an invalid response (HTTP %d)", resp.StatusCode)
+	}
 
+	if len(response.Errors) > 0 {
+		return "", errors.New(response.Errors[0].Message)
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("SMS provider error (%d)", resp.StatusCode)
-	}
-	if strings.ToLower(payload.Status) != "success" {
-		if len(payload.Errors) > 0 {
-			return "", errors.New(payload.Errors[0].Message)
+		if strings.TrimSpace(response.Message) != "" {
+			return "", errors.New(response.Message)
 		}
-		return "", fmt.Errorf("SMS provider error")
+		return "", fmt.Errorf("SMS provider error (HTTP %d)", resp.StatusCode)
 	}
-	if len(payload.Messages) > 0 {
-		return payload.Messages[0].ID, nil
+	if len(response.Messages) == 0 || strings.TrimSpace(response.Messages[0].TransactionID) == "" {
+		return "", fmt.Errorf("SMS provider accepted no messages")
 	}
-
-	return "", nil
+	return response.Messages[0].TransactionID, nil
 }
 
 type smsLogParams struct {
