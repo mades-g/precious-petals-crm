@@ -576,6 +576,7 @@ func buildRecommendationTextBody(
 	occasionDate string,
 	ref string,
 	recommendationFrames []recommendationEmailFrame,
+	recommendationPaperweight *recommendationEmailPaperweight,
 ) string {
 	paragraphs := []string{
 		fmt.Sprintf(
@@ -644,6 +645,22 @@ func buildRecommendationTextBody(
 				),
 			)
 		}
+	}
+	if recommendationPaperweight != nil {
+		label := "paperweight"
+		if recommendationPaperweight.Quantity != "1" {
+			label = "paperweights"
+		}
+		paragraph := fmt.Sprintf(
+			"Your order also includes %s %s, priced at %s in total.",
+			recommendationPaperweight.Quantity,
+			label,
+			recommendationPaperweight.TotalPrice,
+		)
+		if len(recommendationFrames) > 0 {
+			paragraph += " This is separate from the frame price above."
+		}
+		paragraphs = append(paragraphs, paragraph)
 	}
 
 	paragraphs = append(paragraphs,

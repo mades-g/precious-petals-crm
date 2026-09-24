@@ -66,6 +66,14 @@
 <p>{{$frame.GlassEngravingLabel}} would be an additional {{$frame.GlassEngravingPrice}}.</p>
 {{end}} {{end}} {{end}}
 
+{{with .recommendation.paperweight}}
+<p>
+  Your order also includes {{.Quantity}} {{if eq .Quantity "1"}}paperweight{{else}}paperweights{{end}},
+  priced at {{.TotalPrice}} in total.{{if $.recommendation.frames}} This is separate from the
+  frame price above.{{end}}
+</p>
+{{end}}
+
 <p>
   There are many more ideas available on our website, including a range of
   beautiful optional extras you may wish to include in your order.

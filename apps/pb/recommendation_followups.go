@@ -99,12 +99,12 @@ func (s recommendationEmailService) send(ctx context.Context, e *core.RequestEve
 
 	occasionDate := formatDate(string(payload.Order.OccasionDate))
 	ref := buildOrderReference(payload)
-	recommendationFrames, _ := buildRecommendationEmailContentFromPayload(payload)
+	recommendationFrames, recommendationPaperweight := buildRecommendationEmailContentFromPayload(payload)
 
 	emailHTML, err := renderEmailTemplate(
 		s.viewsDir,
 		"email.recommendation.html",
-		buildRecommendationTemplateData(payload, occasionDate, ref, recommendationFrames, s.emailLogoDataURI),
+		buildRecommendationTemplateData(payload, occasionDate, ref, recommendationFrames, recommendationPaperweight, s.emailLogoDataURI),
 	)
 	if err != nil {
 		updateEmailLog(s.app, logRec, "failed", err.Error(), map[string]any{"stage": "render_email_html"})
@@ -114,7 +114,7 @@ func (s recommendationEmailService) send(ctx context.Context, e *core.RequestEve
 		}
 	}
 
-	textBody := buildRecommendationTextBody(payload, occasionDate, ref, recommendationFrames)
+	textBody := buildRecommendationTextBody(payload, occasionDate, ref, recommendationFrames, recommendationPaperweight)
 	req := ResendEmailRequest{
 		To:      []string{toEmail},
 		Subject: subject,
@@ -162,6 +162,7 @@ func buildRecommendationTemplateData(
 	occasionDate string,
 	ref string,
 	recommendationFrames []recommendationEmailFrame,
+	recommendationPaperweight *recommendationEmailPaperweight,
 	emailLogoDataURI string,
 ) map[string]any {
 	return map[string]any{
@@ -181,7 +182,8 @@ func buildRecommendationTemplateData(
 			"website":     "https://www.preciouspetals.co.uk",
 		},
 		"recommendation": map[string]any{
-			"frames": recommendationFrames,
+			"frames":      recommendationFrames,
+			"paperweight": recommendationPaperweight,
 		},
 		"suggestions": map[string]any{
 			"sideProfileUpsizePrice": "£50.00",

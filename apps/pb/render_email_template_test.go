@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -43,5 +44,63 @@ func TestRenderEmailTemplateUsesLogoHeader(t *testing.T) {
 
 	if strings.Contains(html, "Flower Preservation Specialists") {
 		t.Fatalf("expected shared header to use the logo image, not text header copy")
+	}
+}
+
+func TestRecommendationEmailIncludesPaperweightInHTMLAndText(t *testing.T) {
+	tests := []struct {
+		name                  string
+		items                 string
+		wantPaperweight       bool
+		wantSeparateFrameNote bool
+	}{
+		{
+			name:                  "frame and paperweights",
+			items:                 `"frames":[{"recommendedSize":"20 x 20","layout":"Meadow","frameType":"Modern white","price":1027}],"paperweight":{"quantity":2,"price":164}`,
+			wantPaperweight:       true,
+			wantSeparateFrameNote: true,
+		},
+		{
+			name:            "paperweights only",
+			items:           `"paperweight":{"quantity":2,"price":164}`,
+			wantPaperweight: true,
+		},
+		{
+			name:  "frame only",
+			items: `"frames":[{"recommendedSize":"20 x 20","layout":"Meadow","frameType":"Modern white","price":1027}]`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var payload invoicePayload
+			raw := `{"customer":{"title":"Mrs","surname":"Example"},"order":{"orderNo":30338},` + tt.items + `}`
+			if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+				t.Fatalf("unmarshal payload: %v", err)
+			}
+
+			frames, paperweight := buildRecommendationEmailContentFromPayload(payload)
+			html, err := renderEmailTemplate(
+				filepath.Join("pb_hooks", "views"),
+				"email.recommendation.html",
+				buildRecommendationTemplateData(payload, "18 September 2026", "30338", frames, paperweight, ""),
+			)
+			if err != nil {
+				t.Fatalf("render email: %v", err)
+			}
+			plainText := buildRecommendationTextBody(payload, "18 September 2026", "30338", frames, paperweight)
+
+			for name, body := range map[string]string{"HTML": html, "text": plainText} {
+				if got := strings.Contains(body, "2 paperweights"); got != tt.wantPaperweight {
+					t.Errorf("%s paperweight quantity present = %v, want %v", name, got, tt.wantPaperweight)
+				}
+				if got := strings.Contains(body, "£164.00 in total"); got != tt.wantPaperweight {
+					t.Errorf("%s paperweight price present = %v, want %v", name, got, tt.wantPaperweight)
+				}
+				if got := strings.Contains(body, "separate from the"); got != tt.wantSeparateFrameNote {
+					t.Errorf("%s separate frame note present = %v, want %v", name, got, tt.wantSeparateFrameNote)
+				}
+			}
+		})
 	}
 }
