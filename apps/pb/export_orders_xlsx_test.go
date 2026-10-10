@@ -141,6 +141,8 @@ func TestWriteOrdersSheetUsesEnabledFlagsForExtras(t *testing.T) {
 		"Occasion Date",
 		"Customer Name",
 		"Customer Email",
+		"How Recommended",
+		"Mount Cut",
 		"Order Status",
 		"Payment Status",
 		"Replacement Flowers",
@@ -176,6 +178,8 @@ func TestWriteOrdersSheetUsesEnabledFlagsForExtras(t *testing.T) {
 		"01-05-2026",
 		"Mr Eudes Duarte",
 		"eudes@example.com",
+		"",
+		"FALSE",
 		"chosen",
 		"second_deposit_paid",
 		"TRUE",
@@ -195,5 +199,145 @@ func TestWriteOrdersSheetUsesEnabledFlagsForExtras(t *testing.T) {
 		if rows[1][i] != expected {
 			t.Fatalf("expected row value %d to be %q, got %q", i, expected, rows[1][i])
 		}
+	}
+}
+
+func TestExportIncludesCustomerRecommendationSource(t *testing.T) {
+	file := excelize.NewFile()
+	t.Cleanup(func() { _ = file.Close() })
+	file.SetSheetName("Sheet1", "Production Overview")
+	file.NewSheet("Orders")
+
+	orders := []*core.Record{}
+	customers := map[string]orderExportCustomer{}
+	wantSources := []string{"Previous customer", "Google", "", ""}
+	for i, source := range wantSources {
+		id := fmt.Sprintf("order-%d", i)
+		order := newExportTestRecord("orders", map[string]any{"id": id, "orderNo": i + 1})
+		orders = append(orders, order)
+		if i == 3 {
+			continue // An order without a linked customer still exports.
+		}
+		customer := newExportTestRecord("customers", map[string]any{
+			"firstName":      fmt.Sprintf("Customer %d", i),
+			"howRecommended": "  " + source + "  ",
+		})
+		customers[id] = buildOrderExportCustomer(customer)
+	}
+	writeProductionOverviewSheet(file, "Production Overview", orders, nil, customers, nil, nil, nil)
+	writeOrdersSheet(file, orders, customers, nil)
+
+	buffer, err := file.WriteToBuffer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	exported, err := excelize.OpenReader(buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = exported.Close() })
+	for sheet, header := range map[string]string{"Production Overview": "How recommended", "Orders": "How Recommended"} {
+		rows, err := exported.GetRows(sheet)
+		if err != nil {
+			t.Fatal(err)
+		}
+		column := indexOfHeader(rows[0], header)
+		if column == 0 {
+			t.Fatalf("%s is missing %q", sheet, header)
+		}
+		for i, want := range wantSources {
+			cell, _ := excelize.CoordinatesToCellName(column, i+2)
+			got, err := exported.GetCellValue(sheet, cell)
+			if err != nil || got != want {
+				t.Fatalf("%s!%s: want %q, got %q (error: %v)", sheet, cell, want, got, err)
+			}
+		}
+	}
+}
+
+func TestProductionOverviewReplacementFlowersRequired(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		values map[string]any
+		want   string
+	}{
+		{"required with no charge", map[string]any{"replacementFlowers": true, "replacementFlowersPrice": 0}, "Yes"},
+		{"not required with stale charge", map[string]any{"replacementFlowers": false, "replacementFlowersPrice": 40}, "No"},
+		{"unset on existing order", map[string]any{}, "No"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			file := excelize.NewFile()
+			t.Cleanup(func() { _ = file.Close() })
+			order := newExportTestRecord("orders", tt.values)
+			writeProductionOverviewSheet(file, "Sheet1", []*core.Record{order}, nil, nil, nil, nil, nil)
+			rows, err := file.GetRows("Sheet1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			column := indexOfHeader(rows[0], "Replacement flowers required")
+			if column == 0 {
+				t.Fatal("missing Replacement flowers required column")
+			}
+			cell, _ := excelize.CoordinatesToCellName(column, 2)
+			got, err := file.GetCellValue("Sheet1", cell)
+			if err != nil || got != tt.want {
+				t.Fatalf("want %q, got %q (error: %v)", tt.want, got, err)
+			}
+		})
+	}
+}
+
+func TestExportMountCutStatus(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		values       map[string]any
+		wantOverview string
+		wantOrders   string
+	}{
+		{"cut", map[string]any{"mountCut": true}, "Yes", "TRUE"},
+		{"not cut", map[string]any{"mountCut": false}, "No", "FALSE"},
+		{"existing order without field", map[string]any{}, "No", "FALSE"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			file := excelize.NewFile()
+			t.Cleanup(func() { _ = file.Close() })
+			file.SetSheetName("Sheet1", "Production Overview")
+			file.NewSheet("Orders")
+			order := newExportTestRecord("orders", tt.values)
+			order.Id = "order-1"
+			frame := newExportTestRecord("order_frame_items", map[string]any{"frameType": "Oak"})
+			frames := map[string][]*core.Record{order.Id: {frame, frame}}
+			writeProductionOverviewSheet(file, "Production Overview", []*core.Record{order}, nil, nil, frames, nil, nil)
+			writeOrdersSheet(file, []*core.Record{order}, nil, frames)
+			buffer, err := file.WriteToBuffer()
+			if err != nil {
+				t.Fatal(err)
+			}
+			exported, err := excelize.OpenReader(buffer)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = exported.Close() })
+			for _, expected := range []struct{ sheet, header, want string }{
+				{"Production Overview", "Mount cut", tt.wantOverview},
+				{"Orders", "Mount Cut", tt.wantOrders},
+				{"Production Overview", "Total frames", "2"},
+				{"Production Overview", "Frame 2 style", "Oak"},
+			} {
+				rows, err := exported.GetRows(expected.sheet)
+				if err != nil {
+					t.Fatal(err)
+				}
+				column := indexOfHeader(rows[0], expected.header)
+				if column == 0 {
+					t.Fatalf("%s: missing %s", expected.sheet, expected.header)
+				}
+				cell, _ := excelize.CoordinatesToCellName(column, 2)
+				got, err := exported.GetCellValue(expected.sheet, cell)
+				if err != nil || got != expected.want {
+					t.Fatalf("%s!%s: want %q, got %q (error: %v)", expected.sheet, cell, expected.want, got, err)
+				}
+			}
+		})
 	}
 }

@@ -244,6 +244,7 @@ export type OrdersOrderStatusOptions =
 
 export type OrdersRecord = {
   artworkComplete?: boolean;
+  mountCut?: boolean;
   created: IsoAutoDateString;
   frameOrderId?: RecordIdString[];
   framingComplete?: boolean;

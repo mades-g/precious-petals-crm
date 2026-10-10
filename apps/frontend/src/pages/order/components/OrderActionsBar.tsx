@@ -122,9 +122,11 @@ export type OrderActionsBarProps = {
   showFrameCompletion?: boolean;
   showPaperweightCompletion?: boolean;
   artworkComplete?: boolean;
+  mountCut?: boolean;
   framingComplete?: boolean;
   paperweightReceived?: boolean;
   onToggleArtworkComplete?: (next: boolean) => void;
+  onToggleMountCut?: (next: boolean) => void;
   onToggleFramingComplete?: (next: boolean) => void;
   onTogglePaperweightReceived?: (next: boolean) => void;
   isSavingCompletion?: boolean;
@@ -155,9 +157,11 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
   showFrameCompletion,
   showPaperweightCompletion,
   artworkComplete,
+  mountCut,
   framingComplete,
   paperweightReceived,
   onToggleArtworkComplete,
+  onToggleMountCut,
   onToggleFramingComplete,
   onTogglePaperweightReceived,
   isSavingCompletion,
@@ -320,6 +324,12 @@ const OrderActionsBar: FC<OrderActionsBarProps> = ({
                   label="Artwork complete"
                   checked={Boolean(artworkComplete)}
                   onChange={(next) => onToggleArtworkComplete?.(next)}
+                  disabled={isSavingCompletion}
+                />
+                <InlineToggle
+                  label="Mount cut"
+                  checked={Boolean(mountCut)}
+                  onChange={(next) => onToggleMountCut?.(next)}
                   disabled={isSavingCompletion}
                 />
                 <InlineToggle

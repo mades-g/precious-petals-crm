@@ -114,6 +114,12 @@ export const buildEmailPayload = ({
       billingTown: order?.billingTown,
       billingCounty: order?.billingCounty,
       billingPostcode: order?.billingPostcode,
+      deliverySameAsBilling: order?.deliverySameAsBilling,
+      deliveryAddressLine1: order?.deliveryAddressLine1,
+      deliveryAddressLine2: order?.deliveryAddressLine2,
+      deliveryTown: order?.deliveryTown,
+      deliveryCounty: order?.deliveryCounty,
+      deliveryPostcode: order?.deliveryPostcode,
     },
     orderExtras: {
       replacementFlowers: extras.replacementFlowers,

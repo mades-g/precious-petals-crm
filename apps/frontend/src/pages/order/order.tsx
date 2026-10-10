@@ -198,6 +198,7 @@ const OrderPage = () => {
   const [paperweightReceivedDraft, setPaperweightReceivedDraft] =
     useState(false);
   const [artworkCompleteDraft, setArtworkCompleteDraft] = useState(false);
+  const [mountCutDraft, setMountCutDraft] = useState(false);
   const [framingCompleteDraft, setFramingCompleteDraft] = useState(false);
   const [orderExtrasDraft, setOrderExtrasDraft] =
     useState<OrderExtrasDraft>(defaultExtrasDraft);
@@ -231,6 +232,7 @@ const OrderPage = () => {
       Boolean(order.paperWeightOrder?.paperweightReceived),
     );
     setArtworkCompleteDraft(Boolean(order.artworkComplete));
+    setMountCutDraft(Boolean(order.mountCut));
     setFramingCompleteDraft(Boolean(order.framingComplete));
     setOrderExtrasDraft(initialOrderExtrasDraft);
     setFrameGlassDrafts(initialFrameGlassDrafts);
@@ -705,6 +707,20 @@ const OrderPage = () => {
     }
   };
 
+  const handleToggleMountCut = async (next: boolean) => {
+    if (!order?.orderId) return;
+    const previous = mountCutDraft;
+    setMountCutDraft(next);
+    try {
+      await updateOrderCompletion({
+        orderId: order.orderId,
+        mountCut: next,
+      });
+    } catch {
+      setMountCutDraft(previous);
+    }
+  };
+
   const handleToggleFramingComplete = async (next: boolean) => {
     if (!order?.orderId) return;
     const previous = framingCompleteDraft;
@@ -842,9 +858,11 @@ const OrderPage = () => {
         showFrameCompletion={hasFrames}
         showPaperweightCompletion={hasPaperweight}
         artworkComplete={artworkCompleteDraft}
+        mountCut={mountCutDraft}
         framingComplete={framingCompleteDraft}
         paperweightReceived={paperweightReceivedDraft}
         onToggleArtworkComplete={handleToggleArtworkComplete}
+        onToggleMountCut={handleToggleMountCut}
         onToggleFramingComplete={handleToggleFramingComplete}
         onTogglePaperweightReceived={handleTogglePaperweightReceived}
         isSavingCompletion={isSavingCompletion}

@@ -130,11 +130,17 @@ type invoicePayload struct {
 		OccasionDate StringDate `json:"occasionDate"`
 		RequiredBy   StringDate `json:"requiredBy"`
 
-		BillingAddressLine1 string `json:"billingAddressLine1"`
-		BillingAddressLine2 string `json:"billingAddressLine2"`
-		BillingTown         string `json:"billingTown"`
-		BillingCounty       string `json:"billingCounty"`
-		BillingPostcode     string `json:"billingPostcode"`
+		BillingAddressLine1   string `json:"billingAddressLine1"`
+		BillingAddressLine2   string `json:"billingAddressLine2"`
+		BillingTown           string `json:"billingTown"`
+		BillingCounty         string `json:"billingCounty"`
+		BillingPostcode       string `json:"billingPostcode"`
+		DeliverySameAsBilling bool   `json:"deliverySameAsBilling"`
+		DeliveryAddressLine1  string `json:"deliveryAddressLine1"`
+		DeliveryAddressLine2  string `json:"deliveryAddressLine2"`
+		DeliveryTown          string `json:"deliveryTown"`
+		DeliveryCounty        string `json:"deliveryCounty"`
+		DeliveryPostcode      string `json:"deliveryPostcode"`
 
 		// ignored extras from FE
 		OrderID string `json:"orderId"`
@@ -215,20 +221,21 @@ type invoiceRow struct {
 }
 
 type invoiceViewModel struct {
-	Address       string
-	OccasionDate  string
-	InvoiceDate   string
-	InvoiceNo     string
-	LogoDataURI   string
-	FooterDataURI string
-	ShowFooter    bool
-	Rows          []invoiceRow
-	Notes         string
-	SubTotal      string
-	VatTotal      string
-	GrandTotal    string
-	Credits       string
-	BalanceDue    string
+	Address         string
+	DeliveryAddress string
+	OccasionDate    string
+	InvoiceDate     string
+	InvoiceNo       string
+	LogoDataURI     string
+	FooterDataURI   string
+	ShowFooter      bool
+	Rows            []invoiceRow
+	Notes           string
+	SubTotal        string
+	VatTotal        string
+	GrandTotal      string
+	Credits         string
+	BalanceDue      string
 }
 
 func formatMoney(value float64) string {
@@ -528,37 +535,66 @@ func buildInvoiceViewModel(payload invoicePayload, logoDataURI string, footerDat
 		}, " "))
 	}
 
-	addressLines := []string{
-		displayName,
+	billingLines := []string{
 		payload.Order.BillingAddressLine1,
 		payload.Order.BillingAddressLine2,
 		payload.Order.BillingTown,
 		payload.Order.BillingCounty,
 		payload.Order.BillingPostcode,
 	}
-	address := strings.TrimSpace(strings.Join(filterEmpty(addressLines), "\n"))
+	address := strings.TrimSpace(strings.Join(filterEmpty(append([]string{displayName}, billingLines...)), "\n"))
 	if address == "" {
 		address = "-"
+	}
+	deliveryLines := []string{
+		payload.Order.DeliveryAddressLine1,
+		payload.Order.DeliveryAddressLine2,
+		payload.Order.DeliveryTown,
+		payload.Order.DeliveryCounty,
+		payload.Order.DeliveryPostcode,
+	}
+	deliveryAddress := ""
+	if !payload.Order.DeliverySameAsBilling &&
+		invoiceAddressKey(deliveryLines) != "" &&
+		invoiceAddressKey(deliveryLines) != invoiceAddressKey(billingLines) {
+		deliveryAddress = strings.TrimSpace(strings.Join(filterEmpty(append([]string{displayName}, deliveryLines...)), "\n"))
 	}
 
 	occasionDate := formatDate(string(payload.Order.OccasionDate))
 
 	return invoiceViewModel{
-		Address:       address,
-		OccasionDate:  occasionDate,
-		InvoiceDate:   formatDate(time.Now().Format("2006-01-02")),
-		InvoiceNo:     formatInvoiceNo(payload.Order.OrderNo.Float64()),
-		LogoDataURI:   strings.TrimSpace(logoDataURI),
-		FooterDataURI: strings.TrimSpace(footerDataURI),
-		ShowFooter:    showFooter,
-		Rows:          buildInvoiceRows(payload),
-		Notes:         buildInvoiceNotes(payload),
-		SubTotal:      formatMoney(payload.Totals.SubTotal),
-		VatTotal:      formatMoney(payload.Totals.VatTotal),
-		GrandTotal:    formatMoney(payload.Totals.GrandTotal),
-		Credits:       formatMoney(paidTotal),
-		BalanceDue:    formatMoney(balanceDue),
+		Address:         address,
+		DeliveryAddress: deliveryAddress,
+		OccasionDate:    occasionDate,
+		InvoiceDate:     formatDate(time.Now().Format("2006-01-02")),
+		InvoiceNo:       formatInvoiceNo(payload.Order.OrderNo.Float64()),
+		LogoDataURI:     strings.TrimSpace(logoDataURI),
+		FooterDataURI:   strings.TrimSpace(footerDataURI),
+		ShowFooter:      showFooter,
+		Rows:            buildInvoiceRows(payload),
+		Notes:           buildInvoiceNotes(payload),
+		SubTotal:        formatMoney(payload.Totals.SubTotal),
+		VatTotal:        formatMoney(payload.Totals.VatTotal),
+		GrandTotal:      formatMoney(payload.Totals.GrandTotal),
+		Credits:         formatMoney(paidTotal),
+		BalanceDue:      formatMoney(balanceDue),
 	}
+}
+
+// Ignore presentation differences when deciding whether a second address is needed.
+func invoiceAddressKey(lines []string) string {
+	normalized := make([]string, 0, len(lines))
+	for i, line := range lines {
+		parts := strings.Fields(strings.ToLower(line))
+		separator := " "
+		if i == len(lines)-1 {
+			separator = "" // UK postcodes may be stored with or without a space.
+		}
+		if value := strings.Join(parts, separator); value != "" {
+			normalized = append(normalized, value)
+		}
+	}
+	return strings.Join(normalized, "\n")
 }
 
 func filterEmpty(values []string) []string {
