@@ -1,5 +1,8 @@
 import { ORDER_STATUS_OPTIONS } from "@/services/pb/constants";
-import type { OrdersOrderStatusOptions } from "@/services/pb/types";
+import type {
+  OrderPaymentsPaymentTypeOptions,
+  OrdersOrderStatusOptions,
+} from "@/services/pb/types";
 
 const MANUAL_ORDER_STATUS_TRANSITIONS: Record<
   OrdersOrderStatusOptions,
@@ -31,9 +34,12 @@ export const canManuallyUpdateOrderStatus = (
   nextStatus: OrdersOrderStatusOptions,
 ) => MANUAL_ORDER_STATUS_TRANSITIONS[currentStatus].includes(nextStatus);
 
-export const shouldAutoMoveOrderToChosenAfterSecondDeposit = (
+export const shouldAutoMoveOrderToChosenAfterPayment = (
   currentStatus?: OrdersOrderStatusOptions | null,
-) => currentStatus === "to_choose";
+  paymentType?: OrderPaymentsPaymentTypeOptions,
+) =>
+  currentStatus === "to_choose" &&
+  (paymentType === "second_deposit" || paymentType === "final_balance");
 
 export const getCompletionDrivenOrderStatus = (
   currentStatus: OrdersOrderStatusOptions,

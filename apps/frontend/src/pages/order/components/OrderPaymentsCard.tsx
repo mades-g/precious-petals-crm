@@ -47,6 +47,7 @@ type PaymentDatePickerProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  label?: string;
   disabled?: boolean;
   size?: "1" | "2";
   width?: string;
@@ -57,6 +58,7 @@ const PaymentDatePicker: FC<PaymentDatePickerProps> = ({
   value,
   onChange,
   placeholder,
+  label,
   disabled,
   size = "2",
   width = "100%",
@@ -67,6 +69,7 @@ const PaymentDatePicker: FC<PaymentDatePickerProps> = ({
       <Popover.Trigger>
         <Button
           type="button"
+          aria-label={label}
           variant="outline"
           size={size}
           disabled={disabled}
@@ -86,6 +89,7 @@ const PaymentDatePicker: FC<PaymentDatePickerProps> = ({
     </Popover.Root>
     {allowClear && value ? (
       <IconButton
+        aria-label={`Clear ${label ?? "date"}`}
         size={size}
         variant="ghost"
         type="button"
@@ -158,6 +162,9 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   const [editArtistHours, setEditArtistHours] = useState("");
 
   const hasPayments = payments.length > 0;
+  const hasSecondDeposit = payments.some(
+    (payment) => payment.paymentType === "second_deposit",
+  );
   const inputsDisabled = Boolean(disabled) || isSaving;
   const outstandingLabel = useMemo(() => {
     if (typeof outstanding !== "number") return null;
@@ -190,14 +197,16 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     type === "second_deposit" || type === "final_balance";
 
   const requiresRequiredBy = (type: OrderPaymentsPaymentTypeOptions) =>
-    type === "second_deposit";
+    type === "second_deposit" || type === "final_balance";
   const requiresArtistHours = (type: OrderPaymentsPaymentTypeOptions) =>
-    type === "second_deposit";
+    type === "second_deposit" || type === "final_balance";
 
   const getDefaultArtistHours = () =>
-    isPaperweightOnly && orderArtistHours == null
-      ? PAPERWEIGHT_ONLY_ARTIST_HOURS
-      : "";
+    orderArtistHours != null
+      ? String(orderArtistHours)
+      : isPaperweightOnly
+        ? PAPERWEIGHT_ONLY_ARTIST_HOURS
+        : "";
 
   const isFinalBalance = (type: OrderPaymentsPaymentTypeOptions) =>
     type === "final_balance";
@@ -239,18 +248,23 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
   };
   const toIsoDate = (value: string) => {
     const trimmed = value.trim();
+    if (parseDateOnly(trimmed)) return trimmed;
     if (!trimmed || !trimmed.includes("/")) return "";
     const [day, month, year] = trimmed.split("/");
     if (!day || !month || !year) return "";
-    return `${year}-${month}-${day}`;
+    const isoDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    return parseDateOnly(isoDate) ? isoDate : "";
   };
 
   const handlePaymentTypeChange = (next: OrderPaymentsPaymentTypeOptions) => {
     setPaymentType(next);
-    if (next !== "second_deposit") {
+    if (!requiresRequiredBy(next)) {
       setRequiredBy("");
       setArtistHours("");
       return;
+    }
+    if (requiredBy.trim() === "") {
+      setRequiredBy(toIsoDate(orderRequiredBy ?? ""));
     }
     if (artistHours.trim() === "") {
       setArtistHours(getDefaultArtistHours());
@@ -261,10 +275,13 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
     next: OrderPaymentsPaymentTypeOptions,
   ) => {
     setEditPaymentType(next);
-    if (next !== "second_deposit") {
+    if (!requiresRequiredBy(next)) {
       setEditRequiredBy("");
       setEditArtistHours("");
       return;
+    }
+    if (editRequiredBy.trim() === "") {
+      setEditRequiredBy(toIsoDate(orderRequiredBy ?? ""));
     }
     if (editArtistHours.trim() === "") {
       setEditArtistHours(getDefaultArtistHours());
@@ -313,19 +330,27 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       return;
     }
     if (requiresRequiredBy(paymentType) && requiredBy.trim() === "") {
-      setSubmitError("Required by date is required for second deposits.");
+      setSubmitError(
+        "Required by date is required for second deposits and final balances.",
+      );
+      return;
+    }
+    if (requiresRequiredBy(paymentType) && !parseDateOnly(requiredBy)) {
+      setSubmitError("Enter a valid required by date.");
       return;
     }
     if (requiresArtistHours(paymentType) && artistHours.trim() === "") {
-      setSubmitError("Artist hours are required for second deposits.");
+      setSubmitError(
+        "Artist hours are required for second deposits and final balances.",
+      );
       return;
     }
     const parsedArtistHours = Number(artistHours);
     if (
       requiresArtistHours(paymentType) &&
-      (Number.isNaN(parsedArtistHours) || parsedArtistHours <= 0)
+      (!Number.isFinite(parsedArtistHours) || parsedArtistHours <= 0)
     ) {
-      setSubmitError("Artist hours must be greater than 0.");
+      setSubmitError("Artist hours must be a finite number greater than 0.");
       return;
     }
 
@@ -426,19 +451,27 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
       return;
     }
     if (requiresRequiredBy(editPaymentType) && editRequiredBy.trim() === "") {
-      setSubmitError("Required by date is required for second deposits.");
+      setSubmitError(
+        "Required by date is required for second deposits and final balances.",
+      );
+      return;
+    }
+    if (requiresRequiredBy(editPaymentType) && !parseDateOnly(editRequiredBy)) {
+      setSubmitError("Enter a valid required by date.");
       return;
     }
     if (requiresArtistHours(editPaymentType) && editArtistHours.trim() === "") {
-      setSubmitError("Artist hours are required for second deposits.");
+      setSubmitError(
+        "Artist hours are required for second deposits and final balances.",
+      );
       return;
     }
     const parsedEditArtistHours = Number(editArtistHours);
     if (
       requiresArtistHours(editPaymentType) &&
-      (Number.isNaN(parsedEditArtistHours) || parsedEditArtistHours <= 0)
+      (!Number.isFinite(parsedEditArtistHours) || parsedEditArtistHours <= 0)
     ) {
-      setSubmitError("Artist hours must be greater than 0.");
+      setSubmitError("Artist hours must be a finite number greater than 0.");
       return;
     }
 
@@ -486,6 +519,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 Amount paid
               </Text>
               <TextField.Root
+                aria-label="Amount paid"
                 type="number"
                 inputMode="decimal"
                 min="0"
@@ -501,7 +535,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   Payment type
                 </Text>
                 <Select.Root
-                  value={paymentType}
+                  value={paymentType ?? ""}
                   onValueChange={(value) => {
                     const next = value as OrderPaymentsPaymentTypeOptions;
                     handlePaymentTypeChange(next);
@@ -509,6 +543,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   disabled={inputsDisabled}
                 >
                   <Select.Trigger
+                    aria-label="Payment type"
                     disabled={inputsDisabled}
                     placeholder="Select payment type"
                   />
@@ -531,6 +566,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 Paid date
               </Text>
               <PaymentDatePicker
+                label="Paid date"
                 value={paidAt}
                 onChange={setPaidAt}
                 placeholder="Pick date"
@@ -544,6 +580,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   Required by
                 </Text>
                 <PaymentDatePicker
+                  label="Required by"
                   value={requiredBy}
                   onChange={setRequiredBy}
                   placeholder="Pick date"
@@ -559,6 +596,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                   Artist hours
                 </Text>
                 <TextField.Root
+                  aria-label="Artist hours"
                   type="number"
                   min="0"
                   step="0.1"
@@ -573,6 +611,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 Notes
               </Text>
               <TextField.Root
+                aria-label="Notes"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 disabled={inputsDisabled}
@@ -640,11 +679,16 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                 .map((payment) => {
                   const displayDate = payment.paidAt || payment.created || "";
                   const isEditing = editingId === payment.id;
+                  const showsConfirmationDetails =
+                    payment.paymentType === "second_deposit" ||
+                    (payment.paymentType === "final_balance" &&
+                      !hasSecondDeposit);
                   return (
                     <Table.Row key={payment.id}>
                       <Table.Cell>
                         {isEditing ? (
                           <PaymentDatePicker
+                            label="Edit paid date"
                             value={editPaidAt}
                             onChange={setEditPaidAt}
                             placeholder="Pick date"
@@ -669,7 +713,10 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             }}
                             disabled={inputsDisabled}
                           >
-                            <Select.Trigger disabled={inputsDisabled} />
+                            <Select.Trigger
+                              aria-label="Edit payment type"
+                              disabled={inputsDisabled}
+                            />
                             <Select.Content>
                               {PAYMENT_TYPE_OPTIONS.map((option) => (
                                 <Select.Item
@@ -692,6 +739,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       <Table.Cell>
                         {isEditing ? (
                           <TextField.Root
+                            aria-label="Edit amount paid"
                             type="number"
                             inputMode="decimal"
                             min="0"
@@ -709,6 +757,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       <Table.Cell>
                         {isEditing && requiresRequiredBy(editPaymentType) ? (
                           <PaymentDatePicker
+                            label="Edit required by"
                             value={editRequiredBy}
                             onChange={setEditRequiredBy}
                             placeholder="Pick date"
@@ -717,8 +766,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             width="130px"
                             allowClear
                           />
-                        ) : payment.paymentType === "second_deposit" &&
-                          orderRequiredBy ? (
+                        ) : showsConfirmationDetails && orderRequiredBy ? (
                           orderRequiredBy
                         ) : (
                           ""
@@ -727,6 +775,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       <Table.Cell>
                         {isEditing && requiresArtistHours(editPaymentType) ? (
                           <TextField.Root
+                            aria-label="Edit artist hours"
                             type="number"
                             min="0"
                             step="0.1"
@@ -736,7 +785,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                             }
                             disabled={inputsDisabled}
                           />
-                        ) : payment.paymentType === "second_deposit" ? (
+                        ) : showsConfirmationDetails ? (
                           orderArtistHours != null ? (
                             String(orderArtistHours)
                           ) : (
@@ -749,6 +798,7 @@ const OrderPaymentsCard: FC<OrderPaymentsCardProps> = ({
                       <Table.Cell>
                         {isEditing ? (
                           <TextField.Root
+                            aria-label="Edit notes"
                             value={editNotes}
                             onChange={(event) =>
                               setEditNotes(event.target.value)

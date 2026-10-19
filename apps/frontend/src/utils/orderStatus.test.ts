@@ -4,7 +4,7 @@ import {
   MANUAL_ORDER_STATUS_OPTIONS,
   canManuallyUpdateOrderStatus,
   getCompletionDrivenOrderStatus,
-  shouldAutoMoveOrderToChosenAfterSecondDeposit,
+  shouldAutoMoveOrderToChosenAfterPayment,
 } from "./orderStatus";
 
 describe("order status rules", () => {
@@ -17,11 +17,16 @@ describe("order status rules", () => {
     expect(canManuallyUpdateOrderStatus("draft", "cancelled")).toBe(true);
   });
 
-  it("only auto-moves to chosen after second deposit once choices are being gathered", () => {
-    expect(shouldAutoMoveOrderToChosenAfterSecondDeposit("draft")).toBe(false);
-    expect(shouldAutoMoveOrderToChosenAfterSecondDeposit("to_choose")).toBe(
-      true,
-    );
+  it.each(["second_deposit", "final_balance"] as const)("auto-moves to chosen after %s only while choices are being gathered", (paymentType) => {
+    expect(shouldAutoMoveOrderToChosenAfterPayment("to_choose", paymentType)).toBe(true);
+    for (const status of ["draft", "chosen", "in_progress", "ready", "cancelled", "left_the_studio"] as const) {
+      expect(shouldAutoMoveOrderToChosenAfterPayment(status, paymentType)).toBe(false);
+    }
+    expect(shouldAutoMoveOrderToChosenAfterPayment(undefined, paymentType)).toBe(false);
+  });
+
+  it.each(["first_deposit", "other"] as const)("does not confirm the order for %s", (paymentType) => {
+    expect(shouldAutoMoveOrderToChosenAfterPayment("to_choose", paymentType)).toBe(false);
   });
 
   it("prevents completion logic from moving draft or to_choose orders forward", () => {
