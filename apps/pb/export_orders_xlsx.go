@@ -20,9 +20,23 @@ const (
 )
 
 type orderExportCustomer struct {
-	id    string
-	name  string
-	email string
+	id             string
+	name           string
+	email          string
+	howRecommended string
+}
+
+func buildOrderExportCustomer(customer *core.Record) orderExportCustomer {
+	return orderExportCustomer{
+		id: customer.Id,
+		name: strings.TrimSpace(strings.Join([]string{
+			customer.GetString("title"),
+			customer.GetString("firstName"),
+			customer.GetString("surname"),
+		}, " ")),
+		email:          strings.TrimSpace(customer.GetString("email")),
+		howRecommended: strings.TrimSpace(customer.GetString("howRecommended")),
+	}
 }
 
 type sentByDisplay struct {
@@ -133,17 +147,7 @@ func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error 
 	customerById := map[string]orderExportCustomer{}
 	for _, customer := range customers {
 		relatedOrderId := strings.TrimSpace(customer.GetString("orderId"))
-		name := strings.TrimSpace(strings.Join([]string{
-			customer.GetString("title"),
-			customer.GetString("firstName"),
-			customer.GetString("surname"),
-		}, " "))
-
-		entry := orderExportCustomer{
-			id:    customer.Id,
-			name:  strings.TrimSpace(name),
-			email: strings.TrimSpace(customer.GetString("email")),
-		}
+		entry := buildOrderExportCustomer(customer)
 
 		customerById[customer.Id] = entry
 		if relatedOrderId != "" {
@@ -274,16 +278,7 @@ func handleOrdersExport(app *pocketbase.PocketBase, e *core.RequestEvent) error 
 		moreCustomers, err := fetchRecordsByIds(app, "customers", missingCustomerIds)
 		if err == nil {
 			for _, customer := range moreCustomers {
-				name := strings.TrimSpace(strings.Join([]string{
-					customer.GetString("title"),
-					customer.GetString("firstName"),
-					customer.GetString("surname"),
-				}, " "))
-				customerById[customer.Id] = orderExportCustomer{
-					id:    customer.Id,
-					name:  strings.TrimSpace(name),
-					email: strings.TrimSpace(customer.GetString("email")),
-				}
+				customerById[customer.Id] = buildOrderExportCustomer(customer)
 			}
 		}
 	}
@@ -400,12 +395,14 @@ func writeProductionOverviewSheet(
 
 	leftHeaders := []string{
 		"Married name",
+		"How recommended",
 		"Order no",
 		"Order status",
 		"Occasion date",
 		"Booking date",
 		"Required by date",
 		"Artist hours",
+		"Replacement flowers required",
 	}
 
 	frameHeaders := []string{}
@@ -421,6 +418,7 @@ func writeProductionOverviewSheet(
 
 	rightHeaders := []string{
 		"Artwork complete",
+		"Mount cut",
 		"Framing complete",
 		"Total frames",
 		"Order total (£)",
@@ -467,12 +465,14 @@ func writeProductionOverviewSheet(
 
 		leftValues := []any{
 			customer.name,
+			customer.howRecommended,
 			orderNoById[oid],
 			formatSnakeLabel(order.GetString("orderStatus")),
 			exportDateDMY(order.GetString("occasionDate")),
 			exportDateDMY(bookingDate),
 			exportDateDMY(requiredBy),
 			artistHours,
+			fmtBool(order.GetBool("replacementFlowers")),
 		}
 
 		frameValues := []any{}
@@ -502,6 +502,7 @@ func writeProductionOverviewSheet(
 
 		rightValues := []any{
 			fmtBool(allArtworkComplete),
+			fmtBool(order.GetBool("mountCut")),
 			fmtBool(allFramingComplete),
 			len(frames),
 			orderTotal,
@@ -879,6 +880,8 @@ func writeOrdersSheet(
 		"Occasion Date",
 		"Customer Name",
 		"Customer Email",
+		"How Recommended",
+		"Mount Cut",
 		"Order Status",
 		"Payment Status",
 		"Replacement Flowers",
@@ -908,6 +911,8 @@ func writeOrdersSheet(
 			exportDateDMY(order.GetString("occasionDate")),
 			customer.name,
 			customer.email,
+			customer.howRecommended,
+			order.GetBool("mountCut"),
 			order.GetString("orderStatus"),
 			order.GetString("payment_status"),
 			order.GetBool("replacementFlowers"),

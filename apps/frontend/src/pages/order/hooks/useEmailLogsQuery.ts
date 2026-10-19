@@ -8,14 +8,11 @@ export const useEmailLogsQuery = (orderId?: string) => {
     queryKey: ["email_logs", orderId],
     queryFn: async () => {
       if (!orderId) return [] as EmailLogEntry[];
-      const result = await pb
-        .collection("email_logs")
-        .getList<EmailLogEntry>(1, 50, {
-          filter: `orderId = "${orderId}"`,
-          sort: "-sentAt",
-          expand: "sentBy",
-        });
-      return result.items;
+      return pb.collection("email_logs").getFullList<EmailLogEntry>({
+        filter: `orderId = "${orderId}"`,
+        sort: "-sentAt",
+        expand: "sentBy",
+      });
     },
     enabled: Boolean(orderId),
   });

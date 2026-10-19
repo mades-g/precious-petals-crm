@@ -21,7 +21,7 @@ export type SendSmsResponse = {
   orderId?: string;
   type?: SmsType;
   sentAt?: string;
-  provider?: string;
+  provider?: "webex_interact";
   error?: string;
 };
 

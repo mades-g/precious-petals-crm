@@ -79,6 +79,24 @@
         font-size: 14px;
       }
 
+      .addresses {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        margin-top: 24px;
+      }
+
+      .addresses td {
+        width: 50%;
+        vertical-align: top;
+        padding-right: 20px;
+        overflow-wrap: break-word;
+      }
+
+      .addresses .address {
+        margin-top: 6px;
+      }
+
       /* --- Meta row (3 cols) --- */
       .meta {
         width: 100%;
@@ -245,11 +263,28 @@
                 {{else}}
                 <div class="logo-text">Precious Petals</div>
                 {{end}}
+                {{if not .DeliveryAddress}}
                 <div class="address">{{.Address}}</div>
+                {{end}}
               </td>
               <td class="invoice-title">INVOICE</td>
             </tr>
           </table>
+
+          {{if .DeliveryAddress}}
+          <table class="addresses">
+            <tr>
+              <td>
+                <strong>Billing address</strong>
+                <div class="address">{{.Address}}</div>
+              </td>
+              <td>
+                <strong>Delivery address</strong>
+                <div class="address">{{.DeliveryAddress}}</div>
+              </td>
+            </tr>
+          </table>
+          {{end}}
 
           <!-- Meta -->
           <table class="meta">

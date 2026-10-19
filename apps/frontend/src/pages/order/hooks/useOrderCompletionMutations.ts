@@ -7,6 +7,7 @@ import { COLLECTIONS } from "@/services/pb/constants";
 type CompletionPayload = {
   orderId: string;
   artworkComplete?: boolean;
+  mountCut?: boolean;
   framingComplete?: boolean;
 };
 
@@ -24,6 +25,7 @@ const updateOrderInCache = (
         payload.artworkComplete ??
         customer.orderDetails.artworkComplete ??
         false,
+      mountCut: payload.mountCut ?? customer.orderDetails.mountCut ?? false,
       framingComplete:
         payload.framingComplete ??
         customer.orderDetails.framingComplete ??

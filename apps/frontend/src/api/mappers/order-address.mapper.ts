@@ -7,19 +7,19 @@ export const mapOrderAddressesToPayload = (values: CreateOrderFormValues) => ({
   billingCounty: values.billingCounty ?? "",
   billingPostcode: values.billingPostcode,
   deliverySameAsBilling: values.deliverySameAsBilling,
-  deliveryAddressLine1: values.billingPostcode
+  deliveryAddressLine1: values.deliverySameAsBilling
     ? values.billingAddressLine1
     : (values.deliveryAddressLine1 ?? ""),
-  deliveryAddressLine2: values.billingPostcode
+  deliveryAddressLine2: values.deliverySameAsBilling
     ? (values.billingAddressLine2 ?? "")
     : (values.deliveryAddressLine2 ?? ""),
-  deliveryTown: values.billingPostcode
+  deliveryTown: values.deliverySameAsBilling
     ? values.billingTown
     : (values.deliveryTown ?? ""),
-  deliveryCounty: values.billingPostcode
+  deliveryCounty: values.deliverySameAsBilling
     ? (values.billingCounty ?? "")
     : (values.deliveryCounty ?? ""),
-  deliveryPostcode: values.billingPostcode
+  deliveryPostcode: values.deliverySameAsBilling
     ? values.billingPostcode
     : (values.deliveryPostcode ?? ""),
 });

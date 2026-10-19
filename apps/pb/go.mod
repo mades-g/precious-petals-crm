@@ -3,6 +3,7 @@ module precious-petals/pb-crm
 go 1.25.5
 
 require (
+	github.com/emersion/go-imap v1.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/pocketbase/pocketbase v0.34.0
 	github.com/xuri/excelize/v2 v2.9.1
@@ -17,6 +18,7 @@ require (
 	github.com/dop251/goja v0.0.0-20251103141225-af2ceb9156d7 // indirect
 	github.com/dop251/goja_nodejs v0.0.0-20250409162600-f7acab6894b0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.11 // indirect

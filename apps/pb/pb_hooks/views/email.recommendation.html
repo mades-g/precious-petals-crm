@@ -1,6 +1,6 @@
 {{define "title"}}Your flower preservation order – reference
 {{.order.ref}}{{end}} {{define "body"}}
-<p>Dear {{.customer.title}} {{.customer.surname}},</p>
+<p>Dear {{if .customer.title}}{{.customer.title}} {{end}}{{.customer.surname}},</p>
 
 <p>
   <strong>Reference:</strong> {{.customer.surname}}<br />
@@ -48,22 +48,31 @@
   will be ready for you to view in approximately one month.
 </p>
 
-{{if .recommendation.frames}} {{range .recommendation.frames}}
+{{if .recommendation.frames}} {{range $index, $frame := .recommendation.frames}}
 <p>
-  We would like to suggest a {{if .DisplayDescription}}{{.DisplayDescription}}
-  {{end}}display in a {{.FrameType}} frame. This style would complement your
-  bridal flowers beautifully. The price is {{.MainPrice}}, including the frame
-  with {{.GlassType}} and a single mount.
+  {{if gt $index 0}}We would also like to suggest a {{if $frame.DisplayDescription}}{{$frame.DisplayDescription}}
+  {{end}}display in a {{$frame.FrameType}} frame for your extra display.{{else}}We would like to suggest a {{if $frame.DisplayDescription}}{{$frame.DisplayDescription}}
+  {{end}}display in a {{$frame.FrameType}} frame.{{end}} This style would complement your
+  flowers beautifully. The price is {{$frame.MainPrice}}, including the frame
+  with {{$frame.GlassType}} and a single mount.
 </p>
 
-{{if .HasAdditionalMount}}
+{{if $frame.HasAdditionalMount}}
 <p>
-  An additional {{.AdditionalMount}} mount would further enhance the display,
-  bringing the total to {{.TotalPrice}}.
+  An additional {{$frame.AdditionalMount}} mount would further enhance the display,
+  bringing the total to {{$frame.TotalPrice}}.
 </p>
-{{end}} {{if .HasGlassEngraving}}
-<p>{{.GlassEngravingLabel}} would be an additional {{.GlassEngravingPrice}}.</p>
+{{end}} {{if $frame.HasGlassEngraving}}
+<p>{{$frame.GlassEngravingLabel}} would be an additional {{$frame.GlassEngravingPrice}}.</p>
 {{end}} {{end}} {{end}}
+
+{{with .recommendation.paperweight}}
+<p>
+  Your order also includes {{.Quantity}} {{if eq .Quantity "1"}}paperweight{{else}}paperweights{{end}},
+  priced at {{.TotalPrice}} in total.{{if $.recommendation.frames}} This is separate from the
+  frame price above.{{end}}
+</p>
+{{end}}
 
 <p>
   There are many more ideas available on our website, including a range of
@@ -119,7 +128,7 @@
 
 <p>
   Kind regards,<br />
-  Catherine
+  The Precious Petals Team
 </p>
 
 <p>

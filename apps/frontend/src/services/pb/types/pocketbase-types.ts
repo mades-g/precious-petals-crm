@@ -104,13 +104,14 @@ export type SuperusersRecord = {
   verified?: boolean;
 };
 
-export type CustomersTitleOptions = "Mrs" | "Mr" | "Miss";
+export type CustomersTitleOptions = string;
 
 export type CustomersHowRecommendedOptions =
   | "Google"
   | "Friend / Family"
   | "Florist"
-  | "Wedding planner";
+  | "Wedding planner"
+  | "Previous customer";
 
 export type CustomersRecord = {
   created: IsoAutoDateString;
@@ -121,7 +122,7 @@ export type CustomersRecord = {
   orderId?: RecordIdString;
   surname: string;
   telephone: string;
-  title?: CustomersTitleOptions;
+  title?: string;
   updated: IsoAutoDateString;
 };
 
@@ -150,9 +151,7 @@ export type OrderFrameItemsFrameTypeOptions =
   | "Cottage pine"
   | "Bronze"
   | "Antique gold"
-  | "Speckled gold"
   | "Antique silver"
-  | "Speckled silver"
   | "New modern silver"
   | "Distressed white"
   | "Modern white"
@@ -245,6 +244,7 @@ export type OrdersOrderStatusOptions =
 
 export type OrdersRecord = {
   artworkComplete?: boolean;
+  mountCut?: boolean;
   created: IsoAutoDateString;
   frameOrderId?: RecordIdString[];
   framingComplete?: boolean;
@@ -325,7 +325,7 @@ export type SmsLogsRecord = {
   sender: string;
   type: SmsTypeOptions;
   body: string;
-  provider: "txtlocal";
+  provider: "txtlocal" | "webex_interact";
   providerMessageId?: string;
   status: SmsStatusOptions;
   error?: string;

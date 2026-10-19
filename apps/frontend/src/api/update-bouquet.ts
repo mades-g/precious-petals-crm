@@ -13,8 +13,8 @@ export type UpdateBouquetPayload = {
   frameMountColour?: string | null;
   inclusions?: string | null;
   glassEngraving?: string;
-  sizeX?: string;
-  sizeY?: string;
+  sizeX?: number | null;
+  sizeY?: number | null;
   extras?: FrameExtras | null;
   preservationType?: string;
   special_notes?: string;

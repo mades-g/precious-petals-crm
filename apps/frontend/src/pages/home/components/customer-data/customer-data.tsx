@@ -71,29 +71,38 @@ const CustomerData: FC<CustomerDataProps> = ({ nextOrderNo }) => {
         <Box minWidth="70px">
           <FormField name="title" className={formStyles.field}>
             <FormLabel className={formStyles.label} asChild>
-              <Text>
-                <Text color="red">*</Text> Title
-              </Text>
+              <Text>Title</Text>
             </FormLabel>
             <FormControl asChild>
               <Controller
                 name="title"
                 control={control}
-                rules={{ required: "Title is required" }}
                 render={({ field }) => (
-                  <Select.Root
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                  >
-                    <Select.Trigger placeholder="Title" />
-                    <Select.Content>
-                      {CUSTOMERS_TITLE_OPTIONS.map((opt) => (
-                        <Select.Item key={opt} value={opt}>
-                          {opt}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Root>
+                  <Flex gap="2" align="center">
+                    <Select.Root
+                      value={
+                        CUSTOMERS_TITLE_OPTIONS.includes(field.value)
+                          ? field.value
+                          : ""
+                      }
+                      onValueChange={field.onChange}
+                    >
+                      <Select.Trigger placeholder="Pick" />
+                      <Select.Content>
+                        {CUSTOMERS_TITLE_OPTIONS.map((opt) => (
+                          <Select.Item key={opt} value={opt}>
+                            {opt}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Root>
+                    <TextField.Root
+                      value={field.value || ""}
+                      placeholder="Custom title"
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  </Flex>
                 )}
               />
             </FormControl>

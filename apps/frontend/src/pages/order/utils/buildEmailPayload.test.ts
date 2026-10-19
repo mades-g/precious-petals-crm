@@ -3,6 +3,48 @@ import { describe, expect, it } from "vitest";
 import { buildEmailPayload } from "./buildEmailPayload";
 
 describe("buildEmailPayload", () => {
+  it.each([false, true])(
+    "passes all address fields without a delivery charge when same as billing is %s",
+    (deliverySameAsBilling) => {
+      const addresses = {
+        billingAddressLine1: "1 Billing Road",
+        billingAddressLine2: "Flat 2",
+        billingTown: "Basingstoke",
+        billingCounty: "Hampshire",
+        billingPostcode: "RG21 1AA",
+        deliverySameAsBilling,
+        deliveryAddressLine1: "9 Delivery Street",
+        deliveryAddressLine2: "Garden cottage",
+        deliveryTown: "Reading",
+        deliveryCounty: "Berkshire",
+        deliveryPostcode: "RG1 1BB",
+      };
+      const payload = buildEmailPayload({
+        customer: null,
+        order: addresses as never,
+        frames: [],
+        paperweight: null,
+        extras: {
+          replacementFlowers: false,
+          replacementFlowersPrice: null,
+          collection: false,
+          collectionPrice: null,
+          delivery: false,
+          deliveryPrice: null,
+          recreateButtonhole: false,
+          recreateButtonholePrice: null,
+          returnUnusedFlowers: false,
+          returnUnusedFlowersPrice: null,
+          notes: "",
+        },
+        totals: { subTotal: 0, vatRate: 20, vatTotal: 0, grandTotal: 0 },
+      });
+
+      expect(payload.order).toMatchObject(addresses);
+      expect(payload.orderExtras.delivery).toBe(false);
+    },
+  );
+
   it("merges inclusion details into order notes for invoice payloads", () => {
     const payload = buildEmailPayload({
       customer: null,

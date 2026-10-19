@@ -3,7 +3,6 @@ import { COLLECTIONS } from "@/services/pb/constants";
 import type {
   CustomersResponse,
   Update,
-  CustomersTitleOptions,
   CustomersHowRecommendedOptions,
 } from "@/services/pb/types";
 
@@ -13,7 +12,7 @@ export type UpdateCustomerInput = {
   surname: string;
   email: string;
   telephone: string;
-  title?: CustomersTitleOptions | "";
+  title?: string;
   howRecommended?: CustomersHowRecommendedOptions | "";
 };
 

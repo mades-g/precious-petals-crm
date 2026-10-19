@@ -115,6 +115,7 @@ export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
       deliveryPostcode,
       requiredBy,
       artworkComplete,
+      mountCut,
       framingComplete,
       updated,
       created,
@@ -162,6 +163,7 @@ export const normaliseOrder = (expandedRecord: ExpandedOrdersResponse) => {
     deliveryPostcode,
     requiredBy,
     artworkComplete,
+    mountCut,
     framingComplete,
   };
 };

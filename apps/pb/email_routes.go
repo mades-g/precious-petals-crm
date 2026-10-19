@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -72,6 +73,7 @@ func registerEmailRoutes(
 	footerDataURI string,
 ) {
 	viewsDir := resolvePathFromExecutable("pb_hooks", "views")
+	recommendationService := newRecommendationEmailService(app, resend, emailLogoDataURI)
 
 	se.Router.POST("/api/email/invoice", func(e *core.RequestEvent) error {
 		var payload invoicePayload
@@ -179,7 +181,37 @@ func registerEmailRoutes(
 		}
 
 		textBody := fmt.Sprintf(
-			"Dear %s %s\n\nReference: Name: %s\nOccasion Date: %s\nInvoice: %s\n\nEstimated Completion Date: %s\nPlease see attached your final invoice which details your display choices, the payments that you have made and the outstanding balance, which is due one month before completion, this will enable us to meet the estimated completion date.\n\nWe kindly request that you read through the details on your invoice and get in touch as soon as possible if you need to amend anything.\n\nKind Regards,\nThe Precious Petals Team\n\nhttps://www.preciouspetals.co.uk\n01256 882422\nStudio Opening hours\nMon - Thurs 9-5\nFri - Sat 9.30-12.30\n",
+			`Dear %s %s
+
+Reference: Name: %s
+Occasion Date: %s
+Invoice: %s
+
+Estimated Completion Date: %s
+
+Please find attached your final invoice, which confirms your display choices, payments received, any outstanding balance and your estimated completion date.
+
+Every display we create is individual, making each piece completely unique. As every bouquet contains different flower varieties and each flower preserves in its own unique way, no two finished displays will ever be exactly the same. Our aim is always to create the most beautiful display possible following the instructions that you have provided.
+
+We kindly ask that you take a few moments to read through your invoice carefully and check that it accurately reflects your order. If there is anything you would like to amend, or if you feel we have misunderstood any aspect of your order, please let us know as soon as possible before we begin creating your display.
+
+If we do not hear from you, we will assume that the invoice accurately reflects your instructions and will proceed with creating your display accordingly.
+
+The outstanding balance is due one month before your estimated completion date. Receiving payment by this date allows us to complete your display within the planned timescale, protecting your preserved flowers within their finished display and reuniting them with you as soon as possible.
+
+If you have any questions at all, please don't hesitate to get in touch. We are always happy to help.
+
+Thank you once again for choosing Precious Petals. We look forward to creating a beautiful keepsake for you to treasure for many years to come.
+
+Kind regards,
+The Precious Petals Team
+
+https://www.preciouspetals.co.uk
+01256 882422
+Studio Opening hours
+Mon - Thurs 9-5
+Fri - Sat 9.30-12.30
+`,
 			emailView.Customer.Title,
 			emailView.Customer.Surname,
 			emailView.Customer.Surname,
@@ -251,130 +283,29 @@ func registerEmailRoutes(
 			})
 		}
 
-		originalTo := strings.TrimSpace(payload.Customer.Email)
-		if originalTo == "" {
+		if strings.TrimSpace(payload.Customer.Email) == "" {
 			return e.JSON(http.StatusBadRequest, map[string]any{
 				"ok":    false,
 				"error": "Missing customer email.",
 			})
 		}
 
-		toEmail := originalTo
-		if devOverride := strings.TrimSpace(os.Getenv("RESEND_DEV_OVERRIDE_TO")); devOverride != "" {
-			toEmail = devOverride
-		}
-
-		subject := buildOrderSubject(payload)
-
 		logCtx, meta := buildEmailLogContextFromPayload(payload, "recommendation_bouquet", "manual", "recommendation")
-		if toEmail != originalTo {
-			meta["recipientOverride"] = true
-			meta["overrideRecipient"] = toEmail
-			meta["originalRecipient"] = originalTo
-		}
-		toName := buildCustomerDisplayName(payload)
-
-		var logRec *core.Record
-		if rec, err := createEmailLog(app, e, originalTo, toName, subject, logCtx, meta); err == nil {
-			logRec = rec
-		} else {
-			fmt.Println("email log create failed:", err.Error())
-		}
-
-		occasionDate := formatDate(string(payload.Order.OccasionDate))
-
-		ref := buildOrderReference(payload)
-
-		recommendationFrames, _ := buildRecommendationEmailContentFromPayload(payload)
-
-		emailHTML, err := renderEmailTemplate(viewsDir, "email.recommendation.html", map[string]any{
-			"logoDataURI": emailLogoDataURI,
-			"customer": map[string]any{
-				"title":   strings.TrimSpace(payload.Customer.Title),
-				"surname": strings.TrimSpace(payload.Customer.Surname),
-			},
-			"order": map[string]any{
-				"occasionDate": occasionDate,
-				"ref":          ref,
-			},
-			"links": map[string]any{
-				"jotform":     "https://eu.jotform.com/PPetals/order-form",
-				"frameStyles": "https://www.preciouspetals.co.uk/framestyles",
-				"terms":       "https://www.preciouspetals.co.uk/terms",
-				"website":     "https://www.preciouspetals.co.uk",
-			},
-			"recommendation": map[string]any{
-				"frames": recommendationFrames,
-			},
-			"suggestions": map[string]any{
-				"sideProfileUpsizePrice": "£50.00",
-			},
-			"contact": map[string]any{
-				"phone": "01256 882422",
-				"email": "enquiries@preciouspetals.co.uk",
-			},
-			"brand": map[string]any{
-				"name":    "Precious Petals",
-				"tagline": "Flower Preservation Specialists",
-				"phone":   "01256 882422",
-				"website": "https://www.preciouspetals.co.uk",
-			},
-		})
-		if err != nil {
-			updateEmailLog(app, logRec, "failed", err.Error(), map[string]any{"stage": "render_email_html"})
-			return e.JSON(http.StatusInternalServerError, map[string]any{
-				"ok":      false,
-				"error":   "Failed to render recommendation email.",
-				"details": err.Error(),
-			})
-		}
-
-		textBody := buildRecommendationTextBody(
-			payload,
-			occasionDate,
-			ref,
-			recommendationFrames,
-		)
-
-		req := ResendEmailRequest{
-			To:      []string{toEmail},
-			Subject: subject,
-			HTML:    emailHTML,
-			Text:    textBody,
-		}
-
-		idemKey := ""
-		if logRec != nil && strings.TrimSpace(logRec.Id) != "" {
-			idemKey = "email_log_" + logRec.Id
-		}
-
-		sendStart := time.Now()
-		resp, sendErr := resend.SendEmail(e.Request.Context(), req, idemKey)
-		if sendErr != nil {
-			metaPatch := map[string]any{
-				"stage":  "send_email",
-				"sendMs": time.Since(sendStart).Milliseconds(),
+		if err := recommendationService.send(e.Request.Context(), e, payload, logCtx, meta); err != nil {
+			var sendErr *recommendationEmailSendError
+			if errors.As(err, &sendErr) && sendErr != nil {
+				return e.JSON(http.StatusInternalServerError, map[string]any{
+					"ok":      false,
+					"error":   sendErr.PublicMessage,
+					"details": sendErr.Cause.Error(),
+				})
 			}
-			if httpErr, ok := sendErr.(*ResendHTTPError); ok {
-				metaPatch["resendStatus"] = httpErr.Status
-				metaPatch["resendBody"] = httpErr.Body
-			}
-			updateEmailLog(app, logRec, "failed", sendErr.Error(), metaPatch)
-
 			return e.JSON(http.StatusInternalServerError, map[string]any{
 				"ok":      false,
 				"error":   "Failed to send recommendation email.",
-				"details": sendErr.Error(),
+				"details": err.Error(),
 			})
 		}
-
-		updateEmailLog(app, logRec, "sent", "", map[string]any{
-			"stage":          "sent",
-			"sendMs":         time.Since(sendStart).Milliseconds(),
-			"resendId":       resp.ID,
-			"idempotencyKey": idemKey,
-			"toEmailActual":  toEmail,
-		})
 
 		return e.JSON(http.StatusOK, map[string]any{"ok": true})
 	}).Bind(apis.RequireAuth())
@@ -645,6 +576,7 @@ func buildRecommendationTextBody(
 	occasionDate string,
 	ref string,
 	recommendationFrames []recommendationEmailFrame,
+	recommendationPaperweight *recommendationEmailPaperweight,
 ) string {
 	paragraphs := []string{
 		fmt.Sprintf(
@@ -664,7 +596,7 @@ func buildRecommendationTextBody(
 		"If you would prefer to visit our studio to complete the form and discuss your options with one of our artists, or if you would like a phone consultation, please call us as soon as possible to arrange an appointment. Your flowers will be ready for you to view in approximately one month.",
 	}
 
-	for _, frame := range recommendationFrames {
+	for index, frame := range recommendationFrames {
 		displayDescription := strings.TrimSpace(frame.DisplayDescription)
 		if displayDescription == "" {
 			displayDescription = "display"
@@ -672,11 +604,23 @@ func buildRecommendationTextBody(
 			displayDescription += " display"
 		}
 
-		paragraphs = append(paragraphs,
-			fmt.Sprintf(
-				"We would like to suggest a %s in a %s frame. This style would complement your bridal flowers beautifully. The price is %s, including the frame with %s and a single mount.",
+		recommendationLead := fmt.Sprintf(
+			"We would like to suggest a %s in a %s frame.",
+			displayDescription,
+			frame.FrameType,
+		)
+		if index > 0 {
+			recommendationLead = fmt.Sprintf(
+				"We would also like to suggest a %s in a %s frame for your extra display.",
 				displayDescription,
 				frame.FrameType,
+			)
+		}
+
+		paragraphs = append(paragraphs,
+			fmt.Sprintf(
+				"%s This style would complement your flowers beautifully. The price is %s, including the frame with %s and a single mount.",
+				recommendationLead,
 				frame.MainPrice,
 				frame.GlassType,
 			),
@@ -701,6 +645,22 @@ func buildRecommendationTextBody(
 				),
 			)
 		}
+	}
+	if recommendationPaperweight != nil {
+		label := "paperweight"
+		if recommendationPaperweight.Quantity != "1" {
+			label = "paperweights"
+		}
+		paragraph := fmt.Sprintf(
+			"Your order also includes %s %s, priced at %s in total.",
+			recommendationPaperweight.Quantity,
+			label,
+			recommendationPaperweight.TotalPrice,
+		)
+		if len(recommendationFrames) > 0 {
+			paragraph += " This is separate from the frame price above."
+		}
+		paragraphs = append(paragraphs, paragraph)
 	}
 
 	paragraphs = append(paragraphs,
